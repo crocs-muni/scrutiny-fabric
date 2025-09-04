@@ -27,20 +27,23 @@ def _tag_vals(js: Dict, name: str) -> List[str]:
     return [t[1] for t in js.get("tags", []) if isinstance(t, list) and len(t) >= 2 and t[0] == name]
 
 
-def _make_prompt_stub(plan: Mapping[str, Union[str, List[str]]]) -> Callable[..., str]:
+def _make_prompt_stub(
+    plan: Mapping[str, Union[str, List[str]]]
+) -> Callable[..., Union[str, int]]:
     """
     Return a prompt() stub that serves answers from a plan mapping.
-    If plan[label] is a list, serve values sequentially (pop-by-index).
+    If plan[label] is a list, serve values sequentially (index-based).
     Falls back to provided default, or "" if none.
+    NOTE: Matches publish_nostr.prompt signature, including keyword 'type'.
     """
     counters: Dict[str, int] = {}
 
     def _stub(
         label: str,
         default: Optional[str] = None,
-        typ: Any = str,
+        type: Any = str,  # match original prompt(...) signature
         show_default: bool = True,
-    ) -> str:
+    ) -> Union[str, int]:
         if label in plan:
             v = plan[label]
             if isinstance(v, list):
@@ -52,16 +55,15 @@ def _make_prompt_stub(plan: Mapping[str, Union[str, List[str]]]) -> Callable[...
         else:
             ans = default if default is not None else ""
 
-        # Coerce to expected type if requested
-        if typ is int:
+        # Coerce to expected type if requested (return a real int for type=int)
+        if type is int:
             try:
-                return str(int(str(ans)))
+                return int(str(ans))
             except Exception:
-                # fall back to default as int, then to 0
                 try:
-                    return str(int(str(default or "0")))
+                    return int(str(default or "0"))
                 except Exception:
-                    return "0"
+                    return 0
 
         return str(ans)
 
