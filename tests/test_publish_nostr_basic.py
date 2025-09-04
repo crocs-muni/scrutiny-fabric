@@ -288,3 +288,130 @@ def test_http_request_retry_then_success(monkeypatch):
 
 def test_parse_pubkey_to_hex_raw_hex():
     assert pn.parse_pubkey_to_hex("f" * 64) == "f" * 64
+
+def test_parse_tlvs_simple():
+    # TLV: type=0 len=3 "abc", type=2 len=32 pubkey bytes
+    payload = b"\x00\x03abc" + b"\x02\x20" + (b"\x01" * 32)
+    tlvs = pn._parse_tlvs(payload)
+    assert 0 in tlvs and tlvs[0][0] == b"abc"
+    assert 2 in tlvs and tlvs[2][0] == (b"\x01" * 32)
+
+
+def test_fetch_relay_min_pow_variants(monkeypatch):
+    # Fake http_request to return different JSON payloads by URL substring
+    async def fake_http_request(method, url, **kw):
+        if "relay.damus.io" in url:
+            content = json.dumps({"limitation": {"min_pow_difficulty": 15}}).encode("utf-8")
+        elif "relay.other" in url:
+            content = json.dumps({"limits": {"pow": 5}}).encode("utf-8")
+        else:
+            content = json.dumps({}).encode("utf-8")
+        return pn.SimpleResponse(200, {"content-type": "application/json"}, content)
+
+    monkeypatch.setattr(pn, "http_request", fake_http_request)
+
+    max_pow, diag = asyncio.run(pn.fetch_relay_min_pow(["wss://relay.damus.io", "wss://relay.other"]))
+    assert max_pow == 15
+    # diag should have two entries with reachable True
+    r = [d for d in diag if d["url"].endswith("relay.damus.io")][0]
+    assert r["reachable"] is True
+    assert r["min_pow"] == 15
+    r2 = [d for d in diag if d["url"].endswith("relay.other")][0]
+    assert r2["reachable"] is True
+    assert r2["min_pow"] == 5
+    # forced should mark only the one with max_pow
+    assert any(d["forced"] for d in diag) is True
+
+
+def test_publish_event_broadcast_success(monkeypatch):
+    # Fake Client implementation to capture send_event_builder calls
+    class FakeClient:
+        inst_counter = 0
+        fail_instances = set()
+
+        def __init__(self, signer=None):
+            FakeClient.inst_counter += 1
+            self.idx = FakeClient.inst_counter
+            self.relays = []
+            self.connected = False
+
+        async def add_relay(self, r):
+            self.relays.append(r)
+
+        async def connect(self):
+            self.connected = True
+
+        async def send_event_builder(self, builder):
+            if self.idx in FakeClient.fail_instances:
+                raise RuntimeError("forced failure")
+            # Return object with .id.to_hex()
+            return SimpleNamespace(id=SimpleNamespace(to_hex=lambda: "f" * 64))
+
+        async def disconnect(self):
+            self.connected = False
+
+    monkeypatch.setattr(pn, "Client", FakeClient)
+
+    old_mode = pn.PUBLISH_MODE
+    old_dry = pn.DRY_RUN
+    pn.PUBLISH_MODE = "broadcast"
+    pn.DRY_RUN = False
+    FakeClient.inst_counter = 0
+    FakeClient.fail_instances = set()
+
+    try:
+        keys = pn.Keys.generate()
+        builder = pn.EventBuilder.text_note("hello broadcast")
+        eid = asyncio.run(pn.publish_event_with_client(keys, ["wss://relay.one"], builder))
+        assert eid == "f" * 64
+    finally:
+        pn.PUBLISH_MODE = old_mode
+        pn.DRY_RUN = old_dry
+        FakeClient.inst_counter = 0
+        FakeClient.fail_instances = set()
+
+
+def test_publish_event_first_success_with_initial_failure(monkeypatch):
+    class FakeClient:
+        inst_counter = 0
+        fail_instances = set()
+
+        def __init__(self, signer=None):
+            FakeClient.inst_counter += 1
+            self.idx = FakeClient.inst_counter
+            self.relays = []
+            self.connected = False
+
+        async def add_relay(self, r):
+            self.relays.append(r)
+
+        async def connect(self):
+            self.connected = True
+
+        async def send_event_builder(self, builder):
+            if self.idx in FakeClient.fail_instances:
+                raise RuntimeError("forced failure")
+            return SimpleNamespace(id=SimpleNamespace(to_hex=lambda: "a" * 64))
+
+        async def disconnect(self):
+            self.connected = False
+
+    monkeypatch.setattr(pn, "Client", FakeClient)
+    FakeClient.inst_counter = 0
+    FakeClient.fail_instances = {1}  # first instance will fail
+
+    old_mode = pn.PUBLISH_MODE
+    old_dry = pn.DRY_RUN
+    pn.PUBLISH_MODE = "first_success"
+    pn.DRY_RUN = False
+
+    try:
+        keys = pn.Keys.generate()
+        builder = pn.EventBuilder.text_note("first_success test")
+        eid = asyncio.run(pn.publish_event_with_client(keys, ["wss://relay.one", "wss://relay.two"], builder))
+        assert eid == "a" * 64
+    finally:
+        pn.PUBLISH_MODE = old_mode
+        pn.DRY_RUN = old_dry
+        FakeClient.inst_counter = 0
+        FakeClient.fail_instances = set()
