@@ -720,11 +720,12 @@ def _strip_wrappers(s: str) -> str:
 
 def _find_candidate_token(s: str) -> str:
     s = s.strip()
-    m = re.search(r"(n(sec|pub|profile|event|addr)|note)1[0-9a-z]+", s, re.I)
+    m = re.search(r"(n(?:sec|pub|profile|event|addr)|note)1[0-9a-z]+", s, re.I)
     if m:
         return m.group(0)
-    if re.fullmatch(r"[0-9a-fA-F]{64}", s):
-        return s.lower()
+    m2 = re.search(r"[0-9a-fA-F]{64}", s)
+    if m2:
+        return m2.group(0).lower()
     return s
 
 
