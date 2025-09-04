@@ -36,5 +36,4 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest -q --maxfail=1 --disable-warnings \
-            --cov=publish_nostr --cov-report=term-missing
+          pytest -q --maxfail=1 --disable-warnings --cov=publish_nostr --cov-report=term-missing
