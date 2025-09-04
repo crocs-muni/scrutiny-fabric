@@ -175,8 +175,11 @@ def test_cli_binding_event_preview(monkeypatch, capsys):
 
     monkeypatch.setattr(pn, "get_user_inputs_async", fake_inputs)
 
-    # Provide event IDs directly
-    monkeypatch.setattr(pn, "prompt_event_ids_list", lambda label, relays: ["a" * 64] if "Product" in label else ["b" * 64])
+    # Provide event IDs directly (async stub)
+    async def fake_event_ids_list(label, relays):
+        return ["a" * 64] if "Product" in label else ["b" * 64]
+
+    monkeypatch.setattr(pn, "prompt_event_ids_list", fake_event_ids_list)
     monkeypatch.setattr(pn, "prompt", _make_prompt_stub({"Optional note (Enter to skip)": ""}))
     monkeypatch.setattr(pn, "confirm", lambda *a, **k: False)
 
@@ -205,8 +208,11 @@ def test_cli_update_event_preview(monkeypatch, capsys):
 
     monkeypatch.setattr(pn, "get_user_inputs_async", fake_inputs)
 
-    # Original event id
-    monkeypatch.setattr(pn, "prompt_single_event_id", lambda label, relays: "c" * 64)
+    # Original event id (async stub)
+    async def fake_single_event_id(label, relays):
+        return "c" * 64
+
+    monkeypatch.setattr(pn, "prompt_single_event_id", fake_single_event_id)
 
     # "Select (1-3)" -> choose Metadata (2) so we can update url/x
     prompt_plan = {
@@ -216,10 +222,16 @@ def test_cli_update_event_preview(monkeypatch, capsys):
     monkeypatch.setattr(pn, "prompt", _make_prompt_stub(prompt_plan))
 
     # Update url/x path
-    monkeypatch.setattr(pn, "confirm", lambda *a, **k: True if "Provide a new URL" in (a[0] if a else "") else False)
+    monkeypatch.setattr(
+        pn,
+        "confirm",
+        lambda *a, **k: True if "Provide a new URL" in (a[0] if a else "") else False,
+    )
     monkeypatch.setattr(pn, "prompt_https_optional", lambda label: "https://cdn.example.com/new.bin")
+
     async def fake_fetch(url: str):
         return b"XX", {"content-type": "application/octet-stream"}
+
     monkeypatch.setattr(pn, "fetch_bytes_and_headers", fake_fetch)
 
     old = pn.DRY_RUN
@@ -250,7 +262,10 @@ def test_cli_contestation_event_preview(monkeypatch, capsys):
     monkeypatch.setattr(pn, "get_user_inputs_async", fake_inputs)
 
     # Contest an event and reference an alternative metadata event (choice 1)
-    monkeypatch.setattr(pn, "prompt_single_event_id", lambda label, relays: ("e" * 64) if "Contested" in label else ("f" * 64))
+    async def fake_single_event_id(label, relays):
+        return ("e" * 64) if "Contested" in label else ("f" * 64)
+
+    monkeypatch.setattr(pn, "prompt_single_event_id", fake_single_event_id)
     monkeypatch.setattr(pn, "prompt", _make_prompt_stub({"Select (1-2)": "1", "Short reason (optional)": "mismatch"}))
     monkeypatch.setattr(pn, "confirm", lambda *a, **k: False)
 
@@ -281,15 +296,19 @@ def test_cli_confirmation_event_preview(monkeypatch, capsys):
     monkeypatch.setattr(pn, "get_user_inputs_async", fake_inputs)
 
     # Confirm a Metadata event (type 2), with existing evidence id (path 1)
-    monkeypatch.setattr(pn, "prompt_single_event_id", lambda label, relays: "1" * 64)
+    async def fake_single_event_id(label, relays):
+        if "Original event ID to confirm" in label:
+            return "1" * 64
+        # Evidence id prompt
+        return "2" * 64
+
+    monkeypatch.setattr(pn, "prompt_single_event_id", fake_single_event_id)
     prompt_plan = {
         "Select (1-3)": "2",  # Metadata
         "Confirmation note (optional)": "ok",
         "Select (1-2, Enter to skip)": "1",
     }
     monkeypatch.setattr(pn, "prompt", _make_prompt_stub(prompt_plan))
-    # Provide the evidence id
-    monkeypatch.setattr(pn, "prompt_single_event_id", lambda label, relays: "1" * 64 if "Original event ID" in label else "2" * 64)
     monkeypatch.setattr(pn, "confirm", lambda *a, **k: False)
 
     old = pn.DRY_RUN
