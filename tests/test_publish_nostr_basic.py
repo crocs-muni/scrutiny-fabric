@@ -1,5 +1,6 @@
 import asyncio
 import json
+from types import SimpleNamespace
 
 import publish_nostr as pn
 
@@ -195,3 +196,95 @@ def test_publish_event_with_client_dry_run(monkeypatch):
         assert isinstance(eid_hex, str) and len(eid_hex) == 64
     finally:
         pn.DRY_RUN = old
+
+def test_add_scrutiny_t_tags_counts_and_values():
+    tags = []
+    before = len(tags)
+    tags = pn.add_scrutiny_t_tags(tags, pn.TAG_PRODUCT_BASE, pn.TAG_METADATA_BASE)
+    after = len(tags)
+    # Should add namespace + 2 kinds + version = 4 tags
+    assert after - before == 4
+
+    # Normalize Tag objects back to vector form for inspection
+    vecs = [t.as_vec() if hasattr(t, "as_vec") else [] for t in tags]
+    # Extract all "t" tag values
+    tvals = [v[1][1:] if v and v[0] == "t" and isinstance(v[1], str) and v[1].startswith("#") else v[1]
+             for v in vecs if v and v[0] == "t"]
+
+    assert "scrutiny_mo" in tvals
+    assert "scrutiny_product" in tvals
+    assert "scrutiny_metadata" in tvals
+    assert "scrutiny_v01" in tvals
+
+
+def test_blossom_upload_missing_url_field_returns_none(monkeypatch):
+    async def fake_http_request(method, url, **kw):
+        # No url/href/location in JSON
+        data = json.dumps({"message": "ok"}).encode("utf-8")
+        return pn.SimpleResponse(200, {"content-type": "application/json"}, data)
+
+    monkeypatch.setattr(pn, "http_request", fake_http_request)
+    out = asyncio.run(
+        pn.blossom_upload(
+            "https://blossom.example", b"DATA", "file.bin", use_nip98=False, keys=None
+        )
+    )
+    assert out is None
+
+
+def test_blossom_upload_http_exception_returns_none(monkeypatch):
+    async def fake_http_request(method, url, **kw):
+        raise RuntimeError("server error")
+
+    monkeypatch.setattr(pn, "http_request", fake_http_request)
+    out = asyncio.run(
+        pn.blossom_upload(
+            "https://blossom.example", b"DATA", "file.bin", use_nip98=False, keys=None
+        )
+    )
+    assert out is None
+
+
+def test_http_request_retry_then_success(monkeypatch):
+    """
+    Simulate urlopen raising once (HTTP 500) and then succeeding.
+    We patch pn.urlopen, which is used by http_request via asyncio.to_thread.
+    """
+    calls = {"n": 0}
+
+    class FakeResp:
+        def __init__(self, code, content=b"{}", headers=None):
+            self._code = code
+            self._content = content
+            self.headers = headers or {"Content-Type": "application/json"}
+
+        def getcode(self):
+            return self._code
+
+        def read(self):
+            return self._content
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_urlopen(req, timeout=60):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            # First call: behave like a server error (500)
+            return FakeResp(500, b"server error")
+        # Second call: success 200 with JSON body
+        return FakeResp(200, b'{"ok": true}', {"Content-Type": "application/json"})
+
+    monkeypatch.setattr(pn, "urlopen", fake_urlopen)
+
+    # method=GET → no body
+    resp = asyncio.run(pn.http_request("GET", "https://example.com/api"))
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+    assert calls["n"] >= 2  # retried at least once
+
+def test_parse_pubkey_to_hex_raw_hex():
+    assert pn.parse_pubkey_to_hex("f" * 64) == "f" * 64
