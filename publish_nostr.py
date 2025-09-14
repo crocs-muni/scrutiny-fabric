@@ -1387,7 +1387,8 @@ async def create_update_event() -> None:
     private_key, relay_urls = await get_user_inputs_async()
 
     original_hex = await prompt_single_event_id(
-        "Original event ID (hex/note/nevent/naddr/NIP-19 URI/URL)", relay_urls
+        "Original event ID (hex/note/nevent/naddr/NIP-19 URI/URL)",
+        relay_urls,
     )
 
     echo("Original type:")
@@ -1404,12 +1405,16 @@ async def create_update_event() -> None:
 
     update_note = prompt("Update note (free text)", default="", show_default=False)
 
-    add_p = confirm("Add p tag referencing original author's pubkey?", default=False)
+    add_p = confirm(
+        "Add p tag referencing original author's pubkey?", default=False
+    )
     original_pubkey_hex: Optional[str] = None
     if add_p:
         while True:
             try:
-                pub = prompt("Enter original author's pubkey (npub/nprofile/hex)")
+                pub = prompt(
+                    "Enter original author's pubkey (npub/nprofile/hex)"
+                )
                 original_pubkey_hex = parse_pubkey_to_hex(pub)
                 break
             except Exception as e:
@@ -1425,7 +1430,9 @@ async def create_update_event() -> None:
         if confirm("Provide a new URL to update url/x?", default=False):
             while True:
                 try:
-                    new_url_try = prompt_https_optional("New URL (https required)")
+                    new_url_try = prompt_https_optional(
+                        "New URL (https required)"
+                    )
                     if not new_url_try:
                         echo("URL cannot be empty here.", err=True)
                         continue
@@ -1463,6 +1470,7 @@ async def create_update_event() -> None:
         tags: List[Any] = []
         tags = add_scrutiny_t_tags(tags, TAG_UPDATE_BASE, original_type_tag)
         tags.append(Tag.parse(["e", original_hex, "", "root"]))
+        tags.append(Tag.parse(["e", original_hex, "", "reply"]))
         if original_pubkey_hex:
             tags.append(Tag.parse(["p", original_pubkey_hex]))
         if new_url and new_x:
@@ -1471,7 +1479,11 @@ async def create_update_event() -> None:
 
         builder = EventBuilder.text_note(content).tags(tags)
         eid, published = await build_sign_preview_publish(
-            keys, relay_urls, builder, pow_diff, preview_title="Event preview:"
+            keys,
+            relay_urls,
+            builder,
+            pow_diff,
+            preview_title="Event preview:",
         )
         _ = (eid, published)
     except Exception as e:
@@ -1514,7 +1526,12 @@ async def create_contestation_event() -> None:
                 echo("Evidence URL cannot be empty.", err=True)
                 return
             alt_hex, published = await build_and_publish_metadata_event(
-                keys, relay_urls, url, title="Evidence metadata for contestation", offer_blossom=True, picture_url=None
+                keys,
+                relay_urls,
+                url,
+                title="Evidence metadata for contestation",
+                offer_blossom=True,
+                picture_url=None,
             )
             if not published:
                 echo("Evidence was not published. Aborting contestation.")
@@ -1535,11 +1552,16 @@ async def create_contestation_event() -> None:
         tags: List[Any] = []
         tags = add_scrutiny_t_tags(tags, TAG_CONTEST_BASE, TAG_METADATA_BASE)
         tags.append(Tag.parse(["e", contested_hex, "", "root"]))
+        tags.append(Tag.parse(["e", contested_hex, "", "reply"]))
         tags.append(Tag.parse(["e", alt_obj.to_hex(), "", "mention"]))
 
         builder = EventBuilder.text_note(content).tags(tags)
         eid, published = await build_sign_preview_publish(
-            keys, relay_urls, builder, pow_diff, preview_title="Event preview:"
+            keys,
+            relay_urls,
+            builder,
+            pow_diff,
+            preview_title="Event preview:",
         )
         _ = (eid, published)
     except Exception as e:
@@ -1572,7 +1594,9 @@ async def create_confirmation_event() -> None:
     echo("Evidence:")
     echo("1. Reference existing MetadataEvent")
     echo("2. Provide URL (will publish new MetadataEvent and attach)")
-    add_evidence_choice = prompt("Select (1-2, Enter to skip)", default="", show_default=False)
+    add_evidence_choice = prompt(
+        "Select (1-2, Enter to skip)", default="", show_default=False
+    )
 
     evidence_e_id_hex: Optional[str] = None
     try:
@@ -1589,7 +1613,12 @@ async def create_confirmation_event() -> None:
                 return
             keys_tmp = Keys.parse(private_key)
             e_hex, published = await build_and_publish_metadata_event(
-                keys_tmp, relay_urls, e_url, title="Evidence for confirmation", offer_blossom=True, picture_url=None
+                keys_tmp,
+                relay_urls,
+                e_url,
+                title="Evidence for confirmation",
+                offer_blossom=True,
+                picture_url=None,
             )
             if not published:
                 echo("Evidence was not published. Aborting confirmation.")
@@ -1614,13 +1643,19 @@ async def create_confirmation_event() -> None:
 
         tags: List[Any] = []
         tags = add_scrutiny_t_tags(tags, TAG_CONFIRM_BASE, original_type_tag)
+        # Add both root and reply markers for compatibility
         tags.append(Tag.parse(["e", original_hex, "", "root"]))
+        tags.append(Tag.parse(["e", original_hex, "", "reply"]))
         if evidence_e_id_hex:
             tags.append(Tag.parse(["e", evidence_e_id_hex, "", "mention"]))
 
         builder = EventBuilder.text_note(content).tags(tags)
         eid, published = await build_sign_preview_publish(
-            keys, relay_urls, builder, pow_diff, preview_title="Event preview:"
+            keys,
+            relay_urls,
+            builder,
+            pow_diff,
+            preview_title="Event preview:",
         )
         _ = (eid, published)
     except Exception as e:

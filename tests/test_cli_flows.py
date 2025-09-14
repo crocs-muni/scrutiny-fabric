@@ -24,7 +24,11 @@ def _tvals(js: Dict) -> List[str]:
 
 
 def _tag_vals(js: Dict, name: str) -> List[str]:
-    return [t[1] for t in js.get("tags", []) if isinstance(t, list) and len(t) >= 2 and t[0] == name]
+    return [
+        t[1]
+        for t in js.get("tags", [])
+        if isinstance(t, list) and len(t) >= 2 and t[0] == name
+    ]
 
 
 def _make_prompt_stub(
@@ -94,8 +98,12 @@ def test_cli_product_event_preview(monkeypatch, capsys):
         "prompt_https_optional",
         lambda label: "https://example.com" if "Canonical URL" in label else "",
     )
-    monkeypatch.setattr(pn, "prompt_d_tag_optional", lambda: "org.example.vendor:test-1")
-    monkeypatch.setattr(pn, "prompt_semver_or_text", lambda label: ("1.0.0", "semver"))
+    monkeypatch.setattr(
+        pn, "prompt_d_tag_optional", lambda: "org.example.vendor:test-1"
+    )
+    monkeypatch.setattr(
+        pn, "prompt_semver_or_text", lambda label: ("1.0.0", "semver")
+    )
     # Valid 13-field CPE
     monkeypatch.setattr(
         pn,
@@ -144,8 +152,12 @@ def test_cli_metadata_event_preview(monkeypatch, capsys):
     monkeypatch.setattr(pn, "fetch_bytes_and_headers", fake_fetch)
 
     # Prompt answers
-    monkeypatch.setattr(pn, "prompt_https_optional", lambda label: "https://files.example.com/report.pdf")
-    monkeypatch.setattr(pn, "prompt", _make_prompt_stub({"Short title (optional, default: report.pdf)": "Report"}))
+    monkeypatch.setattr(
+        pn, "prompt_https_optional", lambda label: "https://files.example.com/report.pdf"
+    )
+    monkeypatch.setattr(
+        pn, "prompt", _make_prompt_stub({"Short title (optional, default: report.pdf)": "Report"})
+    )
     monkeypatch.setattr(pn, "confirm", lambda *a, **k: False)
 
     old = pn.DRY_RUN
@@ -182,7 +194,9 @@ def test_cli_binding_event_preview(monkeypatch, capsys):
         return ["a" * 64] if "Product" in label else ["b" * 64]
 
     monkeypatch.setattr(pn, "prompt_event_ids_list", fake_event_ids_list)
-    monkeypatch.setattr(pn, "prompt", _make_prompt_stub({"Optional note (Enter to skip)": ""}))
+    monkeypatch.setattr(
+        pn, "prompt", _make_prompt_stub({"Optional note (Enter to skip)": ""})
+    )
     monkeypatch.setattr(pn, "confirm", lambda *a, **k: False)
 
     old = pn.DRY_RUN
@@ -227,9 +241,13 @@ def test_cli_update_event_preview(monkeypatch, capsys):
     monkeypatch.setattr(
         pn,
         "confirm",
-        lambda *a, **k: True if "Provide a new URL" in (a[0] if a else "") else False,
+        lambda *a, **k: True
+        if "Provide a new URL" in (a[0] if a else "")
+        else False,
     )
-    monkeypatch.setattr(pn, "prompt_https_optional", lambda label: "https://cdn.example.com/new.bin")
+    monkeypatch.setattr(
+        pn, "prompt_https_optional", lambda label: "https://cdn.example.com/new.bin"
+    )
 
     async def fake_fetch(url: str):
         return b"XX", {"content-type": "application/octet-stream"}
@@ -250,6 +268,15 @@ def test_cli_update_event_preview(monkeypatch, capsys):
         tvals = _tvals(js)
         assert "scrutiny_update" in tvals
         assert "scrutiny_metadata" in tvals
+        # ensure reply marker present for original id
+        assert any(
+            isinstance(t, list)
+            and len(t) >= 4
+            and t[0] == "e"
+            and t[1] == ("c" * 64)
+            and t[3] == "reply"
+            for t in js.get("tags", [])
+        )
     finally:
         pn.DRY_RUN = old
 
@@ -268,7 +295,9 @@ def test_cli_contestation_event_preview(monkeypatch, capsys):
         return ("e" * 64) if "Contested" in label else ("f" * 64)
 
     monkeypatch.setattr(pn, "prompt_single_event_id", fake_single_event_id)
-    monkeypatch.setattr(pn, "prompt", _make_prompt_stub({"Select (1-2)": "1", "Short reason (optional)": "mismatch"}))
+    monkeypatch.setattr(
+        pn, "prompt", _make_prompt_stub({"Select (1-2)": "1", "Short reason (optional)": "mismatch"})
+    )
     monkeypatch.setattr(pn, "confirm", lambda *a, **k: False)
 
     old = pn.DRY_RUN
@@ -284,6 +313,15 @@ def test_cli_contestation_event_preview(monkeypatch, capsys):
         tvals = _tvals(js)
         assert "scrutiny_contestation" in tvals
         assert "scrutiny_metadata" in tvals
+        # ensure reply marker present for contested id
+        assert any(
+            isinstance(t, list)
+            and len(t) >= 4
+            and t[0] == "e"
+            and t[1] == ("e" * 64)
+            and t[3] == "reply"
+            for t in js.get("tags", [])
+        )
     finally:
         pn.DRY_RUN = old
 
@@ -326,6 +364,15 @@ def test_cli_confirmation_event_preview(monkeypatch, capsys):
         tvals = _tvals(js)
         assert "scrutiny_confirmation" in tvals
         assert "scrutiny_metadata" in tvals
+        # ensure reply marker present for original id
+        assert any(
+            isinstance(t, list)
+            and len(t) >= 4
+            and t[0] == "e"
+            and t[1] == ("1" * 64)
+            and t[3] == "reply"
+            for t in js.get("tags", [])
+        )
     finally:
         pn.DRY_RUN = old
 
@@ -343,7 +390,11 @@ def test_cli_delete_event_preview(monkeypatch, capsys):
     monkeypatch.setattr(pn, "confirm", lambda *a, **k: True)
 
     plan = {
-        "Event ID (hex/note/nevent/naddr/NIP-19 URI/URL)": ["a" * 64, "b" * 64, ""],
+        "Event ID (hex/note/nevent/naddr/NIP-19 URI/URL)": [
+            "a" * 64,
+            "b" * 64,
+            "",
+        ],
         "Reason (optional)": "cleanup",
     }
     monkeypatch.setattr(pn, "prompt", _make_prompt_stub(plan))

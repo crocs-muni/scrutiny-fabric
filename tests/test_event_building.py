@@ -140,6 +140,7 @@ def test_build_update_like_event():
     tags: List[pn.Tag] = []
     tags = pn.add_scrutiny_t_tags(tags, pn.TAG_UPDATE_BASE, pn.TAG_METADATA_BASE)
     tags.append(pn.Tag.parse(["e", root, "", "root"]))
+    tags.append(pn.Tag.parse(["e", root, "", "reply"]))
     tags.append(pn.Tag.parse(["url", new_url]))
     tags.append(pn.Tag.parse(["x", new_x]))
 
@@ -154,6 +155,15 @@ def test_build_update_like_event():
     tvals = _tag_values(js, "t")
     assert "scrutiny_update" in tvals
     assert "scrutiny_metadata" in tvals
+    # reply marker present
+    assert any(
+        isinstance(t, list)
+        and len(t) >= 4
+        and t[0] == "e"
+        and t[1] == root
+        and t[3] == "reply"
+        for t in js.get("tags", [])
+    )
 
 
 def test_build_contestation_like_event():
@@ -167,6 +177,7 @@ def test_build_contestation_like_event():
     tags: List[pn.Tag] = []
     tags = pn.add_scrutiny_t_tags(tags, pn.TAG_CONTEST_BASE, pn.TAG_METADATA_BASE)
     tags.append(pn.Tag.parse(["e", contested, "", "root"]))
+    tags.append(pn.Tag.parse(["e", contested, "", "reply"]))
     tags.append(pn.Tag.parse(["e", alternative, "", "mention"]))
 
     builder = pn.EventBuilder.text_note(content).tags(tags)
@@ -178,6 +189,15 @@ def test_build_contestation_like_event():
     tvals = _tag_values(js, "t")
     assert "scrutiny_contestation" in tvals
     assert "scrutiny_metadata" in tvals
+    # reply marker present
+    assert any(
+        isinstance(t, list)
+        and len(t) >= 4
+        and t[0] == "e"
+        and t[1] == contested
+        and t[3] == "reply"
+        for t in js.get("tags", [])
+    )
 
 
 def test_build_confirmation_like_event():
@@ -191,6 +211,7 @@ def test_build_confirmation_like_event():
     tags: List[pn.Tag] = []
     tags = pn.add_scrutiny_t_tags(tags, pn.TAG_CONFIRM_BASE, pn.TAG_METADATA_BASE)
     tags.append(pn.Tag.parse(["e", root, "", "root"]))
+    tags.append(pn.Tag.parse(["e", root, "", "reply"]))
     tags.append(pn.Tag.parse(["e", evidence, "", "mention"]))
 
     builder = pn.EventBuilder.text_note(content).tags(tags)
@@ -202,6 +223,15 @@ def test_build_confirmation_like_event():
     tvals = _tag_values(js, "t")
     assert "scrutiny_confirmation" in tvals
     assert "scrutiny_metadata" in tvals
+    # reply marker present
+    assert any(
+        isinstance(t, list)
+        and len(t) >= 4
+        and t[0] == "e"
+        and t[1] == root
+        and t[3] == "reply"
+        for t in js.get("tags", [])
+    )
 
 
 def test_build_delete_event():
