@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import secrets
+import getpass
 from datetime import timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
@@ -223,6 +224,37 @@ def validate_cpe23(cpe: str) -> None:
         raise ValueError("CPE version missing (e.g., 2.3)")
     if part not in ("a", "o", "h"):
         raise ValueError("CPE part must be one of: a (app), o (OS), h (hardware)")
+    
+def validate_purl(p: str) -> None:
+    """
+    Minimal Package URL validation.
+    Spec: https://github.com/package-url/purl-spec
+    Accepts forms like:
+      pkg:<type>/<name>@<version>
+      pkg:<type>/<namespace>/<name>@<version>?qualifiers#subpath
+    We enforce:
+      - starts with "pkg:"
+      - has a type and a name
+    """
+    if not p or not isinstance(p, str):
+        raise ValueError("Empty purl")
+    if not p.startswith("pkg:"):
+        raise ValueError("purl must start with 'pkg:'")
+
+    # Basic structure check after 'pkg:'
+    rest = p[4:]
+    if "/" not in rest:
+        raise ValueError("purl must include a type and a name")
+    # Split off qualifiers/subpath
+    rest_main = rest.split("?", 1)[0].split("#", 1)[0]
+    # Ensure there's at least type and name
+    parts = rest_main.split("/")
+    if len(parts) < 2:
+        raise ValueError("purl must include a type and a name")
+    ptype = parts[0].strip()
+    name = parts[-1].strip()  # name is last segment (after namespace)
+    if not ptype or not name:
+        raise ValueError("purl missing type or name")
 
 
 # --------------------------
@@ -230,9 +262,18 @@ def validate_cpe23(cpe: str) -> None:
 # --------------------------
 
 def prompt_private_key() -> str:
-    """Prompt for nsec private key; validate by parsing."""
+    """Prompt for nsec private key; validate by parsing (hidden input)."""
     while True:
-        nsec = prompt("Enter your Nostr private key (nsec format)", show_default=False)
+        try:
+            nsec = getpass.getpass(
+                "Enter your Nostr private key (nsec format): "
+            ).strip()
+        except Exception:
+            # Fallback to visible prompt if getpass isn't available
+            nsec = prompt(
+                "Enter your Nostr private key (nsec format)", show_default=False
+            ).strip()
+
         if not nsec.lower().startswith("nsec"):
             echo("Private key must be in nsec format.", err=True)
             continue
@@ -320,6 +361,17 @@ def prompt_cpe23_optional() -> str:
         except Exception as e:
             echo(f"Invalid cpe23: {e}", err=True)
 
+def prompt_purl_optional() -> str:
+    """Prompt optional purl; validate if present; loop until valid or empty."""
+    while True:
+        val = prompt("purl (id)", default="", show_default=False)
+        if not val.strip():
+            return ""
+        try:
+            validate_purl(val.strip())
+            return val.strip()
+        except Exception as e:
+            echo(f"Invalid purl: {e}", err=True)
 
 def prompt_sha256_optional(label: str) -> str:
     while True:
@@ -373,29 +425,50 @@ async def http_request(
     max_retries: int = 3,
 ) -> SimpleResponse:
     """
-    Minimal HTTP client using urllib
+    Minimal HTTP client using urllib with sane default headers.
     """
     assert method.upper() in ("GET", "POST")
     attempt = 0
     last_exc: Optional[Exception] = None
 
+    def _add_default_headers(h: Dict[str, str]) -> Dict[str, str]:
+        # Make header lookup case-insensitive
+        lower = {k.lower(): k for k in h.keys()}
+        if "user-agent" not in lower:
+            h["User-Agent"] = "scrutiny-cli/0.1 (+https://github.com/)"
+        if "accept" not in lower:
+            h["Accept"] = "*/*"
+        # Some hosts refuse GETs without a Referer
+        if method.upper() == "GET" and "referer" not in lower:
+            h["Referer"] = url
+        return h
+
     while attempt < max_retries:
         try:
             req_headers = _convert_headers(headers)
+            req_headers = _add_default_headers(req_headers)
+
             body: Optional[bytes] = None
             if method.upper() == "GET":
                 body = None
             else:
                 if files:
-                    # Multipart form-data for single file field: "file"
+                    # Multipart form-data for single/multiple files
                     boundary = "----ScrutinyBoundary" + secrets.token_hex(12)
-                    req_headers["Content-Type"] = f"multipart/form-data; boundary={boundary}"
+                    req_headers[
+                        "Content-Type"
+                    ] = f"multipart/form-data; boundary={boundary}"
                     parts: List[bytes] = []
                     for field_name, (filename, file_bytes) in files.items():
                         parts.append(f"--{boundary}\r\n".encode())
-                        disposition = f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
+                        disposition = (
+                            'Content-Disposition: form-data; name="'
+                            f'{field_name}"; filename="{filename}"\r\n'
+                        )
                         parts.append(disposition.encode())
-                        parts.append(b"Content-Type: application/octet-stream\r\n\r\n")
+                        parts.append(
+                            b"Content-Type: application/octet-stream\r\n\r\n"
+                        )
                         parts.append(file_bytes)
                         parts.append(b"\r\n")
                     parts.append(f"--{boundary}--\r\n".encode())
@@ -404,25 +477,35 @@ async def http_request(
                     if data is None:
                         body = b""
                         if "Content-Type" not in req_headers:
-                            req_headers["Content-Type"] = "application/octet-stream"
+                            req_headers["Content-Type"] = (
+                                "application/octet-stream"
+                            )
                     else:
                         body = data
                         if "Content-Type" not in req_headers:
-                            req_headers["Content-Type"] = "application/octet-stream"
+                            req_headers["Content-Type"] = (
+                                "application/octet-stream"
+                            )
 
-            req = Request(url=url, data=body, headers=req_headers, method=method.upper())
+            req = Request(url=url, data=body, headers=req_headers,
+                          method=method.upper())
+
             def _do() -> SimpleResponse:
                 with urlopen(req, timeout=60) as resp:
                     content = resp.read()
                     hdrs = {k.lower(): v for k, v in resp.headers.items()}
                     return SimpleResponse(resp.getcode(), hdrs, content)
+
             resp = await asyncio.to_thread(_do)
+
             # retry on server errors / 429
             if resp.status_code >= 500 or resp.status_code == 429:
                 raise RuntimeError(f"HTTP {resp.status_code}")
             return resp
         except (HTTPError, URLError, RuntimeError, Exception) as e:
             last_exc = e
+            # For 4xx other than 429, retrying rarely helps; but keep
+            # a short backoff for idempotent GETs
             await asyncio.sleep((2 ** attempt) * 0.5)
             attempt += 1
 
@@ -720,11 +803,12 @@ def _strip_wrappers(s: str) -> str:
 
 def _find_candidate_token(s: str) -> str:
     s = s.strip()
-    m = re.search(r"(n(sec|pub|profile|event|addr)|note)1[0-9a-z]+", s, re.I)
+    m = re.search(r"(n(?:sec|pub|profile|event|addr)|note)1[0-9a-z]+", s, re.I)
     if m:
         return m.group(0)
-    if re.fullmatch(r"[0-9a-fA-F]{64}", s):
-        return s.lower()
+    m2 = re.search(r"[0-9a-fA-F]{64}", s)
+    if m2:
+        return m2.group(0).lower()
     return s
 
 
@@ -1103,9 +1187,11 @@ async def create_product_event() -> None:
     product_name = prompt("product_name (text)", default="", show_default=False)
     product_version, pv_type = prompt_semver_or_text("product_version (semver)")
     cpe23 = prompt_cpe23_optional()
-    purl = prompt("purl (id)", default="", show_default=False)
+    purl = prompt_purl_optional()
     sbom_url = prompt_https_optional("sbom_url (https URL)")
-    sbom_sha256 = prompt_sha256_optional("sbom_sha256 (64-hex, leave blank to auto compute if sbom_url given)")
+    sbom_sha256 = prompt_sha256_optional(
+        "sbom_sha256 (64-hex, leave blank to auto compute if sbom_url given)"
+    )
     release_date = prompt_date_optional()
 
     pic_url: Optional[str] = None
@@ -1276,13 +1362,19 @@ async def create_metadata_event() -> None:
     echo("\n=== Metadata Event ===")
     private_key, relay_urls = await get_user_inputs_async()
 
-    src_url = prompt_https_optional("URL to data file (https required)")
-    if not src_url:
-        echo("A https URL is required.", err=True)
-        return
+    # Ask for the source URL until a non-empty https URL is provided
+    src_url = ""
+    while not src_url:
+        src_url = prompt_https_optional("URL to data file (https required)")
+        if not src_url:
+            echo("A https URL is required.", err=True)
 
     ttl_default = url_basename(src_url)
-    ttl = prompt(f"Short title (optional, default: {ttl_default})", default=ttl_default, show_default=True)
+    ttl = prompt(
+        f"Short title (optional, default: {ttl_default})",
+        default=ttl_default,
+        show_default=True,
+    )
 
     pic_url: Optional[str] = None
     if confirm("Add picture/thumbnail URL for metadata?", default=False):
@@ -1290,12 +1382,19 @@ async def create_metadata_event() -> None:
         pic_url = tmp or None
 
     extra_labels: List[List[str]] = []
-    if confirm("Add product-related labels (vendor, product_version, cpe23, purl, type, tool)?", default=False):
+    if confirm(
+        "Add product-related labels (vendor, product_version, cpe23, purl, type, tool)?",
+        default=False,
+    ):
         vendor = prompt("vendor (text)", default="", show_default=False)
-        product_name = prompt("product_name (text)", default="", show_default=False)
-        product_version, pv_type = prompt_semver_or_text("product_version (semver)")
+        product_name = prompt(
+            "product_name (text)", default="", show_default=False
+        )
+        product_version, pv_type = prompt_semver_or_text(
+            "product_version (semver)"
+        )
         cpe = prompt_cpe23_optional()
-        purl = prompt("purl (id)", default="", show_default=False)
+        purl = prompt_purl_optional()
         metadata_type = prompt("metadata_type (text)", default="", show_default=False)
         measurement_tool = prompt("tool (text)", default="", show_default=False)
 
@@ -1306,27 +1405,58 @@ async def create_metadata_event() -> None:
         add_l("vendor", vendor, "text")
         add_l("product_name", product_name, "text")
         if product_version.strip():
-            add_l("product_version", product_version.strip(), pv_type or "text")
+            add_l(
+                "product_version",
+                product_version.strip(),
+                pv_type or "text",
+            )
         if cpe.strip():
             add_l("cpe23", cpe.strip(), "id")
-        add_l("purl", purl, "id")
+        if purl.strip():
+            add_l("purl", purl.strip(), "id")
         add_l("type", metadata_type, "text")
         add_l("tool", measurement_tool, "text")
 
     try:
         keys = Keys.parse(private_key)
-        main_id, _pub = await build_and_publish_metadata_event(
-            keys,
-            relay_urls,
-            src_url,
-            title=ttl,
-            offer_blossom=True,
-            picture_url=pic_url,
-            extra_labels=extra_labels or None,
-        )
-        _ = main_id
     except Exception as e:
-        echo(f"Error: {e}", err=True)
+        echo(f"Invalid private key: {e}", err=True)
+        return
+
+    # Try to build/publish; on fetch errors (e.g., 403), let the user
+    # re-enter just the URL and try again. Keep all other inputs intact.
+    while True:
+        try:
+            main_id, _pub = await build_and_publish_metadata_event(
+                keys,
+                relay_urls,
+                src_url,
+                title=ttl,
+                offer_blossom=True,
+                picture_url=pic_url,
+                extra_labels=extra_labels or None,
+            )
+            _ = main_id
+            break
+        except Exception as e:
+            echo(f"Error while fetching or building metadata: {e}", err=True)
+            if not confirm("Re-enter the data file URL and try again?", default=True):
+                return
+            # Re-prompt just the URL and retry
+            new_url = prompt_https_optional("URL to data file (https required)")
+            if not new_url:
+                echo("A https URL is required.", err=True)
+                continue
+            src_url = new_url
+            # Optionally refresh the default title if the user left it as
+            # default the first time
+            if ttl == ttl_default:
+                ttl_default = url_basename(src_url)
+                ttl = prompt(
+                    f"Short title (optional, default: {ttl_default})",
+                    default=ttl_default,
+                    show_default=True,
+                )
 
 
 async def create_binding_event() -> None:
@@ -1386,7 +1516,8 @@ async def create_update_event() -> None:
     private_key, relay_urls = await get_user_inputs_async()
 
     original_hex = await prompt_single_event_id(
-        "Original event ID (hex/note/nevent/naddr/NIP-19 URI/URL)", relay_urls
+        "Original event ID (hex/note/nevent/naddr/NIP-19 URI/URL)",
+        relay_urls,
     )
 
     echo("Original type:")
@@ -1403,12 +1534,16 @@ async def create_update_event() -> None:
 
     update_note = prompt("Update note (free text)", default="", show_default=False)
 
-    add_p = confirm("Add p tag referencing original author's pubkey?", default=False)
+    add_p = confirm(
+        "Add p tag referencing original author's pubkey?", default=False
+    )
     original_pubkey_hex: Optional[str] = None
     if add_p:
         while True:
             try:
-                pub = prompt("Enter original author's pubkey (npub/nprofile/hex)")
+                pub = prompt(
+                    "Enter original author's pubkey (npub/nprofile/hex)"
+                )
                 original_pubkey_hex = parse_pubkey_to_hex(pub)
                 break
             except Exception as e:
@@ -1424,7 +1559,9 @@ async def create_update_event() -> None:
         if confirm("Provide a new URL to update url/x?", default=False):
             while True:
                 try:
-                    new_url_try = prompt_https_optional("New URL (https required)")
+                    new_url_try = prompt_https_optional(
+                        "New URL (https required)"
+                    )
                     if not new_url_try:
                         echo("URL cannot be empty here.", err=True)
                         continue
@@ -1462,6 +1599,7 @@ async def create_update_event() -> None:
         tags: List[Any] = []
         tags = add_scrutiny_t_tags(tags, TAG_UPDATE_BASE, original_type_tag)
         tags.append(Tag.parse(["e", original_hex, "", "root"]))
+        tags.append(Tag.parse(["e", original_hex, "", "reply"]))
         if original_pubkey_hex:
             tags.append(Tag.parse(["p", original_pubkey_hex]))
         if new_url and new_x:
@@ -1470,7 +1608,11 @@ async def create_update_event() -> None:
 
         builder = EventBuilder.text_note(content).tags(tags)
         eid, published = await build_sign_preview_publish(
-            keys, relay_urls, builder, pow_diff, preview_title="Event preview:"
+            keys,
+            relay_urls,
+            builder,
+            pow_diff,
+            preview_title="Event preview:",
         )
         _ = (eid, published)
     except Exception as e:
@@ -1513,7 +1655,12 @@ async def create_contestation_event() -> None:
                 echo("Evidence URL cannot be empty.", err=True)
                 return
             alt_hex, published = await build_and_publish_metadata_event(
-                keys, relay_urls, url, title="Evidence metadata for contestation", offer_blossom=True, picture_url=None
+                keys,
+                relay_urls,
+                url,
+                title="Evidence metadata for contestation",
+                offer_blossom=True,
+                picture_url=None,
             )
             if not published:
                 echo("Evidence was not published. Aborting contestation.")
@@ -1534,11 +1681,16 @@ async def create_contestation_event() -> None:
         tags: List[Any] = []
         tags = add_scrutiny_t_tags(tags, TAG_CONTEST_BASE, TAG_METADATA_BASE)
         tags.append(Tag.parse(["e", contested_hex, "", "root"]))
+        tags.append(Tag.parse(["e", contested_hex, "", "reply"]))
         tags.append(Tag.parse(["e", alt_obj.to_hex(), "", "mention"]))
 
         builder = EventBuilder.text_note(content).tags(tags)
         eid, published = await build_sign_preview_publish(
-            keys, relay_urls, builder, pow_diff, preview_title="Event preview:"
+            keys,
+            relay_urls,
+            builder,
+            pow_diff,
+            preview_title="Event preview:",
         )
         _ = (eid, published)
     except Exception as e:
@@ -1571,7 +1723,9 @@ async def create_confirmation_event() -> None:
     echo("Evidence:")
     echo("1. Reference existing MetadataEvent")
     echo("2. Provide URL (will publish new MetadataEvent and attach)")
-    add_evidence_choice = prompt("Select (1-2, Enter to skip)", default="", show_default=False)
+    add_evidence_choice = prompt(
+        "Select (1-2, Enter to skip)", default="", show_default=False
+    )
 
     evidence_e_id_hex: Optional[str] = None
     try:
@@ -1588,7 +1742,12 @@ async def create_confirmation_event() -> None:
                 return
             keys_tmp = Keys.parse(private_key)
             e_hex, published = await build_and_publish_metadata_event(
-                keys_tmp, relay_urls, e_url, title="Evidence for confirmation", offer_blossom=True, picture_url=None
+                keys_tmp,
+                relay_urls,
+                e_url,
+                title="Evidence for confirmation",
+                offer_blossom=True,
+                picture_url=None,
             )
             if not published:
                 echo("Evidence was not published. Aborting confirmation.")
@@ -1613,13 +1772,19 @@ async def create_confirmation_event() -> None:
 
         tags: List[Any] = []
         tags = add_scrutiny_t_tags(tags, TAG_CONFIRM_BASE, original_type_tag)
+        # Add both root and reply markers for compatibility
         tags.append(Tag.parse(["e", original_hex, "", "root"]))
+        tags.append(Tag.parse(["e", original_hex, "", "reply"]))
         if evidence_e_id_hex:
             tags.append(Tag.parse(["e", evidence_e_id_hex, "", "mention"]))
 
         builder = EventBuilder.text_note(content).tags(tags)
         eid, published = await build_sign_preview_publish(
-            keys, relay_urls, builder, pow_diff, preview_title="Event preview:"
+            keys,
+            relay_urls,
+            builder,
+            pow_diff,
+            preview_title="Event preview:",
         )
         _ = (eid, published)
     except Exception as e:
