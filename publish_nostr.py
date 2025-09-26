@@ -1168,6 +1168,53 @@ async def build_sign_preview_publish(
     display_event_links_after_publish(keys, eid)
     return eid, True
 
+def collect_custom_l_tags() -> List[List[str]]:
+    """
+    Interactive loop to collect custom 'l' tags.
+
+    Returns a list of rows like:
+      ["l", <name>, <value>, <type>]
+
+    - name: free-form (e.g., vendor_url, category_code)
+    - value: free-form; if type=url we validate https://
+    - type: text/id/url/date/hash/mimetype/bytes/other (free-form, defaults to 'text')
+    """
+    echo("\nCustom label tags (l)")
+    rows: List[List[str]] = []
+    while confirm("Add a custom l tag?", default=False):
+        name = prompt("l.name (e.g., vendor_url, category_code)", default="", show_default=False).strip()
+        if not name:
+            echo("Name cannot be empty.", err=True)
+            continue
+
+        value = prompt("l.value", default="", show_default=False).strip()
+        if not value:
+            echo("Value cannot be empty.", err=True)
+            continue
+
+        ltype = prompt(
+            "l.type (text/id/url/date/hash/mimetype/bytes/other)",
+            default="text",
+        ).strip().lower() or "text"
+
+        # Minimal guardrails
+        if ltype == "url":
+            try:
+                validate_https_url(value)
+            except Exception as e:
+                echo(f"Invalid url: {e}", err=True)
+                continue
+        elif ltype == "hash":
+            # Not all hashes are sha256; warn if it isn't 64-hex
+            try:
+                validate_sha256_hex(value)
+            except Exception:
+                echo("Note: 'hash' type is generic; value is not a 64-hex sha256.", err=False)
+
+        rows.append(["l", name, value, ltype])
+        echo(f"Added: ['l', '{name}', '{value}', '{ltype}']")
+    return rows
+
 
 # --------------------------
 # Event builders
@@ -1252,6 +1299,10 @@ async def create_product_event() -> None:
         add_label("sbom_m", sbom_mime or "", "mimetype")
         add_label("sbom_size", sbom_size or "", "bytes")
         add_label("release_date", release_date, "date")
+        # add user-defined custom l tags
+        if confirm("Add custom label tags (l)?", default=False):
+            for row in collect_custom_l_tags():
+                tags.append(Tag.parse(row))
 
         builder = EventBuilder.text_note(content).tags(tags)
         eid, published = await build_sign_preview_publish(
@@ -1416,6 +1467,9 @@ async def create_metadata_event() -> None:
             add_l("purl", purl.strip(), "id")
         add_l("type", metadata_type, "text")
         add_l("tool", measurement_tool, "text")
+        # add user-defined custom l tags for metadata
+        if confirm("Add custom label tags (l)?", default=False):
+            extra_labels.extend(collect_custom_l_tags())
 
     try:
         keys = Keys.parse(private_key)
