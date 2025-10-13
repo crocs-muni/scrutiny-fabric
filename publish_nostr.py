@@ -33,6 +33,7 @@ try:
         Tag,
         Filter,
         PublicKey,
+        RelayUrl,
     )
 except ImportError:
     print("Error: nostr-sdk not installed. Please run: pip install nostr-sdk", file=sys.stderr)
@@ -913,7 +914,9 @@ async def resolve_naddr_to_event_id(naddr: str, relay_urls: List[str]) -> str:
     try:
         for r in relays:
             try:
-                await client.add_relay(r)
+                # Convert string URL to RelayUrl instance
+                relay = RelayUrl.parse(r)
+                await client.add_relay(relay)
             except Exception:
                 pass
         await client.connect()
@@ -1014,7 +1017,9 @@ async def publish_event_with_client(
         for r in relay_urls:
             client = Client(NostrSigner.keys(keys))
             try:
-                await client.add_relay(r)
+                # Convert string URL to RelayUrl instance
+                relay = RelayUrl.parse(r)
+                await client.add_relay(relay)
                 await client.connect()
                 eid_hex = await _send_with(client)
                 echo(f"✓ Published to {r}. Event ID: {eid_hex}")
@@ -1034,7 +1039,9 @@ async def publish_event_with_client(
         try:
             for r in relay_urls:
                 try:
-                    await client.add_relay(r)
+                    # Convert string URL to RelayUrl instance
+                    relay = RelayUrl.parse(r)
+                    await client.add_relay(relay)
                 except Exception:
                     pass
             await client.connect()
