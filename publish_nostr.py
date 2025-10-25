@@ -981,14 +981,9 @@ async def resolve_naddr_to_event_id(naddr: str, relay_urls: List[str]) -> str:
     try:
         for r in relays:
             try:
-<<<<<<< Updated upstream
                 # Convert string URL to RelayUrl instance
-                relay = RelayUrl.parse(r)
-                await client.add_relay(relay)
-=======
                 relay_url = RelayUrl.parse(r)
                 await client.add_relay(relay_url)
->>>>>>> Stashed changes
             except Exception:
                 pass
         await client.connect()
@@ -1089,14 +1084,8 @@ async def publish_event_with_client(
         for r in relay_urls:
             client = Client(NostrSigner.keys(keys))
             try:
-<<<<<<< Updated upstream
-                # Convert string URL to RelayUrl instance
-                relay = RelayUrl.parse(r)
-                await client.add_relay(relay)
-=======
                 relay_url = RelayUrl.parse(r)
                 await client.add_relay(relay_url)
->>>>>>> Stashed changes
                 await client.connect()
                 eid_hex = await _send_with(client)
                 echo(f"✓ Published to {r}. Event ID: {eid_hex}")
@@ -1116,14 +1105,8 @@ async def publish_event_with_client(
         try:
             for r in relay_urls:
                 try:
-<<<<<<< Updated upstream
-                    # Convert string URL to RelayUrl instance
-                    relay = RelayUrl.parse(r)
-                    await client.add_relay(relay)
-=======
                     relay_url = RelayUrl.parse(r)
                     await client.add_relay(relay_url)
->>>>>>> Stashed changes
                 except Exception:
                     pass
             await client.connect()
