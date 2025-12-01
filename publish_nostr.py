@@ -561,7 +561,14 @@ async def http_request(
             def _do() -> SimpleResponse:
                 with urlopen(req, timeout=60) as resp:
                     content = resp.read()
-                    hdrs = {k.lower(): v for k, v in resp.headers.items()}
+                    # Ensure headers are properly extracted as dict
+                    hdrs = {}
+                    if hasattr(resp.headers, 'items'):
+                        hdrs = {k.lower(): v for k, v in resp.headers.items()}
+                    else:
+                        # Fallback: iterate over header names
+                        for k in resp.headers.keys():
+                            hdrs[k.lower()] = resp.headers[k]
                     return SimpleResponse(resp.getcode(), hdrs, content)
 
             resp = await asyncio.to_thread(_do)
@@ -581,6 +588,28 @@ async def http_request(
 
 
 async def fetch_bytes_and_headers(url: str) -> Tuple[bytes, Dict[str, str]]:
+    # Normalize well-known hosting URLs to fetch the actual file bytes
+    def _rewrite_github_blob(u: str) -> str:
+        try:
+            p = urlparse(u)
+            host = (p.netloc or "").lower()
+            path = p.path or ""
+            if host in ("github.com", "www.github.com") and "/blob/" in path:
+                # Expect: /owner/repo/blob/branch/path/to/file
+                parts = path.strip("/").split("/")
+                if len(parts) >= 5 and parts[2] == "blob":
+                    owner, repo, _blob, branch = parts[0], parts[1], parts[2], parts[3]
+                    rest = "/".join(parts[4:])
+                    return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
+        except Exception:
+            pass
+        return u
+
+    rewritten = _rewrite_github_blob(url)
+    if rewritten != url:
+        echo(f"Rewriting GitHub blob URL to raw: {rewritten}")
+        url = rewritten
+
     validate_https_url(url)
     echo(f"Fetching content from: {url}")
     resp = await http_request("GET", url)
