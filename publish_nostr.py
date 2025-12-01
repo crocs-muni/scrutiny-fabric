@@ -33,6 +33,7 @@ try:
         Tag,
         Filter,
         PublicKey,
+        RelayUrl,
     )
 except ImportError:
     print("Error: nostr-sdk not installed. Please run: pip install nostr-sdk", file=sys.stderr)
@@ -180,21 +181,22 @@ def validate_date_yyyy_mm_dd(d: str) -> None:
 def validate_d_tag(d: str) -> Optional[str]:
     if not d:
         return (
-            "Empty d-tag, recommended to use reverse-DNS like "
-            "'org.vendor:product-<version>'"
+            "Empty d-tag, recommended to use 'vendor:product' or 'vendor:product-version'"
         )
     if "cpe:" in d.lower() or "pkg:" in d.lower():
         return "Do not put CPE/PURL in d-tag, use labels for cpe23/purl"
+    # New simpler format: vendor:product or vendor:product-version
     if ":" not in d or d.count(":") != 1:
-        return "d-tag should be reverse-DNS-like: 'org.vendor:product-<version>'"
-    prefix, suffix = d.split(":")
-    if not re.fullmatch(r"[a-z0-9]+(\.[a-z0-9-]+)+", prefix):
-        return (
-            "d-tag prefix should look like reverse DNS "
-            "(e.g., org.example.vendor)"
-        )
+        return "d-tag should be in the format 'vendor:product' or 'vendor:product-version'"
+    prefix, suffix = d.split(":", 1)
+    # Vendor (prefix) should be a short identifier (alnum, dot, underscore, hyphen)
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", prefix):
+        return "d-tag vendor should contain only letters, digits, '.', '_' or '-' (e.g., nxp)"
     if not suffix:
         return "d-tag must include product identifier after ':'"
+    # No whitespace allowed
+    if re.search(r"\s", d):
+        return "d-tag must not contain whitespace"
     return None
 
 
@@ -224,7 +226,7 @@ def validate_cpe23(cpe: str) -> None:
         raise ValueError("CPE version missing (e.g., 2.3)")
     if part not in ("a", "o", "h"):
         raise ValueError("CPE part must be one of: a (app), o (OS), h (hardware)")
-    
+
 def validate_purl(p: str) -> None:
     """
     Minimal Package URL validation.
@@ -373,6 +375,72 @@ def prompt_purl_optional() -> str:
         except Exception as e:
             echo(f"Invalid purl: {e}", err=True)
 
+
+def prompt_custom_labels() -> List[List[str]]:
+    """Interactively prompt for arbitrary 'l' labels. Returns list of label lists.
+
+    Each label is a list like: ["l", name, value, type]
+    Allowed types: text, semver, id, url, hash, mimetype, bytes, date
+    """
+    allowed = {"text", "semver", "id", "url", "hash", "mimetype", "bytes", "date"}
+    labels: List[List[str]] = []
+    if not confirm("Add custom labels (name/value/type)?", default=False):
+        return labels
+
+    while True:
+        name = prompt("Label name (e.g., foo)", default="", show_default=False).strip()
+        if not name:
+            echo("Empty name — finishing custom labels input.")
+            break
+        value = prompt(f"Value for '{name}'", default="", show_default=False).strip()
+        if not value:
+            echo("Empty value — label skipped.")
+            if not confirm("Add another label?", default=True):
+                break
+            else:
+                continue
+
+        # prompt for type
+        ltype = prompt("Type (text, semver, id, url, hash, mimetype, bytes, date)", default="text", show_default=True).strip()
+        if ltype not in allowed:
+            echo(f"Unknown type '{ltype}', defaulting to 'text'", err=True)
+            ltype = "text"
+
+        # quick validation for semver and cpe when user chooses
+        if ltype == "semver":
+            try:
+                validate_semver(value)
+            except Exception as e:
+                echo(f"Value is not a valid semver: {e}", err=True)
+                if confirm("Keep anyway as text?", default=True):
+                    ltype = "text"
+                else:
+                    # let user re-enter value
+                    continue
+
+        if ltype == "id" and name.lower() == "cpe23":
+            try:
+                # normalize then validate
+                nv = normalize_cpe23(value)
+                validate_cpe23(nv)
+                value = nv
+            except Exception as e:
+                echo(f"Invalid cpe23: {e}", err=True)
+                if not confirm("Skip this label and add another?", default=True):
+                    continue
+                else:
+                    if not confirm("Add another label?", default=True):
+                        break
+                    else:
+                        continue
+
+        labels.append(["l", name, value, ltype])
+
+        if not confirm("Add another label?", default=True):
+            break
+
+    return labels
+
 def prompt_sha256_optional(label: str) -> str:
     while True:
         h = prompt(label, default="", show_default=False)
@@ -493,7 +561,14 @@ async def http_request(
             def _do() -> SimpleResponse:
                 with urlopen(req, timeout=60) as resp:
                     content = resp.read()
-                    hdrs = {k.lower(): v for k, v in resp.headers.items()}
+                    # Ensure headers are properly extracted as dict
+                    hdrs = {}
+                    if hasattr(resp.headers, 'items'):
+                        hdrs = {k.lower(): v for k, v in resp.headers.items()}
+                    else:
+                        # Fallback: iterate over header names
+                        for k in resp.headers.keys():
+                            hdrs[k.lower()] = resp.headers[k]
                     return SimpleResponse(resp.getcode(), hdrs, content)
 
             resp = await asyncio.to_thread(_do)
@@ -513,6 +588,28 @@ async def http_request(
 
 
 async def fetch_bytes_and_headers(url: str) -> Tuple[bytes, Dict[str, str]]:
+    # Normalize well-known hosting URLs to fetch the actual file bytes
+    def _rewrite_github_blob(u: str) -> str:
+        try:
+            p = urlparse(u)
+            host = (p.netloc or "").lower()
+            path = p.path or ""
+            if host in ("github.com", "www.github.com") and "/blob/" in path:
+                # Expect: /owner/repo/blob/branch/path/to/file
+                parts = path.strip("/").split("/")
+                if len(parts) >= 5 and parts[2] == "blob":
+                    owner, repo, _blob, branch = parts[0], parts[1], parts[2], parts[3]
+                    rest = "/".join(parts[4:])
+                    return f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
+        except Exception:
+            pass
+        return u
+
+    rewritten = _rewrite_github_blob(url)
+    if rewritten != url:
+        echo(f"Rewriting GitHub blob URL to raw: {rewritten}")
+        url = rewritten
+
     validate_https_url(url)
     echo(f"Fetching content from: {url}")
     resp = await http_request("GET", url)
@@ -913,7 +1010,9 @@ async def resolve_naddr_to_event_id(naddr: str, relay_urls: List[str]) -> str:
     try:
         for r in relays:
             try:
-                await client.add_relay(r)
+                # Convert string URL to RelayUrl instance
+                relay_url = RelayUrl.parse(r)
+                await client.add_relay(relay_url)
             except Exception:
                 pass
         await client.connect()
@@ -1014,7 +1113,8 @@ async def publish_event_with_client(
         for r in relay_urls:
             client = Client(NostrSigner.keys(keys))
             try:
-                await client.add_relay(r)
+                relay_url = RelayUrl.parse(r)
+                await client.add_relay(relay_url)
                 await client.connect()
                 eid_hex = await _send_with(client)
                 echo(f"✓ Published to {r}. Event ID: {eid_hex}")
@@ -1034,7 +1134,8 @@ async def publish_event_with_client(
         try:
             for r in relay_urls:
                 try:
-                    await client.add_relay(r)
+                    relay_url = RelayUrl.parse(r)
+                    await client.add_relay(relay_url)
                 except Exception:
                     pass
             await client.connect()
@@ -1168,6 +1269,53 @@ async def build_sign_preview_publish(
     display_event_links_after_publish(keys, eid)
     return eid, True
 
+def collect_custom_l_tags() -> List[List[str]]:
+    """
+    Interactive loop to collect custom 'l' tags.
+
+    Returns a list of rows like:
+      ["l", <name>, <value>, <type>]
+
+    - name: free-form (e.g., vendor_url, category_code)
+    - value: free-form; if type=url we validate https://
+    - type: text/id/url/date/hash/mimetype/bytes/other (free-form, defaults to 'text')
+    """
+    echo("\nCustom label tags (l)")
+    rows: List[List[str]] = []
+    while confirm("Add a custom l tag?", default=False):
+        name = prompt("l.name (e.g., vendor_url, category_code)", default="", show_default=False).strip()
+        if not name:
+            echo("Name cannot be empty.", err=True)
+            continue
+
+        value = prompt("l.value", default="", show_default=False).strip()
+        if not value:
+            echo("Value cannot be empty.", err=True)
+            continue
+
+        ltype = prompt(
+            "l.type (text/id/url/date/hash/mimetype/bytes/other)",
+            default="text",
+        ).strip().lower() or "text"
+
+        # Minimal guardrails
+        if ltype == "url":
+            try:
+                validate_https_url(value)
+            except Exception as e:
+                echo(f"Invalid url: {e}", err=True)
+                continue
+        elif ltype == "hash":
+            # Not all hashes are sha256; warn if it isn't 64-hex
+            try:
+                validate_sha256_hex(value)
+            except Exception:
+                echo("Note: 'hash' type is generic; value is not a 64-hex sha256.", err=False)
+
+        rows.append(["l", name, value, ltype])
+        echo(f"Added: ['l', '{name}', '{value}', '{ltype}']")
+    return rows
+
 
 # --------------------------
 # Event builders
@@ -1252,6 +1400,25 @@ async def create_product_event() -> None:
         add_label("sbom_m", sbom_mime or "", "mimetype")
         add_label("sbom_size", sbom_size or "", "bytes")
         add_label("release_date", release_date, "date")
+        # add user-defined custom l tags
+        if confirm("Add custom label tags (l)?", default=False):
+            for row in collect_custom_l_tags():
+                tags.append(Tag.parse(row))
+
+        # custom labels for product event
+        try:
+            custom = prompt_custom_labels()
+            for l in custom:
+                try:
+                    tags.append(Tag.parse(l))
+                except Exception:
+                    # best-effort: append as raw l-tag if Tag.parse fails
+                    try:
+                        tags.append(Tag.parse(["l", l[1], l[2], l[3]]))
+                    except Exception:
+                        pass
+        except Exception:
+            pass
 
         builder = EventBuilder.text_note(content).tags(tags)
         eid, published = await build_sign_preview_publish(
@@ -1416,6 +1583,17 @@ async def create_metadata_event() -> None:
             add_l("purl", purl.strip(), "id")
         add_l("type", metadata_type, "text")
         add_l("tool", measurement_tool, "text")
+        # add user-defined custom l tags for metadata
+        if confirm("Add custom label tags (l)?", default=False):
+            extra_labels.extend(collect_custom_l_tags())
+
+        # allow arbitrary custom labels
+        try:
+            custom = prompt_custom_labels()
+            for l in custom:
+                extra_labels.append(l)
+        except Exception:
+            pass
 
     try:
         keys = Keys.parse(private_key)
@@ -1791,6 +1969,262 @@ async def create_confirmation_event() -> None:
         echo(f"Error: {e}", err=True)
 
 
+async def create_event_from_json() -> None:
+    """Create an event from a JSON file with pre-configured tags."""
+    echo("\n=== Event from JSON ===")
+    private_key, relay_urls = await get_user_inputs_async()
+
+    # Prompt for JSON file path
+    json_file = ""
+    while not json_file:
+        json_file = prompt("Path to JSON file (absolute or relative)")
+        if not json_file.strip():
+            echo("File path cannot be empty.", err=True)
+            continue
+        json_file = json_file.strip()
+        if not os.path.isfile(json_file):
+            echo(f"File not found: {json_file}", err=True)
+            json_file = ""
+            continue
+
+    # Load and parse JSON
+    try:
+        with open(json_file, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
+    except Exception as e:
+        echo(f"Error reading JSON file: {e}", err=True)
+        return
+
+    # Extract tags from JSON
+    tags_input = json_data.get("tags", [])
+    if not tags_input:
+        echo("JSON must contain a 'tags' array.", err=True)
+        return
+
+    if not isinstance(tags_input, list):
+        echo("'tags' field must be an array.", err=True)
+        return
+
+    echo(f"\nLoaded {len(tags_input)} tag(s) from JSON")
+
+    # Ask user what type of event this is
+    echo("\nEvent type:")
+    echo("1. ProductEvent")
+    echo("2. MetadataEvent")
+    echo("3. BindingEvent")
+    echo("4. Update")
+    echo("5. Contestation")
+    echo("6. Confirmation")
+    event_type_choice = prompt("Select (1-6)", type=int)
+
+    type_mapping = {
+        1: TAG_PRODUCT_BASE,
+        2: TAG_METADATA_BASE,
+        3: TAG_BINDING_BASE,
+        4: TAG_UPDATE_BASE,
+        5: TAG_CONTEST_BASE,
+        6: TAG_CONFIRM_BASE,
+    }
+    if event_type_choice not in type_mapping:
+        echo("Invalid choice.")
+        return
+    event_type_tag = type_mapping[event_type_choice]
+
+    # Prompt for content
+    echo("\nEnter event content/description:")
+    echo("(Tip: Press Enter twice to finish, or use actual line breaks)")
+    lines: List[str] = []
+    while True:
+        line = input("  ").rstrip('\r')
+        if line == "":
+            # Check if previous line was also empty
+            if lines and lines[-1] == "":
+                lines.pop()  # Remove the last empty line
+                break
+            lines.append(line)
+        else:
+            lines.append(line)
+    
+    content = "\n".join(lines).strip()
+    if not content:
+        echo("Content cannot be empty.", err=True)
+        return
+
+    # Compute hashes for URLs and build final tags list
+    final_tags: List[Any] = []
+    urls_to_hash: Dict[str, str] = {}  # url -> hash mapping
+
+    try:
+        keys = Keys.parse(private_key)
+        pow_diff = 0 if DRY_RUN else await resolve_pow(relay_urls)
+
+        # First pass: identify URLs that need hashing
+        for tag_entry in tags_input:
+            if isinstance(tag_entry, list) and len(tag_entry) > 0 and tag_entry[0] == "url":
+                if len(tag_entry) > 1:
+                    url = tag_entry[1]
+                    if url and url.startswith("https://"):
+                        urls_to_hash[url] = ""  # placeholder
+
+        # Fetch and compute hashes for URLs
+        if urls_to_hash:
+            echo(f"\nComputing hashes for {len(urls_to_hash)} URL(s)...")
+            for url in urls_to_hash.keys():
+                try:
+                    data, headers = await fetch_bytes_and_headers(url)
+                    urls_to_hash[url] = sha256_hex(data)
+                except Exception as e:
+                    echo(f"Warning: Could not hash URL {url}: {e}", err=True)
+                    urls_to_hash[url] = ""
+
+        # Second pass: add all tags
+        for tag_entry in tags_input:
+            if not isinstance(tag_entry, list) or len(tag_entry) == 0:
+                continue
+
+            # For url tags, also add corresponding x (hash) tags
+            if tag_entry[0] == "url" and len(tag_entry) > 1:
+                url = tag_entry[1]
+                final_tags.append(Tag.parse(tag_entry))
+                # Add hash tag if we computed one
+                if url in urls_to_hash and urls_to_hash[url]:
+                    final_tags.append(Tag.parse(["x", urls_to_hash[url]]))
+            else:
+                # Regular tag - just parse and add
+                try:
+                    final_tags.append(Tag.parse(tag_entry))
+                except Exception as e:
+                    echo(f"Warning: Could not parse tag {tag_entry}: {e}", err=True)
+
+        # Add scrutiny hashtags based on event type
+        final_tags = add_scrutiny_t_tags(final_tags, event_type_tag)
+        hashtags = content_hashtags(event_type_tag)
+        final_content = f"{content}\n\n{hashtags}"
+
+        # Build and publish event
+        builder = EventBuilder.text_note(final_content).tags(final_tags)
+        eid, published = await build_sign_preview_publish(
+            keys,
+            relay_urls,
+            builder,
+            pow_diff,
+            preview_title="Event preview:",
+        )
+        _ = (eid, published)
+
+    except Exception as e:
+        echo(f"Error: {e}", err=True)
+
+
+async def create_test_wrong_hash_event() -> None:
+    """Create a test event with intentionally wrong hash to test hash verification."""
+    echo("\n=== Test Event with Wrong Hash ===")
+    private_key, relay_urls = await get_user_inputs_async()
+
+    # Prompt for URL
+    url = ""
+    while not url:
+        url = prompt_https_optional("URL to hash (https required)")
+        if not url:
+            echo("URL cannot be empty.", err=True)
+            continue
+
+    # Fetch the actual content and compute correct hash
+    try:
+        data, headers = await fetch_bytes_and_headers(url)
+        correct_hash = sha256_hex(data)
+        echo(f"✓ Correct hash: {correct_hash}")
+    except Exception as e:
+        echo(f"Error fetching URL: {e}", err=True)
+        return
+
+    # Generate a wrong hash
+    echo("\nGenerate wrong hash by:")
+    echo("1. Flip first character (e.g., a→b)")
+    echo("2. Flip middle character")
+    echo("3. Flip last character")
+    echo("4. Completely random hash")
+    wrong_choice = prompt("Select (1-4)", type=int)
+
+    wrong_hash = correct_hash
+    if wrong_choice == 1:
+        # Flip first character
+        first = correct_hash[0]
+        replacement = chr((ord(first.lower()) - ord('0')) ^ 1)
+        if replacement in "0123456789abcdef":
+            wrong_hash = replacement + correct_hash[1:]
+        else:
+            wrong_hash = ('a' if first != 'a' else 'b') + correct_hash[1:]
+    elif wrong_choice == 2:
+        # Flip middle character
+        mid = len(correct_hash) // 2
+        mid_char = correct_hash[mid]
+        replacement = 'a' if mid_char != 'a' else 'b'
+        wrong_hash = correct_hash[:mid] + replacement + correct_hash[mid+1:]
+    elif wrong_choice == 3:
+        # Flip last character
+        last = correct_hash[-1]
+        replacement = 'a' if last != 'a' else 'b'
+        wrong_hash = correct_hash[:-1] + replacement
+    elif wrong_choice == 4:
+        # Random hash
+        wrong_hash = ''.join([chr(ord('0') + (i % 16)) for i in range(64)])
+    else:
+        echo("Invalid choice.")
+        return
+
+    echo(f"✗ Wrong hash:   {wrong_hash}")
+
+    # Get content
+    echo("\nEnter event content/description:")
+    echo("(Tip: Press Enter twice to finish)")
+    lines: List[str] = []
+    while True:
+        line = input("  ").rstrip('\r')
+        if line == "":
+            if lines and lines[-1] == "":
+                lines.pop()
+                break
+            lines.append(line)
+        else:
+            lines.append(line)
+    
+    content = "\n".join(lines).strip()
+    if not content:
+        echo("Content cannot be empty.", err=True)
+        return
+
+    # Build event with wrong hash
+    try:
+        keys = Keys.parse(private_key)
+        pow_diff = 0 if DRY_RUN else await resolve_pow(relay_urls)
+
+        header = "🧪 TEST: Wrong Hash Verification"
+        details = f"URL: {url}\nCorrect SHA256: {correct_hash}\nWrong SHA256: {wrong_hash}"
+        hashtags = content_hashtags(TAG_METADATA_BASE)
+        final_content = f"{header}\n\n{details}\n\n{content}\n\n{hashtags}"
+
+        tags: List[Any] = []
+        tags = add_scrutiny_t_tags(tags, TAG_METADATA_BASE)
+        tags.append(Tag.parse(["url", url]))
+        tags.append(Tag.parse(["x", wrong_hash]))  # Intentionally wrong!
+        tags.append(Tag.parse(["m", "application/octet-stream"]))
+        tags.append(Tag.parse(["alt", "Test event with wrong hash"]))
+
+        builder = EventBuilder.text_note(final_content).tags(tags)
+        eid, published = await build_sign_preview_publish(
+            keys,
+            relay_urls,
+            builder,
+            pow_diff,
+            preview_title="Event preview (with WRONG hash):",
+        )
+        _ = (eid, published)
+
+    except Exception as e:
+        echo(f"Error: {e}", err=True)
+
+
 async def create_delete_event() -> None:
     echo("\n=== Delete Event (NIP-09) ===")
     private_key, relay_urls = await get_user_inputs_async()
@@ -1910,10 +2344,12 @@ async def app_loop():
         echo("5. Contestation")
         echo("6. Confirmation")
         echo("7. Delete")
-        echo("8. Exit")
+        echo("8. Event from JSON")
+        echo("9. Test: Event with Wrong Hash")
+        echo("10. Exit")
 
         try:
-            choice = prompt("Choice (1-8)", type=int)
+            choice = prompt("Choice (1-10)", type=int)
             if choice == 1:
                 await create_product_event()
             elif choice == 2:
@@ -1929,6 +2365,10 @@ async def app_loop():
             elif choice == 7:
                 await create_delete_event()
             elif choice == 8:
+                await create_event_from_json()
+            elif choice == 9:
+                await create_test_wrong_hash_event()
+            elif choice == 10:
                 echo("Exit.")
                 break
             else:

@@ -63,8 +63,9 @@ def test_validate_d_tag():
     assert pn.validate_d_tag("org.example.vendor:product-1") is None
     msg = pn.validate_d_tag("")
     assert isinstance(msg, str) and "Empty d-tag" in msg
-    msg = pn.validate_d_tag("badprefix:prod")
-    assert isinstance(msg, str) and "reverse DNS" in msg
+    # New allowed format: vendor:product or vendor:product-version
+    assert pn.validate_d_tag("badprefix:prod") is None
+    assert pn.validate_d_tag("nxp:j3a080") is None
     msg = pn.validate_d_tag("org.example:cpe:2.3:a:bad")
     assert isinstance(msg, str) and "Do not put CPE" in msg
 
