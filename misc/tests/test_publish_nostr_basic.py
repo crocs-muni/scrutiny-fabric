@@ -2,7 +2,7 @@ import asyncio
 import json
 from types import SimpleNamespace
 
-import misc\publish_nostr as pn
+import publish_nostr as pn
 
 
 def test_validate_sha256_hex_ok():

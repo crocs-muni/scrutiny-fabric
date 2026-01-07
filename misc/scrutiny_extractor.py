@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 from dataclasses import dataclass
 import time
 
-from sec_certs.dataset import CCDataset
+from sec_certs.dataset import CCDataset # type: ignore
 
 # Setup logging
 logging.basicConfig(
