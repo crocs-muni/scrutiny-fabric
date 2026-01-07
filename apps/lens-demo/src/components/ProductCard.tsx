@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Copy, ChevronDown, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToShortNpub, pubkeyToNpub } from '@/lib/nip19';
-import { extractLabels, extractDTag, getDisplayEvent, validatePURL, type ScrutinyEvent } from '@/lib/scrutiny';
+import { extractLabels, extractDTag, getDisplayEvent, getLegacyScrutinyReason, validatePURL, type ScrutinyEvent } from '@/lib/scrutiny';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
 import { RawEventDialog } from '@/components/RawEventDialog';
@@ -47,6 +47,8 @@ export function ProductCard({
   const [securityOpen, setSecurityOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
   const [showAllSecurityLevels, setShowAllSecurityLevels] = useState(false);
+
+  const legacyReason = getLegacyScrutinyReason(product.tags);
 
   const { display } = getDisplayEvent(product, update, showOriginal);
 
@@ -138,7 +140,7 @@ export function ProductCard({
     .map(t => t[2]);
 
   // Remove duplicate if eal is already shown separately
-  const filteredSecurityLevels = eal 
+  const filteredSecurityLevels = eal
     ? securityLevels.filter(level => level !== eal)
     : securityLevels;
 
@@ -201,6 +203,20 @@ export function ProductCard({
             <span>Product</span>
           </div>
           <div className="flex items-center gap-2">
+            {legacyReason && (
+              <Badge
+                variant="outline"
+                className="text-xs border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-950/30"
+                title={
+                  legacyReason === 'hyphenated-tags'
+                    ? 'Legacy SCRUTINY event (hyphenated/v0 tags)'
+                    : `Legacy SCRUTINY event (${legacyReason})`
+                }
+              >
+                Legacy
+                {legacyReason !== 'hyphenated-tags' ? ` (${legacyReason})` : ''}
+              </Badge>
+            )}
             {powDifficulty && (
               <Badge
                 variant="outline"

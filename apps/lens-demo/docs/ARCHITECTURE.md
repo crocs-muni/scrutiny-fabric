@@ -36,7 +36,12 @@ Load → Connect Relay → Query Bindings → Parse → Filter → Display List 
   // include plain, hashed (#), v01 and hashed v01 variants for each scrutiny tag
   "#t": [
     "scrutiny_fabric", "#scrutiny_fabric", "scrutiny_fabric_v01", "#scrutiny_fabric_v01",
-    "scrutiny_binding", "#scrutiny_binding", "scrutiny_binding_v01", "#scrutiny_binding_v01"
+    // Legacy namespace (older events)
+    "scrutiny_mo", "#scrutiny_mo", "scrutiny_mo_v01", "#scrutiny_mo_v01",
+    "scrutiny-mo", "#scrutiny-mo", "scrutiny-mo-v0", "#scrutiny-mo-v0",
+    "scrutiny_binding", "#scrutiny_binding", "scrutiny_binding_v01", "#scrutiny_binding_v01",
+    // Legacy hyphenated type tags (if present on older events)
+    "scrutiny-binding", "#scrutiny-binding", "scrutiny-binding-v0", "#scrutiny-binding-v0"
   ]
 }
 ```

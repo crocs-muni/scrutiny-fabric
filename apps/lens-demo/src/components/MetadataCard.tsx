@@ -8,6 +8,7 @@ import { pubkeyToShortNpub, pubkeyToNpub } from '@/lib/nip19';
 import {
   extractURLAndHash,
   extractLabels,
+  getLegacyScrutinyReason,
   type ScrutinyEvent,
   getDisplayEvent,
 } from '@/lib/scrutiny';
@@ -61,6 +62,8 @@ export function MetadataCard({
   const [computedHash, setComputedHash] = useState<string | undefined>();
   const [verificationError, setVerificationError] = useState<string | undefined>();
 
+  const legacyReason = getLegacyScrutinyReason(metadata.tags);
+
   const { display } = getDisplayEvent(metadata, update, showOriginal);
 
   const author = useAuthor(display.pubkey);
@@ -74,7 +77,7 @@ export function MetadataCard({
 
   const { url, hash } = extractURLAndHash(display);
   const labels = extractLabels(display);
-  
+
   const timeAgo = formatDistanceToNow(new Date(display.created_at * 1000), {
     addSuffix: true,
   });
@@ -84,7 +87,7 @@ export function MetadataCard({
     // Get the mention tag (alternative metadata reference)
     const mentionTags = contestation.tags.filter(t => t[0] === 'e' && t[3] === 'mention');
     const alternativeId = mentionTags[0]?.[1];
-    
+
     if (alternativeId && categorized) {
       return categorized.get(alternativeId);
     }
@@ -141,37 +144,37 @@ export function MetadataCard({
 
   // Check if we have test metadata
   const hasTestMetadata = !!(
-    toolClientVersion || 
-    toolAppletVersion || 
-    executionDate || 
-    reader || 
-    cardAtr || 
+    toolClientVersion ||
+    toolAppletVersion ||
+    executionDate ||
+    reader ||
+    cardAtr ||
     cardName
   );
 
   // Check if we have operation details
   const hasOperationDetails = !!(
-    methodName || 
-    algorithm || 
-    operation || 
-    keyType || 
+    methodName ||
+    algorithm ||
+    operation ||
+    keyType ||
     keyLength
   );
 
   // Check if we have performance results
   const hasPerformanceResults = !!(
-    operationAvg || 
-    operationMin || 
-    operationMax || 
+    operationAvg ||
+    operationMin ||
+    operationMax ||
     baselineAvg
   );
 
   // Check if we have advanced data
   const hasAdvancedData = !!(
-    baselineMeasurements || 
-    operationMeasurements || 
-    appletPrepareIns || 
-    appletMeasureIns || 
+    baselineMeasurements ||
+    operationMeasurements ||
+    appletPrepareIns ||
+    appletMeasureIns ||
     config
   );
 
@@ -250,7 +253,7 @@ export function MetadataCard({
     try {
       // Convert GitHub blob URLs to raw URLs for better CORS support
       const verifyUrl = convertToRawURL(url);
-      
+
       const result: VerificationResult = await verifyFileHash(
         verifyUrl,
         hash,
@@ -357,6 +360,20 @@ export function MetadataCard({
             <span>Metadata</span>
           </div>
           <div className="flex items-center gap-2">
+            {legacyReason && (
+              <Badge
+                variant="outline"
+                className="text-xs border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-950/30"
+                title={
+                  legacyReason === 'hyphenated-tags'
+                    ? 'Legacy SCRUTINY event (hyphenated/v0 tags)'
+                    : `Legacy SCRUTINY event (${legacyReason})`
+                }
+              >
+                Legacy
+                {legacyReason !== 'hyphenated-tags' ? ` (${legacyReason})` : ''}
+              </Badge>
+            )}
             {powDifficulty && (
               <Badge
                 variant="outline"
@@ -688,7 +705,7 @@ export function MetadataCard({
               <span>⚡</span>
               <span>Performance Results</span>
             </h4>
-            
+
             {/* Test Context */}
             {(methodName || algorithm) && (
               <div className="mb-3 text-xs text-muted-foreground">
@@ -696,7 +713,7 @@ export function MetadataCard({
                 {algorithm && <div className="mt-0.5">Algorithm: <span className="font-semibold">{algorithm}</span></div>}
               </div>
             )}
-            
+
             {/* Hero Metric */}
             {operationAvg && (
               <div className="text-center mb-4">
@@ -708,7 +725,7 @@ export function MetadataCard({
                 </div>
               </div>
             )}
-            
+
             {/* Details Grid */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               {operationMin && (
@@ -736,7 +753,7 @@ export function MetadataCard({
                 </div>
               )}
             </div>
-            
+
             {dataLength && (
               <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
                 Data Length: <span className="font-mono">{dataLength}</span> bytes

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EventId } from '@/components/EventId';
-import { extractDTag, extractLabels } from '@/lib/scrutiny';
+import { extractDTag, extractLabels, getLegacyScrutinyReason } from '@/lib/scrutiny';
 import { getCountryFlag, validateCPE23 } from '@/lib/productUtils';
 import { ExternalLink } from 'lucide-react';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -49,6 +49,7 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
 }
 
 export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetailsPanelProps) {
+  const legacyReason = getLegacyScrutinyReason(event.tags);
   const labels = extractLabels(event);
   const contentPreview = event.content.length > 160 ? `${event.content.slice(0, 160)}…` : event.content;
 
@@ -114,7 +115,23 @@ export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetails
                 </div>
               )}
             </CardTitle>
-            <Badge variant="secondary">{isProduct ? 'Product' : 'Metadata'}</Badge>
+            <div className="flex items-center gap-2">
+              {legacyReason && (
+                <Badge
+                  variant="outline"
+                  className="text-xs border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-950/30"
+                  title={
+                    legacyReason === 'hyphenated-tags'
+                      ? 'Legacy SCRUTINY event (hyphenated/v0 tags)'
+                      : `Legacy SCRUTINY event (${legacyReason})`
+                  }
+                >
+                  Legacy
+                  {legacyReason !== 'hyphenated-tags' ? ` (${legacyReason})` : ''}
+                </Badge>
+              )}
+              <Badge variant="secondary">{isProduct ? 'Product' : 'Metadata'}</Badge>
+            </div>
           </div>
         </CardHeader>
 

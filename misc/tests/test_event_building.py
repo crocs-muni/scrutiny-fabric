@@ -49,7 +49,7 @@ def test_build_product_like_event():
     assert js["kind"] == 1
     tvals = _tag_values(js, "t")
     # Expect SCRUTINY namespace, product type, and version tag present
-    assert "scrutiny_mo" in tvals
+    assert "scrutiny_fabric" in tvals
     assert "scrutiny_product" in tvals
     assert "scrutiny_v02" in tvals
 
@@ -96,7 +96,7 @@ def test_build_metadata_event_via_helper_no_network(monkeypatch, capsys):
         assert "4" in _tag_values(js, "size")  # len(b"DATA") == 4
 
         tvals = _tag_values(js, "t")
-        assert "scrutiny_mo" in tvals
+        assert "scrutiny_fabric" in tvals
         assert "scrutiny_metadata" in tvals
         assert "scrutiny_v02" in tvals
     finally:

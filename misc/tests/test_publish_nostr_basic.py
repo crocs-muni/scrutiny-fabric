@@ -74,7 +74,7 @@ def test_validate_d_tag():
 
 def test_content_hashtags_basic():
     txt = pn.content_hashtags(pn.TAG_PRODUCT_BASE)
-    assert "#scrutiny_mo" in txt
+    assert "#scrutiny_fabric" in txt
     assert "#scrutiny_product" in txt
     assert "#scrutiny_v02" in txt
 
@@ -214,7 +214,7 @@ def test_add_scrutiny_t_tags_counts_and_values():
     tvals = [v[1][1:] if v and v[0] == "t" and isinstance(v[1], str) and v[1].startswith("#") else v[1]
              for v in vecs if v and v[0] == "t"]
 
-    assert "scrutiny_mo" in tvals
+    assert "scrutiny_fabric" in tvals
     assert "scrutiny_product" in tvals
     assert "scrutiny_metadata" in tvals
     assert "scrutiny_v02" in tvals

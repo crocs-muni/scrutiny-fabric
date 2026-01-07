@@ -40,7 +40,7 @@ class TagProfile:
         """Get tag names for the specified profile"""
         if profile == TagProfile.TEST:
             return {
-                "namespace": "scrutiny_mo_v01",
+                "namespace": "scrutiny_fabric_v01",
                 "type_product": "scrutiny_product_v01",
                 "type_metadata": "scrutiny_metadata_v01",
                 "type_binding": "scrutiny_binding_v01",
@@ -48,7 +48,7 @@ class TagProfile:
             }
         else:  # PRODUCTION
             return {
-                "namespace": "scrutiny_mo",
+                "namespace": "scrutiny_fabric",
                 "type_product": "scrutiny_product",
                 "type_metadata": "scrutiny_metadata",
                 "type_binding": "scrutiny_binding",

@@ -57,6 +57,9 @@ All events are `kind: 1` (text notes) with specific hashtags/tags:
   // This fetches products, metadata, bindings, updates, confirmations, and contestations
   "#t": [
     "scrutiny_fabric", "#scrutiny_fabric", "scrutiny_fabric_v01", "#scrutiny_fabric_v01",
+    // Legacy namespace (older events)
+    "scrutiny_mo", "#scrutiny_mo", "scrutiny_mo_v01", "#scrutiny_mo_v01",
+    "scrutiny-mo", "#scrutiny-mo", "scrutiny-mo-v0", "#scrutiny-mo-v0",
     "scrutiny_binding", "#scrutiny_binding", "scrutiny_binding_v01", "#scrutiny_binding_v01",
     // Also accept other SCRUTINY event type tags in any of their variants
     "scrutiny_product", "#scrutiny_product", "scrutiny_product_v01", "#scrutiny_product_v01",
@@ -84,6 +87,7 @@ Events are identified by their `t` tags. The system accepts four variants for ea
 
 Events have multiple `t` tags:
 - MUST have namespace: `scrutiny_fabric` (or `#scrutiny_fabric`, `scrutiny_fabric_v01`, `#scrutiny_fabric_v01`)
+  - For backwards compatibility, also accept legacy namespace tags: `scrutiny_mo` / `scrutiny-mo` (and their `#` + versioned variants)
 - MUST have type: one or more of `scrutiny_product`, `scrutiny_metadata`, `scrutiny_binding`, `scrutiny_update`, `scrutiny_contestation`, `scrutiny_confirmation` (each accepts the four variants)
 
 ### Filters (Phase 1)

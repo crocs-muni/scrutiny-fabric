@@ -44,8 +44,8 @@ except ImportError:
 # --------------------------
 
 # Base tags
-SCRUTINY_NS_BASE = "scrutiny_mo"
-SCRUTINY_VERSION = "scrutiny_v01"
+SCRUTINY_NS_BASE = "scrutiny_fabric"
+SCRUTINY_VERSION = "scrutiny_v02"
 TAG_PRODUCT_BASE = "scrutiny_product"
 TAG_METADATA_BASE = "scrutiny_metadata"
 TAG_BINDING_BASE = "scrutiny_binding"
@@ -53,7 +53,7 @@ TAG_UPDATE_BASE = "scrutiny_update"
 TAG_CONTEST_BASE = "scrutiny_contestation"
 TAG_CONFIRM_BASE = "scrutiny_confirmation"
 
-# Test tag profile toggle (append _v01 to namespace/type tags, version stays 'scrutiny_v01')
+# Test tag profile toggle (append _v01 to namespace/type tags, version stays unchanged)
 TAG_PROFILE_TEST = False
 
 # Recommended PoW baseline (NIP-13)

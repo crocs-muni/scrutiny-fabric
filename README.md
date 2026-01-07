@@ -1,4 +1,4 @@
-# Scrutiny Nostr
+# SCRUTINY Fabric
 
 Implementation of a Nostr overlay protocol for publishing and binding product/metadata events.
 
@@ -9,8 +9,8 @@ Implementation of a Nostr overlay protocol for publishing and binding product/me
 pnpm install
 
 # Development
-pnpm dev:pub      # Start event publisher (SvelteKit) - http://localhost:5173
-pnpm dev:lens     # Start lens demo (React) - http://localhost:5174
+pnpm dev:pub      # Start event publisher (Svelte)
+pnpm dev:lens     # Start lens demo (React)
 
 # Build for production
 pnpm build
@@ -19,10 +19,10 @@ pnpm build
 ## Project Structure
 
 ```
-scrutiny-nostr/
+scrutiny-fabric/
 ├── apps/
-│   ├── scrutiny-event-publisher/  # SvelteKit publisher app
-│   └── scrutiny-lens-demo/        # React demo client
+│   ├── event-publisher/  # Svelte publisher app
+│   └── lens-demo/        # React demo client
 ├── docs/                          # Protocol specification
 ├── package.json                   # Workspace configuration
 └── pnpm-workspace.yaml
@@ -47,11 +47,17 @@ See [docs/protocol-spec.md](docs/protocol-spec.md) for detailed protocol specifi
 
 ## Known Issues & TODOs
 
-- [ ] Svelte app needs linting setup (eslint not configured)
-- [ ] Root scripts need cross-platform support for Windows
-- [ ] Add CI/CD pipeline for automated builds
-- [ ] Consider adding e2e tests for both apps
-- [ ] Protocol spec needs versioning system
+- [ ] Lens demo is still pretty chatty in the console (debug `console.log` in event categorization/relationship mapping)
+- [ ] Legacy event detection is best-effort (multiple historical tag variants exist in the wild); consider adding fixtures + tests
+- [ ] Relay queries can get large (many `#t` variants + follow-up fetches); consider tuning filters/backoff for strict relays
+
+- [ ] Add CI to run:
+	- `pnpm -r build` (apps)
+	- `pnpm -r test` (where available)
+	- `pytest` for `misc/tests`
+- [ ] Add unit tests for `getLegacyScrutinyReason()` / legacy badge rendering
+- [ ] Consider centralizing SCRUTINY tag variant lists (query + detection) to avoid drift
+- [ ] Add linting for the Svelte app (and align repo-wide formatting/lint rules)
 
 ## License
 

@@ -1,4 +1,4 @@
-# SCRUTINY Protocol Event Specification v0.2
+# SCRUTINY Fabric Protocol - Event Specification v0.2
 
 ## 1. Protocol Overview
 
@@ -16,9 +16,10 @@ SCRUTINY is a permissionless, decentralized metadata overlay protocol built on N
 All SCRUTINY events MUST include these hashtag tags (`t` tags):
 
 ```python
-["t", "scrutiny_mo"]      # Namespace marker
+["t", "scrutiny_fabric"]  # Namespace marker
 ["t", "scrutiny_v02"]     # Protocol version
 ["t", "scrutiny_<type>"]  # Event type (product, metadata, binding, etc.)
+
 ```
 
 ### 1.3 Label Namespace Convention
@@ -56,7 +57,7 @@ Examples:
 | Field | Type | Description |
 |-------|------|-------------|
 | `content` | String | Human-readable product title and description with protocol hashtags |
-| `t` tags | Array | `scrutiny_mo`, `scrutiny_product`, `scrutiny_v02` |
+| `t` tags | Array | `scrutiny_fabric`, `scrutiny_product`, `scrutiny_v02` |
 
 ### 2.2 Recommended Labels
 
@@ -168,9 +169,9 @@ To filter by relationship type, clients SHOULD inspect the `e` tag marker OR the
   "kind": 1,
   "pubkey": "1234567890abcdef...",
   "created_at": 1700000000,
-  "content": "📦 SCRUTINY Product – NXP J3A080 Secure Smart Card Controller Revision 3\n\nManufacturer: NXP Semiconductors Germany GmbH\nVersion: 3\nCategory: ICs, Smart Cards and Smart Card-Related Devices and Systems\nSecurity Level: EAL5+\nStatus: archived\n\nCertification: https://sec-certs.org/cc/35b486dc8bc6ba84/\n\n#scrutiny_mo #scrutiny_product #scrutiny_v02",
+  "content": "📦 SCRUTINY Product – NXP J3A080 Secure Smart Card Controller Revision 3\n\nManufacturer: NXP Semiconductors Germany GmbH\nVersion: 3\nCategory: ICs, Smart Cards and Smart Card-Related Devices and Systems\nSecurity Level: EAL5+\nStatus: archived\n\nCertification: https://sec-certs.org/cc/35b486dc8bc6ba84/\n\n#scrutiny_fabric #scrutiny_product #scrutiny_v02",
   "tags": [
-    ["t", "scrutiny_mo"],
+    ["t", "scrutiny_fabric"],
     ["t", "scrutiny_product"],
     ["t", "scrutiny_v02"],
 
@@ -298,7 +299,7 @@ To filter by relationship type, clients SHOULD inspect the `e` tag marker OR the
 | Field | Type | Description |
 |-------|------|-------------|
 | `content` | String | Human-readable description with protocol hashtags |
-| `t` tags | Array | `scrutiny_mo`, `scrutiny_metadata`, `scrutiny_v02` |
+| `t` tags | Array | `scrutiny_fabric`, `scrutiny_metadata`, `scrutiny_v02` |
 
 ### 3.2 Recommended Labels
 
@@ -417,9 +418,9 @@ For vulnerability disclosure metadata:
   "kind": 1,
   "pubkey": "1234567890abcdef...",
   "created_at": 1700000000,
-  "content": "🧾 SCRUTINY Metadata – NXP J3A080 Performance: symmetric, asymmetric\n\nURL: https://github.com/crocs-muni/jcalgtest_results/blob/main/.../NXP_J3A080__PERFORMANCE_SYMMETRIC_ASYMMETRIC....csv\nSHA256: e788a8c65036038c67147b8d1c6637e562ff985f3a1c84b4c96c15feb71529fc\n\n#scrutiny_mo #scrutiny_metadata #scrutiny_v02",
+  "content": "🧾 SCRUTINY Metadata – NXP J3A080 Performance: symmetric, asymmetric\n\nURL: https://github.com/crocs-muni/jcalgtest_results/blob/main/.../NXP_J3A080__PERFORMANCE_SYMMETRIC_ASYMMETRIC....csv\nSHA256: e788a8c65036038c67147b8d1c6637e562ff985f3a1c84b4c96c15feb71529fc\n\n#scrutiny_fabric #scrutiny_metadata #scrutiny_v02",
   "tags": [
-    ["t", "scrutiny_mo"],
+    ["t", "scrutiny_fabric"],
     ["t", "scrutiny_metadata"],
     ["t", "scrutiny_v02"],
 
@@ -477,9 +478,9 @@ For vulnerability disclosure metadata:
   "kind": 1,
   "pubkey": "1234567890abcdef...",
   "created_at": 1700000000,
-  "content": "🧾 SCRUTINY Metadata – CVE-2024-1234: Buffer overflow in NXP J3A080 APDU handler\n\nCritical vulnerability allowing arbitrary code execution via crafted APDU commands.\n\nURL: https://researcher.example.com/advisories/nxp-j3a080-buffer-overflow.pdf\nSHA256: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\n\n#scrutiny_mo #scrutiny_metadata #scrutiny_v02",
+  "content": "🧾 SCRUTINY Metadata – CVE-2024-1234: Buffer overflow in NXP J3A080 APDU handler\n\nCritical vulnerability allowing arbitrary code execution via crafted APDU commands.\n\nURL: https://researcher.example.com/advisories/nxp-j3a080-buffer-overflow.pdf\nSHA256: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08\n\n#scrutiny_fabric #scrutiny_metadata #scrutiny_v02",
   "tags": [
-    ["t", "scrutiny_mo"],
+    ["t", "scrutiny_fabric"],
     ["t", "scrutiny_metadata"],
     ["t", "scrutiny_v02"],
 
@@ -579,7 +580,7 @@ If both `url` and `x` tags are present, clients MUST verify the SHA-256 hash mat
 | Field | Type | Description |
 |-------|------|-------------|
 | `content` | String | Human-readable description with Nostr URIs and protocol hashtags |
-| `t` tags | Array | `scrutiny_mo`, `scrutiny_binding`, `scrutiny_v02` |
+| `t` tags | Array | `scrutiny_fabric`, `scrutiny_binding`, `scrutiny_v02` |
 | `e` tags (products) | Array | One or more product event IDs with marker `"mention"` |
 | `e` tags (metadata) | Array | One or more metadata event IDs with marker `"mention"` |
 
@@ -656,9 +657,9 @@ Binding a vulnerability report to a product:
   "kind": 1,
   "pubkey": "1234567890abcdef...",
   "created_at": 1700000000,
-  "content": "🔗 SCRUTINY Binding – JCAlgTest performance results for NXP J3A080\n\nProduct: nostr:note1qq79096rxvfggwnuqtv3wtd7t6p88herwkp28n9p2uj3hfc3t6vst7qg36\nMetadata: nostr:note1qqqktdg655pztqq83r9l24f8gjacy52tt4acs7cmg6f78m6qr3pst6rz7w\n\n#scrutiny_mo #scrutiny_binding #scrutiny_v02",
+  "content": "🔗 SCRUTINY Binding – JCAlgTest performance results for NXP J3A080\n\nProduct: nostr:note1qq79096rxvfggwnuqtv3wtd7t6p88herwkp28n9p2uj3hfc3t6vst7qg36\nMetadata: nostr:note1qqqktdg655pztqq83r9l24f8gjacy52tt4acs7cmg6f78m6qr3pst6rz7w\n\n#scrutiny_fabric #scrutiny_binding #scrutiny_v02",
   "tags": [
-    ["t", "scrutiny_mo"],
+    ["t", "scrutiny_fabric"],
     ["t", "scrutiny_binding"],
     ["t", "scrutiny_v02"],
 
@@ -688,9 +689,9 @@ Binding a vulnerability report to a product:
   "kind": 1,
   "pubkey": "1234567890abcdef...",
   "created_at": 1700000000,
-  "content": "🔗 SCRUTINY Binding – CVE-2024-1234 affects NXP J3A080 Revision 3\n\nProduct: nostr:note1qq79096rxvfggwnuqtv3wtd7t6p88herwkp28n9p2uj3hfc3t6vst7qg36\nVulnerability Report: nostr:note1a1b2c3d4e5f6...\n\n#scrutiny_mo #scrutiny_binding #scrutiny_v02",
+  "content": "🔗 SCRUTINY Binding – CVE-2024-1234 affects NXP J3A080 Revision 3\n\nProduct: nostr:note1qq79096rxvfggwnuqtv3wtd7t6p88herwkp28n9p2uj3hfc3t6vst7qg36\nVulnerability Report: nostr:note1a1b2c3d4e5f6...\n\n#scrutiny_fabric #scrutiny_binding #scrutiny_v02",
   "tags": [
-    ["t", "scrutiny_mo"],
+    ["t", "scrutiny_fabric"],
     ["t", "scrutiny_binding"],
     ["t", "scrutiny_v02"],
 
@@ -770,7 +771,7 @@ Clients SHOULD render bindings differently based on relationship type:
 | Field | Type | Description |
 |-------|------|-------------|
 | `content` | String | Human-readable update description with Nostr URI and protocol hashtags |
-| `t` tags | Array | `scrutiny_mo`, `scrutiny_update`, `scrutiny_v02` |
+| `t` tags | Array | `scrutiny_fabric`, `scrutiny_update`, `scrutiny_v02` |
 | `e` tag (root) | Tag | Original event ID with marker `"root"` |
 | `e` tag (reply) | Tag | Original event ID with marker `"reply"` |
 
@@ -806,9 +807,9 @@ Clients SHOULD render bindings differently based on relationship type:
   "kind": 1,
   "pubkey": "1234567890abcdef...",
   "created_at": 1700000000,
-  "content": "✏️ SCRUTINY Update – Corrected tool version for performance test\n\nRoot: nostr:note1qqqktdg655pztqq83r9l24f8gjacy52tt4acs7cmg6f78m6qr3pst6rz7w\n\nThe original metadata event listed tool version as 1.6.0, but it was actually 1.7.0.\n\n#scrutiny_mo #scrutiny_update #scrutiny_v02",
+  "content": "✏️ SCRUTINY Update – Corrected tool version for performance test\n\nRoot: nostr:note1qqqktdg655pztqq83r9l24f8gjacy52tt4acs7cmg6f78m6qr3pst6rz7w\n\nThe original metadata event listed tool version as 1.6.0, but it was actually 1.7.0.\n\n#scrutiny_fabric #scrutiny_update #scrutiny_v02",
   "tags": [
-    ["t", "scrutiny_mo"],
+    ["t", "scrutiny_fabric"],
     ["t", "scrutiny_update"],
     ["t", "scrutiny_v02"],
 
@@ -885,7 +886,7 @@ If `change_type` is `deprecation`:
 | Field | Type | Description |
 |-------|------|-------------|
 | `content` | String | Human-readable dispute description with Nostr URIs and protocol hashtags |
-| `t` tags | Array | `scrutiny_mo`, `scrutiny_contestation`, `scrutiny_v02` |
+| `t` tags | Array | `scrutiny_fabric`, `scrutiny_contestation`, `scrutiny_v02` |
 | `e` tag (root) | Tag | Contested event ID with marker `"root"` |
 | `e` tag (reply) | Tag | Contested event ID with marker `"reply"` |
 | `e` tag (mention) | Tag | Alternative metadata event ID with marker `"mention"` |
@@ -915,9 +916,9 @@ If `change_type` is `deprecation`:
   "kind": 1,
   "pubkey": "abcdef1234567890...",
   "created_at": 1700000000,
-  "content": "⚖️ SCRUTINY Contestation – Methodology flaw in NXP J3A080 performance test\n\nContested: nostr:note1qqqktdg655pztqq83r9l24f8gjacy52tt4acs7cmg6f78m6qr3pst6rz7w\nAlternative Evidence: nostr:note1e5f6g7h8i9...\n\nThe original test used incorrect JCAlgTest configuration leading to artificially low timing values. Our replication with correct settings shows 10x slower performance.\n\nReference: https://arxiv.org/abs/2024.12345\n\n#scrutiny_mo #scrutiny_contestation #scrutiny_v02",
+  "content": "⚖️ SCRUTINY Contestation – Methodology flaw in NXP J3A080 performance test\n\nContested: nostr:note1qqqktdg655pztqq83r9l24f8gjacy52tt4acs7cmg6f78m6qr3pst6rz7w\nAlternative Evidence: nostr:note1e5f6g7h8i9...\n\nThe original test used incorrect JCAlgTest configuration leading to artificially low timing values. Our replication with correct settings shows 10x slower performance.\n\nReference: https://arxiv.org/abs/2024.12345\n\n#scrutiny_fabric #scrutiny_contestation #scrutiny_v02",
   "tags": [
-    ["t", "scrutiny_mo"],
+    ["t", "scrutiny_fabric"],
     ["t", "scrutiny_contestation"],
     ["t", "scrutiny_v02"],
 
@@ -990,7 +991,7 @@ If original author publishes an UpdateEvent acknowledging the contestation:
 | Field | Type | Description |
 |-------|------|-------------|
 | `content` | String | Human-readable confirmation description with Nostr URI and protocol hashtags |
-| `t` tags | Array | `scrutiny_mo`, `scrutiny_confirmation`, `scrutiny_v02` |
+| `t` tags | Array | `scrutiny_fabric`, `scrutiny_confirmation`, `scrutiny_v02` |
 | `e` tag (root) | Tag | Confirmed event ID with marker `"root"` |
 | `e` tag (reply) | Tag | Confirmed event ID with marker `"reply"` |
 
@@ -1033,9 +1034,9 @@ If original author publishes an UpdateEvent acknowledging the contestation:
   "kind": 1,
   "pubkey": "fedcba0987654321...",
   "created_at": 1700000000,
-  "content": "✅ SCRUTINY Confirmation – Independent replication of NXP J3A080 performance results\n\nRoot: nostr:note1qqqktdg655pztqq83r9l24f8gjacy52tt4acs7cmg6f78m6qr3pst6rz7w\nOur Evidence: nostr:note1f6g7h8i9j0...\n\nWe independently tested the NXP J3A080 using the same methodology and obtained results within 2.5% of the original findings. This confirms the accuracy of the original test.\n\n#scrutiny_mo #scrutiny_confirmation #scrutiny_v02",
+  "content": "✅ SCRUTINY Confirmation – Independent replication of NXP J3A080 performance results\n\nRoot: nostr:note1qqqktdg655pztqq83r9l24f8gjacy52tt4acs7cmg6f78m6qr3pst6rz7w\nOur Evidence: nostr:note1f6g7h8i9j0...\n\nWe independently tested the NXP J3A080 using the same methodology and obtained results within 2.5% of the original findings. This confirms the accuracy of the original test.\n\n#scrutiny_fabric #scrutiny_confirmation #scrutiny_v02",
   "tags": [
-    ["t", "scrutiny_mo"],
+    ["t", "scrutiny_fabric"],
     ["t", "scrutiny_confirmation"],
     ["t", "scrutiny_v02"],
 
@@ -1152,7 +1153,7 @@ Critical searchable fields SHOULD be duplicated as t-tags:
 #### Find all events by CRoCS lab:
 
 ```python
-{"kinds": [1], "#t": ["scrutiny_mo"], "authors": ["<crocs_pubkey>"]}
+{"kinds": [1], "#t": ["scrutiny_fabric"], "authors": ["<crocs_pubkey>"]}
 ```
 
 ---
@@ -1172,7 +1173,7 @@ Critical searchable fields SHOULD be duplicated as t-tags:
 
 ### 9.2 SCRUTINY-Aware Client
 
-- [ ] Query events by `#t: scrutiny_mo`
+- [ ] Query events by `#t: scrutiny_fabric`
 - [ ] Parse NIP-32 labels into structured data
 - [ ] Group labels by category (product, metadata, test, etc.)
 - [ ] Verify file hashes on MetadataEvents

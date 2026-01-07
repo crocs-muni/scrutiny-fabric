@@ -5,13 +5,13 @@ Use the `useShakespeare` hook for AI chat completions with Nostr authentication.
 ```tsx
 import { useShakespeare, type ChatMessage, type Model } from '@/hooks/useShakespeare';
 
-const { 
-  sendChatMessage, 
-  sendStreamingMessage, 
-  getAvailableModels, 
-  isLoading, 
-  error, 
-  isAuthenticated 
+const {
+  sendChatMessage,
+  sendStreamingMessage,
+  getAvailableModels,
+  isLoading,
+  error,
+  isAuthenticated
 } = useShakespeare();
 ```
 
@@ -34,7 +34,7 @@ function ModelSelector({ onModelSelect }: { onModelSelect: (modelId: string) => 
           return costA - costB;
         });
         setModels(sortedModels);
-        
+
         // Select the cheapest model by default
         if (sortedModels.length > 0) {
           const cheapestModel = sortedModels[0];
@@ -57,9 +57,9 @@ function ModelSelector({ onModelSelect }: { onModelSelect: (modelId: string) => 
   return (
     <div>
       <label htmlFor="model-select">Choose Model:</label>
-      <select 
+      <select
         id="model-select"
-        value={selectedModel} 
+        value={selectedModel}
         onChange={(e) => handleModelChange(e.target.value)}
         disabled={isLoading}
       >
@@ -134,9 +134,9 @@ function AIChat() {
           disabled={isLoading || !selectedModel}
           placeholder={!selectedModel ? "Select a model first..." : "Type your message..."}
         />
-        <button 
-          onClick={handleSend} 
-          disabled={isLoading || !selectedModel} 
+        <button
+          onClick={handleSend}
+          disabled={isLoading || !selectedModel}
           className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
         >
           Send
@@ -158,7 +158,7 @@ function StreamingChat() {
 
   const handleStreaming = async (content: string) => {
     if (!selectedModel) return;
-    
+
     setCurrentResponse('');
     const newMessages = [...messages, { role: 'user', content }];
     setMessages(newMessages);
@@ -167,7 +167,7 @@ function StreamingChat() {
       await sendStreamingMessage(newMessages, selectedModel, (chunk) => {
         setCurrentResponse(prev => prev + chunk);
       });
-      
+
       // Add the complete response to messages
       if (currentResponse.trim()) {
         setMessages(prev => [...prev, {

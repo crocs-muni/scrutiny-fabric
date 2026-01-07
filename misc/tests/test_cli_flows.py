@@ -119,7 +119,7 @@ def test_cli_product_event_preview(monkeypatch, capsys):
 
         assert js["kind"] == 1
         tvals = _tvals(js)
-        assert "scrutiny_mo" in tvals
+        assert "scrutiny_fabric" in tvals
         assert "scrutiny_product" in tvals
         assert "scrutiny_v02" in tvals
 
@@ -170,7 +170,7 @@ def test_cli_metadata_event_preview(monkeypatch, capsys):
         assert "4" in _tag_vals(js, "size")
 
         tvals = _tvals(js)
-        assert "scrutiny_mo" in tvals
+        assert "scrutiny_fabric" in tvals
         assert "scrutiny_metadata" in tvals
         assert "scrutiny_v02" in tvals
     finally:

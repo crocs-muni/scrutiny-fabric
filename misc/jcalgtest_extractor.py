@@ -8,7 +8,6 @@ import json
 import hashlib
 from typing import Dict
 
-
 def compute_file_hash(filepath: str) -> str:
     """Compute SHA-256 hash of file"""
     sha256_hash = hashlib.sha256()
@@ -140,7 +139,7 @@ def create_product_event(filepath: str, relative_path: str, test_mode: bool = Fa
 
     # Build tags
     tags = [
-        ["t", make_tag("scrutiny_mo")],
+        ["t", make_tag("scrutiny_fabric")],
         ["t", make_tag("scrutiny_product")],
         ["t", "scrutiny_v01"],  # Never gets suffix
         ["d", d_tag],
@@ -179,7 +178,7 @@ def create_product_event(filepath: str, relative_path: str, test_mode: bool = Fa
         f"Source: {github_url}",
         f"ATR Parser: {atr_parser_url}",
         "",
-        f"#{make_tag('scrutiny_mo')} #{make_tag('scrutiny_product')} #scrutiny_v01"
+        f"#{make_tag('scrutiny_fabric')} #{make_tag('scrutiny_product')} #scrutiny_v01"
     ]
 
     content = "\n".join(content_lines)

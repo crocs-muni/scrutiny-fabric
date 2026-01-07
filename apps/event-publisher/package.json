@@ -1,6 +1,5 @@
 {
-	"name": "@scrutiny-nostr/event-publisher",
-	"private": true,
+	"name": "@scrutiny-fabric/event-publisher",
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {

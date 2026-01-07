@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToNpub, pubkeyToShortNpub } from '@/lib/nip19';
 import { ContentWithImages } from '@/components/ContentWithImages';
-import type { ScrutinyEvent } from '@/lib/scrutiny';
+import { getLegacyScrutinyReason, type ScrutinyEvent } from '@/lib/scrutiny';
 
 interface BindingCardProps {
   binding: ScrutinyEvent;
@@ -25,6 +25,7 @@ export function BindingCard({
   metadataCount,
   onClick,
 }: BindingCardProps) {
+  const legacyReason = getLegacyScrutinyReason(binding.tags);
   const author = useAuthor(binding.pubkey);
   const fullNpub = pubkeyToNpub(binding.pubkey);
   const shortNpub = pubkeyToShortNpub(binding.pubkey);
@@ -56,6 +57,20 @@ export function BindingCard({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {legacyReason && (
+              <Badge
+                variant="outline"
+                className="text-xs border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-950/30"
+                title={
+                  legacyReason === 'hyphenated-tags'
+                    ? 'Legacy SCRUTINY event (hyphenated/v0 tags)'
+                    : `Legacy SCRUTINY event (${legacyReason})`
+                }
+              >
+                Legacy
+                {legacyReason !== 'hyphenated-tags' ? ` (${legacyReason})` : ''}
+              </Badge>
+            )}
             {hasUpdate && (
               <Badge variant="outline" className="bg-update/10 text-update border-update text-xs">
                 Updated
