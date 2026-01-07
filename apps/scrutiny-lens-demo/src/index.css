@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* sec-certs.org color scheme */
+    --background: 210 17% 98%; /* Light gray background #F8F9FA */
+    --foreground: 210 11% 15%; /* Dark gray text #212529 */
+
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 210 11% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 11% 15%;
+
+    /* Deep blue accent #2C5AA0 */
+    --primary: 214 54% 40%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 17% 98%; /* Light gray #F8F9FA */
+    --secondary-foreground: 214 54% 40%;
+
+    --muted: 210 17% 98%; /* Light gray #F8F9FA */
+    --muted-foreground: 215 16% 47%; /* Medium gray #6C757D */
+
+    /* Teal accent */
+    --accent: 185 62% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 65% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 210 17% 90%;
+    --input: 210 17% 90%;
+    --ring: 214 54% 40%;
+
+    --radius: 0.25rem;
+
+    /* Event type colors */
+    --color-product: 203 100% 38%;
+    --color-metadata: 26 93% 47%;
+    --color-binding: 112 65% 34%;
+    --color-update: 26 93% 47%;
+    --color-contestation: 0 73% 51%;
+    --color-confirmation: 140 69% 29%;
+  }  .dark {
+    --background: 210 11% 15%;
+    --foreground: 210 40% 98%;
+
+    --card: 210 11% 15%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 210 11% 15%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 214 54% 40%;
+
+    --secondary: 210 11% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 210 11% 20%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 185 62% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 65% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 210 11% 20%;
+    --input: 210 11% 20%;
+    --ring: 210 40% 98%;
+
+    /* Event type colors remain the same in dark mode */
+    --color-product: 203 100% 38%;
+    --color-metadata: 26 93% 47%;
+    --color-binding: 112 65% 34%;
+    --color-confirmation: 140 69% 29%;
+    --color-contestation: 0 73% 51%;
+    --color-update: 26 93% 47%;
+  }
+}@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .border-3 {
+    border-width: 3px;
+  }
+
+  @keyframes highlight-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5);
+    }
+    50% {
+      box-shadow: 0 0 0 8px hsl(var(--primary) / 0);
+    }
+  }
+
+  .graph-highlighted {
+    animation: highlight-pulse 2s ease-out;
+  }
+}

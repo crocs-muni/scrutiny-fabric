@@ -1,0 +1,14 @@
+{
+  "name": "scrutiny-nostr",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev:pub": "pnpm --filter @scrutiny-nostr/event-publisher dev",
+    "dev:lens": "pnpm --filter @scrutiny-nostr/lens-demo dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present check || pnpm -r --if-present typecheck",
+    "clean": "pnpm -r exec rm -rf node_modules dist build .svelte-kit"
+  },
+  "license": "MIT"
+}
