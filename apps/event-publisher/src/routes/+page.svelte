@@ -57,7 +57,7 @@
       <div>
         <h1 class="text-xl font-semibold">SCRUTINY Event Publisher</h1>
         <p class="text-sm text-[var(--muted-foreground)]">
-          Create and publish SCRUTINY protocol events on Nostr
+          Create and publish SCRUTINY Fabric protocol events on Nostr
         </p>
       </div>
 

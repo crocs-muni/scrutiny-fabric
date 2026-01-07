@@ -1,11 +1,11 @@
 // src/lib/scrutiny/constants.ts
-// Constants and enums for SCRUTINY protocol
+// Constants and enums for SCRUTINY Fabric protocol
 
 import { Package } from 'lucide-svelte';
 import type { ComponentType } from 'svelte';
 
 /**
- * Required hashtags for all SCRUTINY events
+ * Required hashtags for all SCRUTINY Fabric events
  */
 export const SCRUTINY_HASHTAGS = {
   NAMESPACE: 'scrutiny_fabric',

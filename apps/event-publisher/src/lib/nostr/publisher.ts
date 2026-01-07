@@ -6,7 +6,7 @@ import { SimplePool } from 'nostr-tools/pool';
 import type { VerifiedEvent } from 'nostr-tools';
 
 /**
- * Default relays for publishing SCRUTINY events
+ * Default relays for publishing SCRUTINY Fabric events
  */
 export const DEFAULT_RELAYS = [
   'wss://relay.damus.io',
@@ -42,21 +42,21 @@ export interface PublishResult {
  */
 function createRelayStore() {
   // Load from localStorage or use defaults
-  const stored = typeof window !== 'undefined' 
+  const stored = typeof window !== 'undefined'
     ? localStorage.getItem('scrutiny_relays_v1')
     : null;
-  
+
   const initial: string[] = stored ? JSON.parse(stored) : DEFAULT_RELAYS;
-  
+
   const { subscribe, set, update } = writable<string[]>(initial);
-  
+
   return {
     subscribe,
-    
+
     addRelay(url: string): boolean {
       const normalized = normalizeRelayUrl(url);
       if (!normalized) return false;
-      
+
       let added = false;
       update((relays) => {
         if (!relays.includes(normalized)) {
@@ -65,24 +65,24 @@ function createRelayStore() {
         }
         return relays;
       });
-      
+
       if (added) {
         persist();
       }
       return added;
     },
-    
+
     removeRelay(url: string): void {
       update((relays) => relays.filter((r) => r !== url));
       persist();
     },
-    
+
     resetToDefaults(): void {
       set(DEFAULT_RELAYS);
       persist();
     }
   };
-  
+
   function persist() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('scrutiny_relays_v1', JSON.stringify(get({ subscribe })));
@@ -96,12 +96,12 @@ function createRelayStore() {
 function normalizeRelayUrl(url: string): string | null {
   const trimmed = url.trim();
   if (!trimmed) return null;
-  
+
   // Add wss:// if missing
   if (!trimmed.startsWith('wss://') && !trimmed.startsWith('ws://')) {
     return `wss://${trimmed}`;
   }
-  
+
   return trimmed;
 }
 
@@ -142,7 +142,7 @@ function getPool(): SimplePool {
 
 /**
  * Publish an event to configured relays
- * 
+ *
  * @param event - The signed event to publish
  * @param relays - Optional custom relay list (defaults to configured relays)
  * @param timeout - Timeout in ms per relay (default: 5000)
@@ -156,7 +156,7 @@ export async function publishToRelays(
   const targetRelays = relays ?? get(relaysStore);
   const results: Record<string, PublishResult> = {};
   const pool = getPool();
-  
+
   // Initialize all as pending
   for (const url of targetRelays) {
     relayStatuses.update((statuses) => ({
@@ -164,7 +164,7 @@ export async function publishToRelays(
       [url]: { url, status: 'connecting' }
     }));
   }
-  
+
   // Publish to each relay with individual timeout handling
   const publishPromises = targetRelays.map(async (url) => {
     try {
@@ -172,13 +172,13 @@ export async function publishToRelays(
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Timeout')), timeout);
       });
-      
+
       // Race between publish and timeout
       await Promise.race([
         pool.publish([url], event),
         timeoutPromise
       ]);
-      
+
       results[url] = { url, ok: true };
       relayStatuses.update((statuses) => ({
         ...statuses,
@@ -193,9 +193,9 @@ export async function publishToRelays(
       }));
     }
   });
-  
+
   await Promise.allSettled(publishPromises);
-  
+
   return results;
 }
 

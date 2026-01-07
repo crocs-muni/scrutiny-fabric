@@ -1,5 +1,5 @@
 // src/lib/scrutiny/schemas.ts
-// Zod validation schemas for SCRUTINY event forms
+// Zod validation schemas for SCRUTINY Fabric event forms
 
 import { z } from 'zod';
 
@@ -45,7 +45,7 @@ const eventIdOptional = z
 
 /**
  * Zod schema for ProductEventFormValues
- * Validates all fields per SCRUTINY Protocol Event Specification v0.2
+ * Validates all fields per SCRUTINY Fabric Protocol Event Specification v0.2
  */
 export const productEventFormSchema = z
   .object({
