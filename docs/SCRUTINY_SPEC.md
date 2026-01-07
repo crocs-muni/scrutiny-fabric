@@ -1,8 +1,8 @@
-# SCRUTINY Fabric Protocol - Event Specification v0.2
+#  Protocol - Event Specification v0.2
 
 ## 1. Protocol Overview
 
-SCRUTINY is a permissionless, decentralized metadata overlay protocol built on Nostr (NIP-01) for binding security-relevant metadata to products. All events use `kind: 1` (text notes) for maximum client compatibility.
+SCRUTINY Fabric is a permissionless, decentralized metadata overlay protocol built on Nostr (NIP-01) for binding security-relevant metadata to products. All events use `kind: 1` (text notes) for maximum client compatibility.
 
 ### 1.1 Core Principles
 
@@ -13,7 +13,7 @@ SCRUTINY is a permissionless, decentralized metadata overlay protocol built on N
 
 ### 1.2 Protocol Identifiers
 
-All SCRUTINY events MUST include these hashtag tags (`t` tags):
+All SCRUTINY Fabric events MUST include these hashtag tags (`t` tags):
 
 ```python
 ["t", "scrutiny_fabric"]  # Namespace marker
@@ -24,7 +24,7 @@ All SCRUTINY events MUST include these hashtag tags (`t` tags):
 
 ### 1.3 Label Namespace Convention
 
-SCRUTINY uses NIP-32 label namespaces with colon notation:
+SCRUTINY Fabric uses NIP-32 label namespaces with colon notation:
 
 ```text
 scrutiny:<category>:<field>
@@ -129,7 +129,7 @@ Multiple labels allowed:
 
 #### Product-to-Product Relationships
 
-SCRUTINY supports explicit product-to-product relationships (e.g., composition and dependencies).
+SCRUTINY Fabric supports explicit product-to-product relationships (e.g., composition and dependencies).
 Relationship edges SHOULD be encoded redundantly using:
 
 1) NIP-32 labels (for structured semantics), AND
@@ -282,7 +282,7 @@ To filter by relationship type, clients SHOULD inspect the `e` tag marker OR the
 
 ## 3. Event Type: MetadataEvent
 
-**Purpose:** Pointer to external security-relevant data with integrity verification.
+**Purpose:** Pointer to relevant external data.
 
 **Event Kind:** `1`
 
@@ -863,7 +863,7 @@ If `change_type` is `deprecation`:
 
 **Validation Rules:**
 
-- `e` tags MUST reference an existing SCRUTINY event
+- `e` tags MUST reference an existing SCRUTINY Fabric event
 - Update author MAY differ from original author (third-party corrections allowed)
 
 ---
