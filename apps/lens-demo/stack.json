@@ -1,0 +1,17 @@
+{
+  "name": "lens-demo",
+  "title": "Lens Demo",
+  "description": "A Proof of Concept of a SCRUTINY Fabric aware Nostr client",
+  "commands": [
+    "npm",
+    "npx"
+  ],
+  "tech": [
+    "react",
+    "typescript",
+    "tailwind",
+    "shadcn-ui",
+    "nostrify",
+    "vite"
+  ]
+}
