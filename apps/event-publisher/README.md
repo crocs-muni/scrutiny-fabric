@@ -1,6 +1,6 @@
-# SCRUTINY Nostr Publisher
+# SCRUTINY Fabric Event Publisher
 
-SvelteKit + TypeScript app for creating and publishing SCRUTINY protocol events (kind:1 with NIP-32 labels) on Nostr. Everything happens in the browser—no backend.
+SvelteKit + TypeScript app for creating and publishing SCRUTINY Fabric protocol events (Nostr `kind:1` with NIP-32 labels). Everything happens in the browser—no backend.
 
 ## Key Features
 

@@ -8,7 +8,7 @@
 
 ## Overview
 
-When a user visits a URL like `https://scrutiny-nostr.ayko.ooo/note1abc...` or `https://scrutiny-nostr.ayko.ooo/003c5797...`, they should see:
+When a user visits a URL like `https://<your-lens-domain>/note1abc...` or `https://<your-lens-domain>/003c5797...`, they should see:
 
 1. **Left Panel**: Product/Metadata Event Details (fixed)
 2. **Right Panel**: Bindings List (scrollable) with author filter
@@ -79,12 +79,12 @@ export function decodeEventIdentifier(identifier: string): string | null {
       return null;
     }
   }
-  
+
   // Try raw hex (64 chars)
   if (/^[0-9a-f]{64}$/i.test(identifier)) {
     return identifier.toLowerCase();
   }
-  
+
   return null;
 }
 
@@ -263,7 +263,7 @@ export function AuthorFilterDropdown({
           ))}
         </SelectContent>
       </Select>
-      
+
       {selectedAuthor && (
         <Button variant="outline" size="sm" onClick={() => onAuthorChange(null)}>
           Clear
@@ -274,18 +274,18 @@ export function AuthorFilterDropdown({
 }
 
 // Helper component to display author with profile name
-function AuthorSelectItem({ 
-  pubkey, 
-  bindings 
-}: { 
-  pubkey: string; 
+function AuthorSelectItem({
+  pubkey,
+  bindings
+}: {
+  pubkey: string;
   bindings: NostrEvent[];
 }) {
   const { data: author } = useAuthor(pubkey);
   const count = bindings.filter((b) => b.pubkey === pubkey).length;
-  
+
   const displayName = author?.metadata?.name || pubkeyToShortNpub(pubkey);
-  
+
   return (
     <SelectItem value={pubkey}>
       {displayName} ({count})
@@ -317,10 +317,10 @@ interface EventDetailsPanelProps {
   isMetadata: boolean;
 }
 
-export function EventDetailsPanel({ 
-  event, 
-  isProduct, 
-  isMetadata 
+export function EventDetailsPanel({
+  event,
+  isProduct,
+  isMetadata
 }: EventDetailsPanelProps) {
   const labels = extractLabels(event);
   const { toast } = useToast();
@@ -529,7 +529,7 @@ export function BindingsPanel({ bindings, eventType }: BindingsPanelProps) {
             </Button>
           )}
         </div>
-        
+
         {bindings.length > 0 && (
           <AuthorFilterDropdown
             bindings={bindings}
@@ -608,7 +608,7 @@ export default function EventPage() {
   }, [nip19]);
 
   // Fetch event and bindings
-  const { event, bindings, isProduct, isMetadata, isLoading, error } = 
+  const { event, bindings, isProduct, isMetadata, isLoading, error } =
     useEventWithBindings(eventId || '');
 
   // Loading state
@@ -888,7 +888,7 @@ Before considering complete:
 
 ## Example Usage Flow
 
-1. **User visits**: `https://scrutiny-nostr.ayko.ooo/003c5797433312843a7c02d9172dbe5e8273df237582a3cca157251ba7115e99`
+1. **User visits**: `https://<your-lens-domain>/003c5797433312843a7c02d9172dbe5e8273df237582a3cca157251ba7115e99`
 
 2. **NIP19Page decodes**: Recognizes as raw hex event ID → routes to `EventPage`
 
