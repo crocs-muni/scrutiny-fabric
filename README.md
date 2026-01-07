@@ -4,10 +4,10 @@ A decentralized, permissionless protocol built on Nostr for binding security-rel
 
 The protocol uses standard Nostr `kind:1` text notes with structured hashtags (`t` tags) and NIP-32 labels for semantic metadata. Events are immutable anchors that can be updated via reply chains, contested with evidence, and confirmed by independent parties. This creates a decentralized knowledge graph for security-critical products like smart cards, HSMs, cryptographic libraries, and hardware security modules.
 
-
-> **⚠️ Work in Progress - Experimental Prototype**
+> [!warning]
+> **Work in Progress - Experimental Prototype**
 >
-> SCRUTINY Fabric is in early development and should not be used for production security decisions. The protocol specification is stable (v0.2) but implementation is incomplete:
+> SCRUTINY Fabric is in early development and should not be used for production security decisions. The protocol specification and implementation is incomplete:
 >
 > - **Protocol**: Core specification defined (v0.2) with all event types documented
 > - **Lens Demo**: Functional React app for viewing events; supports legacy formats
@@ -32,7 +32,7 @@ pnpm build
 
 ## Project Structure
 
-```
+```bash
 scrutiny-nostr/
 ├── apps/
 │   ├── event-publisher/  # Svelte publisher app
