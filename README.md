@@ -89,6 +89,7 @@ See [docs/SCRUTINY_SPEC.md](docs/SCRUTINY_SPEC.md) for the complete protocol spe
 - [ ] Add unit tests for `getLegacyScrutinyReason()` / legacy badge rendering
 - [ ] Consider centralizing SCRUTINY tag variant lists (query + detection) to avoid drift
 - [ ] Add linting for the Svelte app (and align repo-wide formatting/lint rules)
+- [ ] Add NIP-03 - OpenTimestamps Attestations for Events
 
 ## License
 
