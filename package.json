@@ -10,5 +10,10 @@
     "typecheck": "pnpm -r --if-present check || pnpm -r --if-present typecheck",
     "clean": "pnpm -r exec rm -rf node_modules dist build .svelte-kit"
   },
+  "pnpm": {
+    "overrides": {
+      "cookie": "^0.7.0"
+    }
+  },
   "license": "MIT"
 }
