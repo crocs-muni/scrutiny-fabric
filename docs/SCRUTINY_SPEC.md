@@ -169,7 +169,7 @@ To filter by relationship type, clients SHOULD inspect the `e` tag marker OR the
   "kind": 1,
   "pubkey": "1234567890abcdef...",
   "created_at": 1700000000,
-  "content": "📦 SCRUTINY Product – NXP J3A080 Secure Smart Card Controller Revision 3\n\nManufacturer: NXP Semiconductors Germany GmbH\nVersion: 3\nCategory: ICs, Smart Cards and Smart Card-Related Devices and Systems\nSecurity Level: EAL5+\nStatus: archived\n\nCertification: https://sec-certs.org/cc/35b486dc8bc6ba84/\n\n#scrutiny_fabric #scrutiny_product #scrutiny_v02",
+  "content": "📦 SCRUTINY Product – NXP J3A080 Secure Smart Card Controller Revision 3\n\nManufacturer: NXP Semiconductors Germany GmbH\nVersion: 3\nCategory: ICs, Smart Cards and Smart Card-Related Devices and Systems\nSecurity Level: EAL5+\nStatus: archived\n\n#scrutiny_fabric #scrutiny_product #scrutiny_v02",
   "tags": [
     ["t", "scrutiny_fabric"],
     ["t", "scrutiny_product"],
@@ -224,15 +224,6 @@ To filter by relationship type, clients SHOULD inspect the `e` tag marker OR the
     ["L", "scrutiny:product:canonical_url"],
     ["l", "https://www.commoncriteriaportal.org/nfs/ccpfiles/files/epfiles/0674a_pdf.pdf", "scrutiny:product:canonical_url"],
 
-    ["L", "scrutiny:cert:scheme"],
-    ["l", "DE", "scrutiny:cert:scheme"],
-
-    ["L", "scrutiny:cert:level"],
-    ["l", "EAL5+", "scrutiny:cert:level"],
-    ["l", "AVA_VAN.5", "scrutiny:cert:level"],
-
-    ["L", "scrutiny:cert:id"],
-    ["l", "BSI-DSZ-CC-0674-2011", "scrutiny:cert:id"],
 
     ["L", "scrutiny:product:contains"],
     ["l", "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890", "scrutiny:product:contains"],
@@ -242,10 +233,7 @@ To filter by relationship type, clients SHOULD inspect the `e` tag marker OR the
     ["l", "fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321", "scrutiny:product:depends_on"],
     ["e", "fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321", "", "scrutiny:product:depends_on"],
 
-    ["url", "https://www.commoncriteriaportal.org/nfs/ccpfiles/files/epfiles/0674a_pdf.pdf"],
-    ["x", "d37ca43c43ed26e0d4059e77f4d793d3e6a69614ee0661e663e992672b1c76a7"],
-
-    ["alt", "Common Criteria certified product: NXP J3A080 Secure Smart Card Controller Revision 3, EAL5+"],
+    ["alt", "SCRUTINY product: NXP J3A080 Secure Smart Card Controller Revision 3"],
 
     ["t", "vendor_nxp"],
     ["t", "smartcard"],
@@ -266,7 +254,6 @@ To filter by relationship type, clients SHOULD inspect the `e` tag marker OR the
 - **Lifecycle:** release_date, eol_date, support_until
 - **Technical Specs:** form_factor, chip, memory, platform versions
 - **Crypto Capabilities:** crypto_suite, key_length_max, ecc_curves, hash_function
-- **Certification:** cert:scheme, cert:level, cert:id
 - **Documentation:** All URL fields
 
 **Validation Rules:**
@@ -410,6 +397,33 @@ For vulnerability disclosure metadata:
 | `scrutiny:vuln:patch_available` | Patch exists | `"yes"` \| `"no"` \| `"workaround"` |
 | `scrutiny:vuln:patch_url` | Patch location | `"https://github.com/.../commit/abc123"` |
 
+#### Certification (Use Case 3)
+
+For certification reports and related evidence:
+
+| Namespace | Description | Example | Notes |
+|-----------|-------------|---------|-------|
+| `scrutiny:cert:scheme` | Certification scheme / country | `"DE"` | Common Criteria scheme identifier |
+| `scrutiny:cert:level` | Assurance level | `"EAL5+"` | Multiple labels allowed |
+| `scrutiny:cert:id` | Certificate identifier | `"BSI-DSZ-CC-0674-2011"` | Scheme-issued ID |
+| `scrutiny:cert:status` | Administrative status | `"revoked"` | See suggested values below |
+| `scrutiny:cert:not_valid_before` | Validity window start (ISO 8601) | `"2011-03-31"` | X.509-style bound |
+| `scrutiny:cert:not_valid_after` | Validity window end (ISO 8601) | `"2021-03-31"` | X.509-style bound |
+
+**Allowed `scrutiny:cert:status` values:**
+
+- `revoked` — explicitly invalidated (security issue, mis-issuance, etc.)
+- `withdrawn` — withdrawn by scheme (administrative/legal; not necessarily “security breach” wording)
+- `suspended` — temporarily suspended (pending investigation or maintenance)
+- `superseded` — replaced by a newer certificate for a successor configuration
+- `archived` — historical record, not actively maintained (common in CC portals)
+- `unknown` — scheme status cannot be determined / not published
+- `scope_changed` — certification scope changed (generic)
+- `scope_reduced` — certification scope reduced
+- `scope_extended` — certification scope extended
+
+Status changes SHOULD be expressed via UpdateEvent (e.g., a later update changing `scrutiny:cert:status`). Clients SHOULD compute “valid”/“expired” from `not_valid_before`/`not_valid_after` rather than relying on status.
+
 ### 3.5 Complete Example (Performance Test)
 
 ```json
@@ -536,7 +550,52 @@ For vulnerability disclosure metadata:
 }
 ```
 
-### 3.7 Client Interpretation Guidelines
+### 3.7 Complete Example (Certification Report)
+
+```json
+{
+  "id": "c7d8e9f0a1b2...",
+  "kind": 1,
+  "pubkey": "1234567890abcdef...",
+  "created_at": 1700000000,
+  "content": "🧾 SCRUTINY Metadata – Common Criteria certificate for NXP J3A080 Revision 3\n\nCertificate report: https://www.commoncriteriaportal.org/nfs/ccpfiles/files/epfiles/0674a_pdf.pdf\nSHA256: d37ca43c43ed26e0d4059e77f4d793d3e6a69614ee0661e663e992672b1c76a7\n\n#scrutiny_fabric #scrutiny_metadata #scrutiny_v02",
+  "tags": [
+    ["t", "scrutiny_fabric"],
+    ["t", "scrutiny_metadata"],
+    ["t", "scrutiny_v02"],
+
+    ["url", "https://www.commoncriteriaportal.org/nfs/ccpfiles/files/epfiles/0674a_pdf.pdf"],
+    ["x", "d37ca43c43ed26e0d4059e77f4d793d3e6a69614ee0661e663e992672b1c76a7"],
+    ["m", "application/pdf"],
+    ["alt", "Common Criteria certificate report for NXP J3A080 Revision 3"],
+
+    ["L", "scrutiny:cert:scheme"],
+    ["l", "DE", "scrutiny:cert:scheme"],
+
+    ["L", "scrutiny:cert:level"],
+    ["l", "EAL5+", "scrutiny:cert:level"],
+    ["l", "AVA_VAN.5", "scrutiny:cert:level"],
+
+    ["L", "scrutiny:cert:id"],
+    ["l", "BSI-DSZ-CC-0674-2011", "scrutiny:cert:id"],
+
+    ["L", "scrutiny:cert:not_valid_before"],
+    ["l", "2011-03-31", "scrutiny:cert:not_valid_before"],
+
+    ["L", "scrutiny:cert:not_valid_after"],
+    ["l", "2021-03-31", "scrutiny:cert:not_valid_after"],
+
+    ["t", "certification"],
+    ["t", "common_criteria"],
+    ["t", "eal5"],
+
+    ["nonce", "3500", "10"]
+  ],
+  "sig": "..."
+}
+```
+
+### 3.8 Client Interpretation Guidelines
 
 **Hash Verification:**
 If both `url` and `x` tags are present, clients MUST verify the SHA-256 hash matches the fetched file before trusting the metadata.
@@ -550,6 +609,7 @@ If both `url` and `x` tags are present, clients MUST verify the SHA-256 hash mat
 - **Statistical Data:** sample_size, confidence, p_value, iterations
 - **Temporal:** measurement_date, analysis_date
 - **Vulnerability Data:** All `scrutiny:vuln:*` labels (if applicable)
+- **Certification:** cert:scheme, cert:level, cert:id, cert:status, cert:not_valid_before, cert:not_valid_after (if applicable)
 
 **Validation Rules:**
 
@@ -557,6 +617,8 @@ If both `url` and `x` tags are present, clients MUST verify the SHA-256 hash mat
 - If `url` tag is present, it MUST use HTTPS scheme
 - If `url` tag is present, `x` tag SHOULD also be present for integrity verification
 - Dates MUST be ISO 8601 format
+- `scrutiny:cert:not_valid_before` and `scrutiny:cert:not_valid_after` MUST be ISO 8601 format (YYYY-MM-DD)
+- `scrutiny:cert:status` SHOULD be one of: revoked, withdrawn, suspended, superseded, archived, unknown, scope_changed, scope_reduced, scope_extended
 - CVSS scores MUST be 0.0-10.0
 - EPSS scores MUST be 0.0-1.0
 
@@ -596,8 +658,8 @@ If both `url` and `x` tags are present, clients MUST verify the SHA-256 hash mat
 
 | Namespace | Description | Example |
 |-----------|-------------|---------|
-| `scrutiny:binding:valid_from` | Binding valid start | `"2015-07-24"` |
-| `scrutiny:binding:valid_until` | Binding expiration | `"2025-07-24"` |
+| `scrutiny:binding:not_valid_before` | Binding valid start | `"2015-07-24"` |
+| `scrutiny:binding:not_valid_after` | Binding expiration | `"2025-07-24"` |
 | `scrutiny:binding:supersedes` | Event ID of older binding | `"<hex_event_id>"` |
 
 #### Context
@@ -669,8 +731,8 @@ Binding a vulnerability report to a product:
     ["L", "scrutiny:binding:relationship"],
     ["l", "test_of", "scrutiny:binding:relationship"],
 
-    ["L", "scrutiny:binding:valid_from"],
-    ["l", "2015-07-24", "scrutiny:binding:valid_from"],
+    ["L", "scrutiny:binding:not_valid_before"],
+    ["l", "2015-07-24", "scrutiny:binding:not_valid_before"],
 
     ["L", "scrutiny:binding:scope"],
     ["l", "complete", "scrutiny:binding:scope"],
@@ -1271,10 +1333,13 @@ scrutiny:test:date
 scrutiny:cert:scheme
 scrutiny:cert:level
 scrutiny:cert:id
+scrutiny:cert:status
+scrutiny:cert:not_valid_before
+scrutiny:cert:not_valid_after
 
 scrutiny:binding:relationship
-scrutiny:binding:valid_from
-scrutiny:binding:valid_until
+scrutiny:binding:not_valid_before
+scrutiny:binding:not_valid_after
 scrutiny:binding:supersedes
 scrutiny:binding:conditions
 scrutiny:binding:limitations
