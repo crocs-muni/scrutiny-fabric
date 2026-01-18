@@ -2,15 +2,31 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Copy, ChevronDown, ChevronRight, AlertCircle, ExternalLink } from 'lucide-react';
+import { Copy, ChevronDown, ChevronRight, AlertCircle, ExternalLink, Box, Package } from 'lucide-react';
 import { useAuthor } from '@/hooks/useAuthor';
-import { pubkeyToShortNpub, pubkeyToNpub } from '@/lib/nip19';
-import { extractLabels, extractDTag, getDisplayEvent, getLegacyScrutinyReason, validatePURL, type ScrutinyEvent } from '@/lib/scrutiny';
+import { pubkeyToShortNpub, pubkeyToNpub, eventIdToNote } from '@/lib/nip19';
+import {
+  extractLabels,
+  extractMultiLabels,
+  extractDTag,
+  getDisplayEvent,
+  getLegacyScrutinyReason,
+  validatePURL,
+  extractProductRelationships,
+  type ScrutinyEvent,
+} from '@/lib/scrutiny';
+import {
+  getLabelDisplayName,
+  getSeverityStyle,
+  PRODUCT_RELATIONSHIP_COLORS,
+  normalizeLabel,
+} from '@/lib/labelRegistry';
 import { formatDistanceToNow, format } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
 import { RawEventDialog } from '@/components/RawEventDialog';
 import { EventId } from '@/components/EventId';
 import { ActivityEvent } from '@/components/ActivityEvent';
+import { RelationshipActivity } from '@/components/RelationshipActivity';
 import { ContentWithImages } from '@/components/ContentWithImages';
 import { getCountryFlag, validateCPE23 } from '@/lib/productUtils';
 import { Link } from 'react-router-dom';
@@ -32,6 +48,8 @@ interface ProductCardProps {
   updates?: ScrutinyEvent[]; // All updates for activity display
   confirmations: ScrutinyEvent[];
   contestations: ScrutinyEvent[];
+  /** Map of all products for resolving relationship links */
+  allProducts?: Map<string, ScrutinyEvent>;
 }
 
 export function ProductCard({
@@ -40,6 +58,7 @@ export function ProductCard({
   updates = [],
   confirmations,
   contestations,
+  allProducts,
 }: ProductCardProps) {
   const [showOriginal, setShowOriginal] = useState(false);
   const [certOpen, setCertOpen] = useState(false);
@@ -47,6 +66,8 @@ export function ProductCard({
   const [securityOpen, setSecurityOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
   const [showAllSecurityLevels, setShowAllSecurityLevels] = useState(false);
+  const [lifecycleOpen, setLifecycleOpen] = useState(false);
+  const [relationshipsOpen, setRelationshipsOpen] = useState(true);
 
   const legacyReason = getLegacyScrutinyReason(product.tags);
 
@@ -64,11 +85,28 @@ export function ProductCard({
   // Check if an update exists (regardless of which is being displayed)
   const hasUpdate = !!update;
 
-  // Extract all URLs (url tag and l tags with type="url")
+  // Extract all URLs (url tag and l tags with URL namespaces)
   const primaryUrl = display.tags.find(t => t[0] === 'url')?.[1];
-  const labelUrls = display.tags
-    .filter(t => t[0] === 'l' && t[3] === 'url' && t[1] !== 'atr_parser_url')
-    .map(t => ({ name: t[1], url: t[2] }));
+  // Legacy: l tags with type="url" in position 3
+  // v0.2: l tags with URL namespaces (canonical_url, datasheet_url, etc.)
+  const urlLabels = [
+    'canonical_url', 'datasheet_url', 'manual_url', 'sdk_url', 'sbom_url',
+    'test_protocol_url', 'reproduction_steps_url', 'patch_url',
+  ];
+  const labelUrls: Array<{ name: string; url: string }> = [];
+  for (const tag of display.tags) {
+    if (tag[0] !== 'l') continue;
+    const [, value, namespace, type] = tag;
+    // Legacy format: type === 'url'
+    if (type === 'url' && value !== 'atr_parser_url') {
+      labelUrls.push({ name: value, url: namespace });
+    }
+    // v0.2 format: namespace ends with _url
+    const normalizedNs = namespace ? normalizeLabel(namespace) : '';
+    if (urlLabels.includes(normalizedNs) && value) {
+      labelUrls.push({ name: normalizedNs.replace(/_url$/, '').replace(/_/g, ' '), url: value });
+    }
+  }
 
   // Get hash for URL verification
   const urlHash = display.tags.find(t => t[0] === 'x')?.[1];
@@ -135,9 +173,7 @@ export function ProductCard({
   const evalFacility = labels['eval_facility']?.value;
 
   // Get all security_level entries (there can be multiple)
-  const securityLevels = display.tags
-    .filter(t => t[0] === 'l' && t[1] === 'security_level')
-    .map(t => t[2]);
+  const securityLevels = extractMultiLabels(display, 'security_level');
 
   // Remove duplicate if eal is already shown separately
   const filteredSecurityLevels = eal
@@ -148,18 +184,10 @@ export function ProductCard({
   const notValidAfter = labels['not_valid_after']?.value;
 
   // Technical - Get all entries for fields that can have multiple values
-  const symmetricCryptoList = display.tags
-    .filter(t => t[0] === 'l' && t[1] === 'symmetric_crypto')
-    .map(t => t[2]);
-  const asymmetricCryptoList = display.tags
-    .filter(t => t[0] === 'l' && t[1] === 'asymmetric_crypto')
-    .map(t => t[2]);
-  const hashFunctions = display.tags
-    .filter(t => t[0] === 'l' && t[1] === 'hash_function')
-    .map(t => t[2]);
-  const cipherModes = display.tags
-    .filter(t => t[0] === 'l' && t[1] === 'cipher_mode')
-    .map(t => t[2]);
+  const symmetricCryptoList = extractMultiLabels(display, 'symmetric_crypto');
+  const asymmetricCryptoList = extractMultiLabels(display, 'asymmetric_crypto');
+  const hashFunctions = extractMultiLabels(display, 'hash_function');
+  const cipherModes = extractMultiLabels(display, 'cipher_mode');
 
   const javaCardVersion = labels['javacard_version']?.value;
   const globalPlatformVersion = labels['globalplatform_version']?.value;
@@ -168,23 +196,77 @@ export function ProductCard({
   const maxUploadJCVersion = labels['max_upload_jc_version']?.value;
 
   // Security Analysis
-  const sideChannelAnalysis = display.tags
-    .filter(t => t[0] === 'l' && t[1] === 'side_channel_analysis')
-    .map(t => t[2]);
+  const sideChannelAnalysis = extractMultiLabels(display, 'side_channel_analysis');
+
+  // Lifecycle labels (new in v0.2)
+  const releaseDate = labels['release_date']?.value;
+  const eolDate = labels['eol_date']?.value;
+  const supportUntil = labels['support_until']?.value;
+
+  // Technical - new in v0.2
+  const formFactor = labels['form_factor']?.value;
+  const chip = labels['chip']?.value;
+  const memoryRam = labels['memory_ram']?.value;
+  const memoryEeprom = labels['memory_eeprom']?.value;
+
+  // Crypto - new in v0.2 (using extractMultiLabels for proper multi-value support)
+  const cryptoSuites = extractMultiLabels(display, 'crypto_suite');
+  const eccCurves = extractMultiLabels(display, 'ecc_curves');
+  const keyLengthMax = labels['key_length_max']?.value;
+
+  // Product relationships (new in v0.2)
+  const productRelationships = extractProductRelationships(display);
+  const hasRelationships = productRelationships.contains.length > 0 ||
+    productRelationships.dependsOn.length > 0 ||
+    productRelationships.supersedes ||
+    productRelationships.successor;
+
+  // Helper to get product display name from event ID
+  const getRelatedProductName = (eventId: string): string => {
+    if (!allProducts) return eventId.substring(0, 8) + '...';
+    const relatedProduct = allProducts.get(eventId);
+    if (!relatedProduct) return eventId.substring(0, 8) + '...';
+    const relLabels = extractLabels(relatedProduct);
+    const relVendor = relLabels['vendor']?.value;
+    const relName = relLabels['product_name']?.value;
+    const relVersion = relLabels['product_version']?.value;
+    if (relVendor && relName) {
+      return relVersion ? `${relVendor} ${relName} ${relVersion}` : `${relVendor} ${relName}`;
+    }
+    return relName || relVendor || eventId.substring(0, 8) + '...';
+  };
 
   const hasCert = !!(certType || certId || certLab || scheme || eal || securityLevels.length > 0 || notValidBefore || notValidAfter || evalFacility);
+  const hasLifecycle = !!(releaseDate || eolDate || supportUntil);
   const hasTech = !!(
     symmetricCryptoList.length > 0 ||
     asymmetricCryptoList.length > 0 ||
     hashFunctions.length > 0 ||
     cipherModes.length > 0 ||
+    cryptoSuites.length > 0 ||
+    eccCurves.length > 0 ||
+    keyLengthMax ||
     javaCardVersion ||
     globalPlatformVersion ||
     cryptoEngine ||
     maxJCVersion ||
-    maxUploadJCVersion
+    maxUploadJCVersion ||
+    formFactor ||
+    chip ||
+    memoryRam ||
+    memoryEeprom
   );
   const hasSecurity = sideChannelAnalysis.length > 0;
+
+  // Format memory size in human-readable format
+  const formatMemory = (bytes: string | undefined): string | undefined => {
+    if (!bytes) return undefined;
+    const num = parseInt(bytes, 10);
+    if (isNaN(num)) return bytes;
+    if (num < 1024) return `${num} B`;
+    if (num < 1024 * 1024) return `${(num / 1024).toFixed(1)} KB`;
+    return `${(num / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const statusClasses = (() => {
     const s = (status || '').toLowerCase();
@@ -618,6 +700,44 @@ export function ProductCard({
               {techOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-2 space-y-1.5 text-sm">
+              {/* Hardware */}
+              {formFactor && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">Form Factor</span>
+                  <span className="text-foreground capitalize">{formFactor}</span>
+                </div>
+              )}
+              {chip && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">Chip</span>
+                  <span className="text-foreground">{chip}</span>
+                </div>
+              )}
+              {memoryRam && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">RAM</span>
+                  <span className="text-foreground">{formatMemory(memoryRam)}</span>
+                </div>
+              )}
+              {memoryEeprom && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">EEPROM</span>
+                  <span className="text-foreground">{formatMemory(memoryEeprom)}</span>
+                </div>
+              )}
+              {/* Cryptography */}
+              {cryptoSuites.length > 0 && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">Crypto Suite</span>
+                  <div className="flex flex-wrap gap-1">
+                    {cryptoSuites.map((suite, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {suite}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
               {symmetricCryptoList.length > 0 && (
                 <div className="grid grid-cols-[120px,1fr] gap-2">
                   <span className="text-muted-foreground font-medium">Symmetric</span>
@@ -666,6 +786,25 @@ export function ProductCard({
                   </div>
                 </div>
               )}
+              {eccCurves.length > 0 && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">ECC Curves</span>
+                  <div className="flex flex-wrap gap-1">
+                    {eccCurves.map((curve, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {curve}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {keyLengthMax && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">Max Key Length</span>
+                  <span className="text-foreground">{keyLengthMax} bits</span>
+                </div>
+              )}
+              {/* Platform */}
               {javaCardVersion && (
                 <div className="grid grid-cols-[120px,1fr] gap-2">
                   <span className="text-muted-foreground font-medium">JavaCard</span>
@@ -694,6 +833,126 @@ export function ProductCard({
                 <div className="grid grid-cols-[120px,1fr] gap-2">
                   <span className="text-muted-foreground font-medium">Max Upload JC</span>
                   <code className="text-xs font-mono">{maxUploadJCVersion}</code>
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Lifecycle (Collapsible) - new in v0.2 */}
+        {hasLifecycle && (
+          <Collapsible open={lifecycleOpen} onOpenChange={setLifecycleOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-t">
+              <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wide">
+                Lifecycle
+              </h4>
+              {lifecycleOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2 space-y-1.5 text-sm">
+              {releaseDate && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">Release Date</span>
+                  <span className="text-foreground">{formatDate(releaseDate)}</span>
+                </div>
+              )}
+              {eolDate && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">End of Life</span>
+                  <span className="text-foreground">{formatDate(eolDate)}</span>
+                </div>
+              )}
+              {supportUntil && (
+                <div className="grid grid-cols-[120px,1fr] gap-2">
+                  <span className="text-muted-foreground font-medium">Support Until</span>
+                  <span className="text-foreground">{formatDate(supportUntil)}</span>
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
+
+        {/* Product Relationships (Collapsible) - new in v0.2 */}
+        {hasRelationships && (
+          <Collapsible open={relationshipsOpen} onOpenChange={setRelationshipsOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full py-2 border-t">
+              <h4 className="text-xs font-bold uppercase text-muted-foreground tracking-wide">
+                Product Relationships
+              </h4>
+              {relationshipsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pt-2 space-y-2 text-sm">
+              {productRelationships.contains.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-muted-foreground font-medium text-xs">
+                    <Package className="h-3 w-3" style={{ color: PRODUCT_RELATIONSHIP_COLORS.contains }} />
+                    <span>Contains</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 pl-4">
+                    {productRelationships.contains.map((containedId) => (
+                      <Link
+                        key={containedId}
+                        to={`/${eventIdToNote(containedId)}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
+                      >
+                        <Box className="h-3 w-3" />
+                        {getRelatedProductName(containedId)}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {productRelationships.dependsOn.length > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-muted-foreground font-medium text-xs">
+                    <Package className="h-3 w-3" style={{ color: PRODUCT_RELATIONSHIP_COLORS.depends_on }} />
+                    <span>Depends On</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 pl-4">
+                    {productRelationships.dependsOn.map((depId) => (
+                      <Link
+                        key={depId}
+                        to={`/${eventIdToNote(depId)}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+                      >
+                        <Box className="h-3 w-3" />
+                        {getRelatedProductName(depId)}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {productRelationships.supersedes && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-muted-foreground font-medium text-xs">
+                    <Package className="h-3 w-3" style={{ color: PRODUCT_RELATIONSHIP_COLORS.supersedes }} />
+                    <span>Supersedes</span>
+                  </div>
+                  <div className="pl-4">
+                    <Link
+                      to={`/${eventIdToNote(productRelationships.supersedes)}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                    >
+                      <Box className="h-3 w-3" />
+                      {getRelatedProductName(productRelationships.supersedes)}
+                    </Link>
+                  </div>
+                </div>
+              )}
+              {productRelationships.successor && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1 text-muted-foreground font-medium text-xs">
+                    <Package className="h-3 w-3" style={{ color: PRODUCT_RELATIONSHIP_COLORS.successor }} />
+                    <span>Successor</span>
+                  </div>
+                  <div className="pl-4">
+                    <Link
+                      to={`/${eventIdToNote(productRelationships.successor)}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                    >
+                      <Box className="h-3 w-3" />
+                      {getRelatedProductName(productRelationships.successor)}
+                    </Link>
+                  </div>
                 </div>
               )}
             </CollapsibleContent>
@@ -747,20 +1006,53 @@ export function ProductCard({
         </div>
 
         {/* Activity Footer */}
-        {(updates.length > 0 || confirmations.length > 0 || contestations.length > 0) && (
+        {(updates.length > 0 || confirmations.length > 0 || contestations.length > 0 || hasRelationships) && (
           <div className="mt-auto pt-3">
             <Collapsible open={activityOpen} onOpenChange={setActivityOpen}>
               <CollapsibleTrigger className="w-full">
                 <div className="bg-muted rounded-md p-2.5 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-3">
                     <span className="font-medium">
-                      Activity ({updates.length + confirmations.length + contestations.length} events)
+                      Activity ({updates.length + confirmations.length + contestations.length + 
+                        productRelationships.contains.length + productRelationships.dependsOn.length +
+                        (productRelationships.supersedes ? 1 : 0) + (productRelationships.successor ? 1 : 0)} items)
                     </span>
                   </div>
                   {activityOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-2 space-y-2">
+                {/* Show relationships first */}
+                {productRelationships.contains.map(containedId => (
+                  <RelationshipActivity
+                    key={`contains-${containedId}`}
+                    relationshipType="contains"
+                    relatedEventId={containedId}
+                    relatedProduct={allProducts?.get(containedId)}
+                  />
+                ))}
+                {productRelationships.dependsOn.map(depId => (
+                  <RelationshipActivity
+                    key={`depends-${depId}`}
+                    relationshipType="depends_on"
+                    relatedEventId={depId}
+                    relatedProduct={allProducts?.get(depId)}
+                  />
+                ))}
+                {productRelationships.supersedes && (
+                  <RelationshipActivity
+                    relationshipType="supersedes"
+                    relatedEventId={productRelationships.supersedes}
+                    relatedProduct={allProducts?.get(productRelationships.supersedes)}
+                  />
+                )}
+                {productRelationships.successor && (
+                  <RelationshipActivity
+                    relationshipType="successor"
+                    relatedEventId={productRelationships.successor}
+                    relatedProduct={allProducts?.get(productRelationships.successor)}
+                  />
+                )}
                 {/* Show updates */}
                 {showOriginal ? (
                   // When viewing original, show all updates

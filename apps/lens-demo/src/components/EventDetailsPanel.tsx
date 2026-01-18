@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EventId } from '@/components/EventId';
-import { extractDTag, extractLabels, getLegacyScrutinyReason } from '@/lib/scrutiny';
+import { extractDTag, extractLabels, extractMultiLabels, getLegacyScrutinyReason } from '@/lib/scrutiny';
 import { getCountryFlag, validateCPE23 } from '@/lib/productUtils';
 import { ExternalLink } from 'lucide-react';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -65,9 +65,7 @@ export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetails
   const scheme = labels['scheme']?.value;
 
   // Get all security_level entries (there can be multiple)
-  const securityLevels = event.tags
-    .filter(t => t[0] === 'l' && t[1] === 'security_level')
-    .map(t => t[2]);
+  const securityLevels = extractMultiLabels(event, 'security_level');
 
   const validFrom = labels['not_valid_before']?.value;
   const validTo = labels['not_valid_after']?.value;
