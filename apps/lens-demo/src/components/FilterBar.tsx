@@ -2,46 +2,22 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
-import { nip19 } from 'nostr-tools';
-import type { EventFilters } from '@/lib/scrutiny';
+import type { EventFilters, ScrutinyEvent } from '@/lib/scrutiny';
+import { AuthorFilterDropdown } from '@/components/AuthorFilterDropdown';
 
 interface FilterBarProps {
   filters: EventFilters;
   onChange: (filters: EventFilters) => void;
   onClear: () => void;
+  events: ScrutinyEvent[];
 }
 
-export function FilterBar({ filters, onChange, onClear }: FilterBarProps) {
+export function FilterBar({ filters, onChange, onClear, events }: FilterBarProps) {
   const hasActiveFilters =
     filters.dateRange.start ||
     filters.dateRange.end ||
-    filters.author ||
-    filters.dTag ||
-    filters.cpe23;
-
-  // Convert npub to hex if needed
-  const handleAuthorChange = (value: string) => {
-    if (!value) {
-      onChange({ ...filters, author: null });
-      return;
-    }
-
-    // Check if it's an npub format
-    if (value.startsWith('npub1')) {
-      try {
-        const decoded = nip19.decode(value);
-        if (decoded.type === 'npub') {
-          onChange({ ...filters, author: decoded.data });
-          return;
-        }
-      } catch {
-        // If decoding fails, just use the value as-is (might be partial input)
-      }
-    }
-
-    // Otherwise assume it's hex
-    onChange({ ...filters, author: value });
-  };
+    filters.authors.length > 0 ||
+    filters.tTag;
 
   return (
     <div className="bg-card border rounded p-4 space-y-4">
@@ -60,7 +36,7 @@ export function FilterBar({ filters, onChange, onClear }: FilterBarProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-2">
           <Label htmlFor="start-date" className="text-xs">
             Start Date
@@ -71,8 +47,8 @@ export function FilterBar({ filters, onChange, onClear }: FilterBarProps) {
             value={
               filters.dateRange.start
                 ? new Date(filters.dateRange.start * 1000)
-                    .toISOString()
-                    .split('T')[0]
+                  .toISOString()
+                  .split('T')[0]
                 : ''
             }
             onChange={(e) => {
@@ -98,8 +74,8 @@ export function FilterBar({ filters, onChange, onClear }: FilterBarProps) {
             value={
               filters.dateRange.end
                 ? new Date(filters.dateRange.end * 1000)
-                    .toISOString()
-                    .split('T')[0]
+                  .toISOString()
+                  .split('T')[0]
                 : ''
             }
             onChange={(e) => {
@@ -116,46 +92,28 @@ export function FilterBar({ filters, onChange, onClear }: FilterBarProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="author" className="text-xs">
-            Author (npub/hex)
-          </Label>
-          <Input
-            id="author"
-            type="text"
-            placeholder="npub1... or hex"
-            value={filters.author || ''}
-            onChange={(e) => handleAuthorChange(e.target.value)}
-            className="h-9 text-sm"
+          <Label className="text-xs">Filter by Author</Label>
+          <AuthorFilterDropdown
+            items={events}
+            getPubkey={(e) => e.pubkey}
+            selectedAuthors={filters.authors}
+            onAuthorsChange={(authors) => onChange({ ...filters, authors })}
+            className="w-full"
+            triggerClassName="w-full h-9 text-sm justify-start font-normal"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="dtag" className="text-xs">
-            D Tag (identifier)
+          <Label htmlFor="ttag" className="text-xs">
+            T Tag (topic)
           </Label>
           <Input
-            id="dtag"
+            id="ttag"
             type="text"
-            placeholder="org.vendor:product"
-            value={filters.dTag || ''}
+            placeholder="Search topics..."
+            value={filters.tTag || ''}
             onChange={(e) =>
-              onChange({ ...filters, dTag: e.target.value || null })
-            }
-            className="h-9 text-sm"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="cpe23" className="text-xs">
-            CPE23
-          </Label>
-          <Input
-            id="cpe23"
-            type="text"
-            placeholder="cpe:2.3:a:vendor:..."
-            value={filters.cpe23 || ''}
-            onChange={(e) =>
-              onChange({ ...filters, cpe23: e.target.value || null })
+              onChange({ ...filters, tTag: e.target.value || null })
             }
             className="h-9 text-sm"
           />

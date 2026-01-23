@@ -408,9 +408,8 @@ export function deduplicateEvents(events: NostrEvent[]): NostrEvent[] {
 
 export interface EventFilters {
   dateRange: { start: number | null; end: number | null };
-  author: string | null;
-  dTag: string | null;
-  cpe23: string | null;
+  authors: string[];
+  tTag: string | null;
 }
 
 export function getLatestUpdate(updates: ScrutinyEvent[] | undefined): ScrutinyEvent | undefined {
@@ -437,21 +436,15 @@ export function applyFilters(events: ScrutinyEvent[], filters: EventFilters): Sc
       return false;
     }
 
-    if (filters.author && event.pubkey !== filters.author) {
+    if (filters.authors.length > 0 && !filters.authors.includes(event.pubkey)) {
       return false;
     }
 
-    if (filters.dTag) {
-      const dTag = extractDTag(event);
-      if (!dTag || !dTag.includes(filters.dTag)) {
-        return false;
-      }
-    }
-
-    if (filters.cpe23) {
-      const labels = extractLabels(event);
-      const cpe = labels['cpe23']?.value;
-      if (!cpe || !cpe.includes(filters.cpe23)) {
+    if (filters.tTag) {
+      const tTags = event.tags.filter(t => t[0] === 't').map(t => t[1]);
+      const search = filters.tTag.toLowerCase();
+      const hasMatch = tTags.some(tag => tag.toLowerCase().includes(search));
+      if (!hasMatch) {
         return false;
       }
     }

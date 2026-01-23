@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToShortNpub } from '@/lib/nip19';
-import type { BindingWithStats } from '@/hooks/useEventWithBindings';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -16,10 +15,13 @@ import { Badge } from '@/components/ui/badge';
 import { Filter, Plus } from 'lucide-react';
 import { nip19 } from 'nostr-tools';
 
-interface AuthorFilterDropdownProps {
-  bindings: BindingWithStats[];
+interface AuthorFilterDropdownProps<T> {
+  items: T[];
+  getPubkey: (item: T) => string;
   selectedAuthors: string[];
   onAuthorsChange: (pubkeys: string[]) => void;
+  className?: string; // Container class
+  triggerClassName?: string; // Button class
 }
 
 // Preset authors
@@ -31,23 +33,26 @@ const PRESET_AUTHORS = {
   },
 };
 
-export function AuthorFilterDropdown({
-  bindings,
+export function AuthorFilterDropdown<T>({
+  items,
+  getPubkey,
   selectedAuthors,
   onAuthorsChange,
-}: AuthorFilterDropdownProps) {
+  className,
+  triggerClassName,
+}: AuthorFilterDropdownProps<T>) {
   const [customInput, setCustomInput] = useState('');
   const [customError, setCustomError] = useState('');
-  
+
   const uniqueAuthors = useMemo(() => {
     const authors = new Set<string>();
-    for (const entry of bindings) {
-      authors.add(entry.binding.pubkey);
+    for (const entry of items) {
+      authors.add(getPubkey(entry));
     }
     return Array.from(authors);
-  }, [bindings]);
+  }, [items, getPubkey]);
 
-  if (bindings.length === 0) {
+  if (items.length === 0) {
     return null;
   }
 
@@ -60,20 +65,20 @@ export function AuthorFilterDropdown({
   };
 
   const clearAll = () => onAuthorsChange([]);
-  
+
   const selectAll = () => onAuthorsChange([]);
-  
+
   const handleAddCustomAuthor = () => {
     setCustomError('');
     const input = customInput.trim();
-    
+
     if (!input) {
       setCustomError('Please enter an npub or pubkey');
       return;
     }
-    
+
     let pubkey: string;
-    
+
     // Try to decode as npub
     if (input.startsWith('npub1')) {
       try {
@@ -109,7 +114,7 @@ export function AuthorFilterDropdown({
       setCustomError('Please enter a valid npub, nprofile, or hex pubkey');
       return;
     }
-    
+
     // Add the author if not already selected
     if (!selectedAuthors.includes(pubkey)) {
       onAuthorsChange([...selectedAuthors, pubkey]);
@@ -120,22 +125,28 @@ export function AuthorFilterDropdown({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={className}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            <span>
-              {selectedAuthors.length > 0
-                ? `${selectedAuthors.length} selected`
-                : 'Filter authors'}
-            </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`flex items-center justify-between gap-2 ${triggerClassName || ''}`}
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span>
+                {selectedAuthors.length > 0
+                  ? `${selectedAuthors.length} selected`
+                  : 'Filter authors'}
+              </span>
+            </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-80">
           <DropdownMenuLabel>Filter by Author</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          
+
           {/* All option */}
           <DropdownMenuCheckboxItem
             checked={selectedAuthors.length === 0}
@@ -144,12 +155,12 @@ export function AuthorFilterDropdown({
           >
             All Authors
           </DropdownMenuCheckboxItem>
-          
+
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
             Presets
           </DropdownMenuLabel>
-          
+
           {/* CRoCS preset */}
           <DropdownMenuCheckboxItem
             checked={selectedAuthors.includes(PRESET_AUTHORS.CROCS.pubkey)}
@@ -158,31 +169,32 @@ export function AuthorFilterDropdown({
             {PRESET_AUTHORS.CROCS.name}
             {uniqueAuthors.includes(PRESET_AUTHORS.CROCS.pubkey) && (
               <span className="ml-auto text-xs text-muted-foreground">
-                ({bindings.filter(b => b.binding.pubkey === PRESET_AUTHORS.CROCS.pubkey).length})
+                ({items.filter(b => getPubkey(b) === PRESET_AUTHORS.CROCS.pubkey).length})
               </span>
             )}
           </DropdownMenuCheckboxItem>
-          
+
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
             Authors in this list
           </DropdownMenuLabel>
-          
+
           {uniqueAuthors.filter(pubkey => pubkey !== PRESET_AUTHORS.CROCS.pubkey).map(pubkey => (
             <AuthorSelectItem
               key={pubkey}
               pubkey={pubkey}
-              bindings={bindings}
+              items={items}
+              getPubkey={getPubkey}
               checked={selectedAuthors.includes(pubkey)}
               onToggle={() => toggleAuthor(pubkey)}
             />
           ))}
-          
+
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
             Add custom author
           </DropdownMenuLabel>
-          
+
           <div className="px-2 py-2 space-y-2">
             <div className="flex items-center gap-2">
               <Input
@@ -212,7 +224,7 @@ export function AuthorFilterDropdown({
               <p className="text-xs text-destructive">{customError}</p>
             )}
           </div>
-          
+
           <DropdownMenuSeparator />
           <Button
             variant="ghost"
@@ -237,19 +249,20 @@ export function AuthorFilterDropdown({
   );
 }
 
-interface AuthorSelectItemProps {
+interface AuthorSelectItemProps<T> {
   pubkey: string;
-  bindings: BindingWithStats[];
+  items: T[];
+  getPubkey: (item: T) => string;
   checked: boolean;
   onToggle: () => void;
 }
 
-function AuthorSelectItem({ pubkey, bindings, checked, onToggle }: AuthorSelectItemProps) {
+function AuthorSelectItem<T>({ pubkey, items, getPubkey, checked, onToggle }: AuthorSelectItemProps<T>) {
   const { data: authorData } = useAuthor(pubkey);
   const displayName = authorData?.metadata?.name ?? pubkeyToShortNpub(pubkey);
   const count = useMemo(
-    () => bindings.filter(binding => binding.binding.pubkey === pubkey).length,
-    [bindings, pubkey]
+    () => items.filter(item => getPubkey(item) === pubkey).length,
+    [items, getPubkey, pubkey]
   );
 
   return (

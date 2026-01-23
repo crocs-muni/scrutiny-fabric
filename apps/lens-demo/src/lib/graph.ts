@@ -1,6 +1,7 @@
 import type { Node, Edge } from '@xyflow/react';
 import type { ScrutinyEvent, CategorizedEvents, Relationships } from './scrutiny';
-import { extractLabels, extractURLAndHash, extractDTag } from './scrutiny';
+import { extractLabels, extractURLAndHash, extractDTag, extractProductRelationships } from './scrutiny';
+import { PRODUCT_RELATIONSHIP_COLORS } from './labelRegistry';
 
 const GRAPH_WIDTH = 1200;
 const GRAPH_HEIGHT = 800;
@@ -13,17 +14,24 @@ interface GraphData {
 // Normalize display names
 function getProductName(product: ScrutinyEvent): string {
   const labels = extractLabels(product);
-  const vendor = labels['vendor']?.value || '';
   const productName = labels['product_name']?.value || '';
   const version = labels['product_version']?.value || '';
 
-  if (vendor && productName) {
-    return version ? `${vendor} ${productName} ${version}` : `${vendor} ${productName}`;
+  if (productName) {
+    return version ? `${productName} ${version}` : productName;
   }
-  return productName || vendor || 'Unknown Product';
+  // Fallback to vendor if no product name
+  const vendor = labels['vendor']?.value || '';
+  return vendor || 'Unknown Product';
 }
 
 function getMetadataName(metadata: ScrutinyEvent): string {
+  // Check for alt tag first (NIP-94 / media metadata)
+  const altTag = metadata.tags.find(t => t[0] === 'alt');
+  if (altTag && altTag[1] && altTag[1].length < 80) {
+    return altTag[1];
+  }
+
   const { url } = extractURLAndHash(metadata);
   const labels = extractLabels(metadata);
 
@@ -60,6 +68,55 @@ function getBindingName(binding: ScrutinyEvent): string {
   return 'Binding';
 }
 
+/**
+ * Recursively collect all related products up to maxDepth.
+ * Returns a Map of product ID -> { product, depth } where depth indicates
+ * how many hops from the binding products.
+ */
+function collectRelatedProductsRecursive(
+  startProducts: ScrutinyEvent[],
+  categorized: CategorizedEvents,
+  maxDepth: number = 5
+): Map<string, { product: ScrutinyEvent; depth: number }> {
+  const collected = new Map<string, { product: ScrutinyEvent; depth: number }>();
+  const visited = new Set<string>();
+
+  function traverse(products: ScrutinyEvent[], depth: number) {
+    if (depth > maxDepth) return;
+
+    const nextProducts: ScrutinyEvent[] = [];
+
+    for (const product of products) {
+      if (visited.has(product.id)) continue;
+      visited.add(product.id);
+      collected.set(product.id, { product, depth });
+
+      const rels = extractProductRelationships(product);
+      const relatedIds = [
+        ...rels.contains,
+        ...rels.dependsOn,
+        rels.supersedes,
+        rels.successor,
+      ].filter((id): id is string => !!id);
+
+      for (const relId of relatedIds) {
+        if (visited.has(relId)) continue;
+        const relProduct = categorized.products.get(relId);
+        if (relProduct) {
+          nextProducts.push(relProduct);
+        }
+      }
+    }
+
+    if (nextProducts.length > 0) {
+      traverse(nextProducts, depth + 1);
+    }
+  }
+
+  traverse(startProducts, 0);
+  return collected;
+}
+
 export function buildGraphData(
   binding: ScrutinyEvent,
   categorized: CategorizedEvents,
@@ -73,9 +130,18 @@ export function buildGraphData(
   const productIds = relationships.bindingToProducts.get(binding.id) || [];
   const metadataIds = relationships.bindingToMetadata.get(binding.id) || [];
 
-  const products = productIds
+  // Start with products directly in the binding
+  const bindingProducts = productIds
     .map((id) => categorized.products.get(id))
     .filter((p): p is ScrutinyEvent => !!p);
+
+  // Recursively collect ALL related products (contains, depends_on, etc.)
+  const allProductsMap = collectRelatedProductsRecursive(bindingProducts, categorized, 5);
+
+  // Convert to array, sorted by depth then by ID for consistent ordering
+  const allProducts = Array.from(allProductsMap.entries())
+    .sort((a, b) => a[1].depth - b[1].depth || a[0].localeCompare(b[0]))
+    .map(([id, { product, depth }]) => ({ product, depth, id }));
 
   const metadata = metadataIds
     .map((id) => categorized.metadata.get(id))
@@ -96,31 +162,156 @@ export function buildGraphData(
     },
   });
 
-  // Left: Products (vertical stack)
-  const productStartY = centerY - ((products.length - 1) * 180) / 2;
-  products.forEach((product, index) => {
-    const productY = productStartY + index * 180;
+  // Left: Products arranged by depth level
+  // Depth 0 (binding products) closest to binding, deeper levels further left
+  const productsByDepth = new Map<number, typeof allProducts>();
+  for (const item of allProducts) {
+    const list = productsByDepth.get(item.depth) || [];
+    list.push(item);
+    productsByDepth.set(item.depth, list);
+  }
 
-    nodes.push({
-      id: product.id,
-      type: 'product',
-      position: { x: 50, y: productY },
-      data: {
-        event: product,
-        name: getProductName(product),
-        highlighted: highlightedNodes.has(product.id),
-      },
+  // Track which products are from the binding (depth 0)
+  const isBindingProduct = (id: string) => {
+    const item = allProductsMap.get(id);
+    return item?.depth === 0;
+  };
+
+  // Position products by depth level
+  const depthLevels = Array.from(productsByDepth.keys()).sort((a, b) => a - b);
+  const DEPTH_SPACING = 200; // horizontal spacing between depth levels
+  const VERTICAL_SPACING = 150; // vertical spacing between products at same depth
+
+  for (const depth of depthLevels) {
+    const productsAtDepth = productsByDepth.get(depth) || [];
+    const startY = centerY - ((productsAtDepth.length - 1) * VERTICAL_SPACING) / 2;
+    // Depth 0 is closest to binding, deeper = further left
+    const xPos = 50 - (depth * DEPTH_SPACING);
+
+    productsAtDepth.forEach((item, index) => {
+      const productY = startY + index * VERTICAL_SPACING;
+      const isRelated = depth > 0;
+
+      nodes.push({
+        id: item.product.id,
+        type: 'product',
+        position: { x: xPos, y: productY },
+        data: {
+          event: item.product,
+          name: getProductName(item.product),
+          highlighted: highlightedNodes.has(item.product.id),
+          isRelated,
+          depth,
+        },
+      });
+    });
+  }
+
+  // Create a set of all product IDs in the graph for edge validation
+  const productIdsInGraph = new Set(allProducts.map(p => p.id));
+
+  // Add edges for all products
+  for (const { product, depth } of allProducts) {
+    // Only connect binding products (depth 0) directly to binding
+    if (depth === 0) {
+      edges.push({
+        id: `product-binding-${product.id}`,
+        source: product.id,
+        sourceHandle: 'binding-source',
+        target: binding.id,
+        type: 'smoothstep',
+        style: { stroke: '#2C5AA0', strokeWidth: 2 },
+        label: showLabels ? 'product' : undefined,
+      });
+    }
+
+    // Add product-to-product relationship edges
+    const productRels = extractProductRelationships(product);
+
+    // Contains relationships (purple) - use top handles
+    productRels.contains.forEach((containedId) => {
+      if (productIdsInGraph.has(containedId)) {
+        edges.push({
+          id: `contains-${product.id}-${containedId}`,
+          source: product.id,
+          sourceHandle: 'rel-source-top',
+          target: containedId,
+          targetHandle: 'rel-target-top',
+          type: 'smoothstep',
+          style: {
+            stroke: PRODUCT_RELATIONSHIP_COLORS.contains,
+            strokeWidth: 2,
+            strokeDasharray: '8,4',
+          },
+          label: showLabels ? 'contains' : undefined,
+          labelStyle: { fill: PRODUCT_RELATIONSHIP_COLORS.contains, fontWeight: 600 },
+          zIndex: 10, // Place above other edges
+        });
+      }
     });
 
-    edges.push({
-      id: `product-binding-${product.id}`,
-      source: product.id,
-      target: binding.id,
-      type: 'smoothstep',
-      style: { stroke: '#2C5AA0', strokeWidth: 2 },
-      label: showLabels ? 'product' : undefined,
+    // Depends-on relationships (amber) - use top handles with different offset
+    productRels.dependsOn.forEach((depId) => {
+      if (productIdsInGraph.has(depId)) {
+        edges.push({
+          id: `depends-${product.id}-${depId}`,
+          source: product.id,
+          sourceHandle: 'rel-source-top',
+          target: depId,
+          targetHandle: 'rel-target-top',
+          type: 'smoothstep',
+          style: {
+            stroke: PRODUCT_RELATIONSHIP_COLORS.depends_on,
+            strokeWidth: 2,
+            strokeDasharray: '4,4',
+          },
+          label: showLabels ? 'depends on' : undefined,
+          labelStyle: { fill: PRODUCT_RELATIONSHIP_COLORS.depends_on, fontWeight: 600 },
+          zIndex: 11,
+        });
+      }
     });
-  });
+
+    // Supersedes relationship (emerald) - use bottom handles
+    if (productRels.supersedes && productIdsInGraph.has(productRels.supersedes)) {
+      edges.push({
+        id: `supersedes-${product.id}-${productRels.supersedes}`,
+        source: product.id,
+        sourceHandle: 'rel-source-bottom',
+        target: productRels.supersedes,
+        targetHandle: 'rel-target-bottom',
+        type: 'smoothstep',
+        style: {
+          stroke: PRODUCT_RELATIONSHIP_COLORS.supersedes,
+          strokeWidth: 2,
+          strokeDasharray: '6,3',
+        },
+        label: showLabels ? 'supersedes' : undefined,
+        labelStyle: { fill: PRODUCT_RELATIONSHIP_COLORS.supersedes, fontWeight: 600 },
+        zIndex: 12,
+      });
+    }
+
+    // Successor relationship (emerald) - use bottom handles with different offset
+    if (productRels.successor && productIdsInGraph.has(productRels.successor)) {
+      edges.push({
+        id: `successor-${product.id}-${productRels.successor}`,
+        source: product.id,
+        sourceHandle: 'rel-source-bottom',
+        target: productRels.successor,
+        targetHandle: 'rel-target-bottom',
+        type: 'smoothstep',
+        style: {
+          stroke: PRODUCT_RELATIONSHIP_COLORS.successor,
+          strokeWidth: 2,
+          strokeDasharray: '6,3',
+        },
+        label: showLabels ? 'successor' : undefined,
+        labelStyle: { fill: PRODUCT_RELATIONSHIP_COLORS.successor, fontWeight: 600 },
+        zIndex: 13,
+      });
+    }
+  }
 
   // Right: Metadata + Replies
   const metadataStartY = centerY - ((metadata.length - 1) * 200) / 2;

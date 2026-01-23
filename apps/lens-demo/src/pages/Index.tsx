@@ -20,9 +20,8 @@ const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<EventFilters>({
     dateRange: { start: null, end: null },
-    author: null,
-    dTag: null,
-    cpe23: null,
+    authors: [],
+    tTag: null,
   });
 
   const selectedBindingId = searchParams.get('binding');
@@ -30,9 +29,8 @@ const Index = () => {
   const clearFilters = () => {
     setFilters({
       dateRange: { start: null, end: null },
-      author: null,
-      dTag: null,
-      cpe23: null,
+      authors: [],
+      tTag: null,
     });
   };
 
@@ -122,7 +120,12 @@ const Index = () => {
           </div>
         </div>
 
-        <FilterBar filters={filters} onChange={setFilters} onClear={clearFilters} />
+        <FilterBar
+          filters={filters}
+          onChange={setFilters}
+          onClear={clearFilters}
+          events={data ? Array.from(data.categorized.bindings.values()) : []}
+        />
 
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">

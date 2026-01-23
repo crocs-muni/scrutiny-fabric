@@ -85,7 +85,8 @@ export function BindingsPanel({ bindings, eventType }: BindingsPanelProps) {
         {bindings.length > 0 && (
           <div className="mt-4 space-y-3">
             <AuthorFilterDropdown
-              bindings={bindings}
+              items={bindings}
+              getPubkey={(b) => b.binding.pubkey}
               selectedAuthors={selectedAuthors}
               onAuthorsChange={setSelectedAuthors}
             />
