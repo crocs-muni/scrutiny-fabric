@@ -1024,7 +1024,7 @@ export function ProductCard({
                 <div className="bg-muted rounded-md p-2.5 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-3">
                     <span className="font-medium">
-                      Activity ({updates.length + confirmations.length + contestations.length + 
+                      Activity ({updates.length + confirmations.length + contestations.length +
                         productRelationships.contains.length + productRelationships.dependsOn.length +
                         (productRelationships.supersedes ? 1 : 0) + (productRelationships.successor ? 1 : 0)} items)
                     </span>

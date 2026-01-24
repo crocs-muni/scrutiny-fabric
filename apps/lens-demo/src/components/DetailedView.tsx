@@ -12,8 +12,9 @@ import { ProductCard } from './ProductCard';
 import { MetadataCard } from './MetadataCard';
 import { GraphPanel } from './GraphPanel';
 import { RawEventDialog } from '@/components/RawEventDialog';
-import { getLatestUpdate } from '@/lib/scrutiny';
+import { getBindingRelationshipStyle, getLatestUpdate, isDemoScrutinyEvent, getLegacyScrutinyReason } from '@/lib/scrutiny';
 import type { ScrutinyEvent, CategorizedEvents, Relationships } from '@/lib/scrutiny';
+import { AlertTriangle } from 'lucide-react';
 
 interface DetailedViewProps {
   binding: ScrutinyEvent;
@@ -36,6 +37,9 @@ export function DetailedView({
   const timeAgo = formatDistanceToNow(new Date(binding.created_at * 1000), {
     addSuffix: true,
   });
+  const relationshipStyle = getBindingRelationshipStyle(binding);
+  const isDemo = isDemoScrutinyEvent(binding.tags);
+  const legacyReason = getLegacyScrutinyReason(binding.tags);
 
   const updateEvent = getLatestUpdate(categorized.updates.get(binding.id));
   const displayBinding = (updateEvent && !showOriginal) ? updateEvent : binding;
@@ -69,6 +73,41 @@ export function DetailedView({
               <CardTitle>Binding Details</CardTitle>
             </div>
             <div className="flex items-center gap-2">
+              {isDemo && (
+                <Badge
+                  variant="outline"
+                  className="text-xs border-purple-300 text-purple-700 bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:bg-purple-950/30"
+                  title="Demo event with _demo suffix tags"
+                >
+                  Demo
+                </Badge>
+              )}
+              {relationshipStyle && (
+                <Badge
+                  variant="outline"
+                  className={`flex items-center gap-1 ${relationshipStyle.badgeClass}`}
+                  title={relationshipStyle.description}
+                >
+                  {relationshipStyle.displayName === 'Vulnerability' && (
+                    <AlertTriangle className="h-3 w-3" />
+                  )}
+                  {relationshipStyle.icon} {relationshipStyle.displayName}
+                </Badge>
+              )}
+              {legacyReason && (
+                <Badge
+                  variant="outline"
+                  className="text-xs border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-950/30"
+                  title={
+                    legacyReason === 'hyphenated-tags'
+                      ? 'Legacy SCRUTINY event (hyphenated/v0 tags)'
+                      : `Legacy SCRUTINY event (${legacyReason})`
+                  }
+                >
+                  Legacy
+                  {legacyReason !== 'hyphenated-tags' ? ` (${legacyReason})` : ''}
+                </Badge>
+              )}
               <RawEventDialog event={binding} eventType="Binding" />
               {updateEvent && (
                 <Badge

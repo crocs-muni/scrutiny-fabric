@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EventId } from '@/components/EventId';
-import { extractDTag, extractLabels, extractMultiLabels, getLegacyScrutinyReason, isDemoScrutinyEvent } from '@/lib/scrutiny';
+import { extractDTag, extractLabels, extractMultiLabels, getBindingRelationshipStyle, getLegacyScrutinyReason, isDemoScrutinyEvent } from '@/lib/scrutiny';
+import { AlertTriangle } from 'lucide-react';
 import { getCountryFlag, validateCPE23 } from '@/lib/productUtils';
 import { ExternalLink } from 'lucide-react';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -13,6 +14,7 @@ interface EventDetailsPanelProps {
   event: NostrEvent;
   isProduct: boolean;
   isMetadata: boolean;
+  isBinding?: boolean;
 }
 
 const formatDateTime = (timestamp: number) => {
@@ -48,9 +50,10 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetailsPanelProps) {
+export function EventDetailsPanel({ event, isProduct, isMetadata, isBinding = false }: EventDetailsPanelProps) {
   const legacyReason = getLegacyScrutinyReason(event.tags);
   const isDemo = isDemoScrutinyEvent(event.tags);
+  const relationshipStyle = isBinding ? getBindingRelationshipStyle(event) : null;
   const labels = extractLabels(event);
   const contentPreview = event.content.length > 160 ? `${event.content.slice(0, 160)}…` : event.content;
 
@@ -83,12 +86,30 @@ export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetails
       <Card
         className={cn(
           'shadow-sm border-2',
-          isProduct ? 'border-product' : 'border-metadata'
+          isBinding ? 'border-binding' : isProduct ? 'border-product' : 'border-metadata'
         )}
       >
         <CardHeader>
           <div className="flex items-start justify-between gap-3">
             <CardTitle className="space-y-1">
+              {isBinding && (
+                <div>
+                  <div className="text-2xl font-semibold leading-tight flex items-center gap-2">
+                    {relationshipStyle?.icon} Binding
+                    {relationshipStyle && (
+                      <span className="text-lg font-normal text-muted-foreground">
+                        ({relationshipStyle.displayName})
+                      </span>
+                    )}
+                  </div>
+                  {contentPreview && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">
+                      {contentPreview}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {isProduct && (
                 <div>
                   <div className="text-2xl font-semibold leading-tight">
@@ -103,7 +124,7 @@ export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetails
                 </div>
               )}
 
-              {isMetadata && (
+              {isMetadata && !isBinding && (
                 <div>
                   <div className="text-2xl font-semibold leading-tight">Metadata</div>
                   {contentPreview && (
@@ -124,6 +145,18 @@ export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetails
                   Demo
                 </Badge>
               )}
+              {relationshipStyle && (
+                <Badge
+                  variant="outline"
+                  className={`text-xs flex items-center gap-1 ${relationshipStyle.badgeClass}`}
+                  title={relationshipStyle.description}
+                >
+                  {relationshipStyle.displayName === 'Vulnerability' && (
+                    <AlertTriangle className="h-3 w-3" />
+                  )}
+                  {relationshipStyle.icon} {relationshipStyle.displayName}
+                </Badge>
+              )}
               {legacyReason && (
                 <Badge
                   variant="outline"
@@ -138,7 +171,7 @@ export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetails
                   {legacyReason !== 'hyphenated-tags' ? ` (${legacyReason})` : ''}
                 </Badge>
               )}
-              <Badge variant="secondary">{isProduct ? 'Product' : 'Metadata'}</Badge>
+              <Badge variant="secondary">{isBinding ? 'Binding' : isProduct ? 'Product' : 'Metadata'}</Badge>
             </div>
           </div>
         </CardHeader>

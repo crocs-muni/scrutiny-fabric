@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToNpub, pubkeyToShortNpub } from '@/lib/nip19';
 import { ContentWithImages } from '@/components/ContentWithImages';
-import { getLegacyScrutinyReason, isDemoScrutinyEvent, type ScrutinyEvent } from '@/lib/scrutiny';
+import { getBindingRelationshipStyle, getLegacyScrutinyReason, isDemoScrutinyEvent, type ScrutinyEvent } from '@/lib/scrutiny';
 
 interface BindingCardProps {
   binding: ScrutinyEvent;
@@ -27,6 +27,7 @@ export function BindingCard({
 }: BindingCardProps) {
   const legacyReason = getLegacyScrutinyReason(binding.tags);
   const isDemo = isDemoScrutinyEvent(binding.tags);
+  const relationshipStyle = getBindingRelationshipStyle(binding);
   const author = useAuthor(binding.pubkey);
   const fullNpub = pubkeyToNpub(binding.pubkey);
   const shortNpub = pubkeyToShortNpub(binding.pubkey);
@@ -65,6 +66,15 @@ export function BindingCard({
                 title="Demo event with _demo suffix tags"
               >
                 Demo
+              </Badge>
+            )}
+            {relationshipStyle && (
+              <Badge
+                variant="outline"
+                className={`text-xs ${relationshipStyle.badgeClass}`}
+                title={relationshipStyle.description}
+              >
+                {relationshipStyle.icon} {relationshipStyle.displayName}
               </Badge>
             )}
             {legacyReason && (
