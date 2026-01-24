@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Badge } from '@/components/ui/badge';
+import { FileText, Check, AlertTriangle } from 'lucide-react';
 import type { ScrutinyEvent } from '@/lib/scrutiny';
 
 interface MetadataNodeData {
@@ -39,7 +40,7 @@ export const MetadataNode = memo((props: { data: MetadataNodeData }) => {
       <Handle type="target" position={Position.Left} style={{ background: '#E46C0A' }} />
       <Handle type="source" position={Position.Right} style={{ background: '#E46C0A' }} />
 
-      <div style={{ fontSize: '24px' }}>📄</div>
+      <FileText style={{ width: '24px', height: '24px', color: '#E46C0A' }} />
 
       <div
         style={{
@@ -62,17 +63,17 @@ export const MetadataNode = memo((props: { data: MetadataNodeData }) => {
         {confirmationCount && confirmationCount > 0 && (
           <Badge
             variant="outline"
-            className="bg-confirmation/10 text-confirmation border-confirmation text-xs px-1.5 py-0"
+            className="bg-confirmation/10 text-confirmation border-confirmation text-xs px-1.5 py-0 flex items-center gap-1"
           >
-            ✓ {confirmationCount}
+            <Check className="h-3 w-3" /> {confirmationCount}
           </Badge>
         )}
         {contestationCount && contestationCount > 0 && (
           <Badge
             variant="outline"
-            className="bg-contestation/10 text-contestation border-contestation text-xs px-1.5 py-0"
+            className="bg-contestation/10 text-contestation border-contestation text-xs px-1.5 py-0 flex items-center gap-1"
           >
-            ⚠ {contestationCount}
+            <AlertTriangle className="h-3 w-3" /> {contestationCount}
           </Badge>
         )}
       </div>

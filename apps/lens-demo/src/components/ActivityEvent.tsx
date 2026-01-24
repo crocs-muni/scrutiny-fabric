@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, ChevronDown, ChevronRight } from 'lucide-react';
+import { ExternalLink, ChevronDown, ChevronRight, Check, AlertTriangle, RefreshCw, FileText } from 'lucide-react';
 import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToNpub, pubkeyToShortNpub, eventIdToNote } from '@/lib/nip19';
 import { ContentWithImages } from '@/components/ContentWithImages';
@@ -53,13 +53,13 @@ export function ActivityEvent({ event, type, alternativeMetadata }: ActivityEven
     ? 'text-update'
     : 'text-foreground';
     
-  const icon = isConfirmation 
-    ? '✓' 
+  const IconComponent = isConfirmation 
+    ? Check 
     : isContestation 
-    ? '⚠' 
+    ? AlertTriangle 
     : isUpdate
-    ? '🔄'
-    : '📄';
+    ? RefreshCw
+    : FileText;
     
   const label = isConfirmation
     ? 'Confirmation'
@@ -73,8 +73,8 @@ export function ActivityEvent({ event, type, alternativeMetadata }: ActivityEven
     <div className={`border rounded-md p-3 ${bgColor}`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className={`${textColor} text-xs px-1.5 py-0`}>
-            {icon} {label}
+          <Badge variant="outline" className={`${textColor} text-xs px-1.5 py-0 flex items-center gap-1`}>
+            <IconComponent className="h-3 w-3" /> {label}
           </Badge>
           <div className="flex items-center gap-1">
             <Link

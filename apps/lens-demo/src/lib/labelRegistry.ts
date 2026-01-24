@@ -399,16 +399,17 @@ export function getSeverityStyle(severity: string): { bg: string; text: string; 
 
 /**
  * Binding relationship display configuration.
+ * Note: iconName references Lucide icon names for use with RelationshipIcon component
  */
-export const BINDING_RELATIONSHIPS: Record<string, { displayName: string; icon: string; color: string }> = {
-  test_of: { displayName: 'Test Result', icon: '🧪', color: 'blue' },
-  vulnerability_in: { displayName: 'Vulnerability', icon: '⚠️', color: 'red' },
-  patch_for: { displayName: 'Patch', icon: '🔧', color: 'orange' },
-  certification_of: { displayName: 'Certification', icon: '🏆', color: 'green' },
-  benchmark_of: { displayName: 'Benchmark', icon: '📊', color: 'purple' },
-  audit_of: { displayName: 'Audit', icon: '🔍', color: 'indigo' },
-  analysis_of: { displayName: 'Analysis', icon: '📈', color: 'cyan' },
-  documentation_of: { displayName: 'Documentation', icon: '📚', color: 'gray' },
+export const BINDING_RELATIONSHIPS: Record<string, { displayName: string; iconName: string; color: string }> = {
+  test_of: { displayName: 'Test Result', iconName: 'TestTube', color: 'blue' },
+  vulnerability_in: { displayName: 'Vulnerability', iconName: 'AlertTriangle', color: 'red' },
+  patch_for: { displayName: 'Patch', iconName: 'Wrench', color: 'orange' },
+  certification_of: { displayName: 'Certification', iconName: 'Award', color: 'green' },
+  benchmark_of: { displayName: 'Benchmark', iconName: 'BarChart3', color: 'purple' },
+  audit_of: { displayName: 'Audit', iconName: 'Search', color: 'indigo' },
+  analysis_of: { displayName: 'Analysis', iconName: 'BarChart3', color: 'cyan' },
+  documentation_of: { displayName: 'Documentation', iconName: 'BookOpen', color: 'gray' },
 };
 
 /**

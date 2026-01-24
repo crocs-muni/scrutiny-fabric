@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { Link2 } from 'lucide-react';
 import type { ScrutinyEvent } from '@/lib/scrutiny';
 
 interface BindingNodeData {
@@ -37,7 +38,7 @@ export const BindingNode = memo((props: { data: BindingNodeData }) => {
       <Handle type="target" position={Position.Left} style={{ background: '#2F8E1F' }} />
       <Handle type="source" position={Position.Right} style={{ background: '#2F8E1F' }} />
 
-      <div style={{ fontSize: '32px' }}>🔗</div>
+      <Link2 style={{ width: '32px', height: '32px', color: '#2F8E1F' }} />
 
       <div
         style={{

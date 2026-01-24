@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { RefreshCw, Check, AlertTriangle } from 'lucide-react';
 import type { ScrutinyEvent } from '@/lib/scrutiny';
 
 interface ReplyNodeData {
@@ -13,9 +14,9 @@ export const ReplyNode = memo((props: { data: ReplyNodeData }) => {
   const { replyType, highlighted } = data;
 
   const colors = {
-    update: { bg: '#E46C0A', icon: '🔄' },
-    confirmation: { bg: '#15803D', icon: '✓' },
-    contestation: { bg: '#DC2626', icon: '⚠' }
+    update: { bg: '#E46C0A', Icon: RefreshCw },
+    confirmation: { bg: '#15803D', Icon: Check },
+    contestation: { bg: '#DC2626', Icon: AlertTriangle }
   };
 
   const config = colors[replyType];
@@ -40,7 +41,7 @@ export const ReplyNode = memo((props: { data: ReplyNodeData }) => {
       }}
     >
       <Handle type="target" position={Position.Left} style={{ background: config.bg }} />
-      {config.icon}
+      <config.Icon className="w-5 h-5" />
     </div>
   );
 });

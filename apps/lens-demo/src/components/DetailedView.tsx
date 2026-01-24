@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Link2, Package, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import { GraphPanel } from './GraphPanel';
 import { RawEventDialog } from '@/components/RawEventDialog';
 import { getBindingRelationshipStyle, getLatestUpdate, isDemoScrutinyEvent, getLegacyScrutinyReason } from '@/lib/scrutiny';
 import type { ScrutinyEvent, CategorizedEvents, Relationships } from '@/lib/scrutiny';
-import { AlertTriangle } from 'lucide-react';
+import { RelationshipIcon } from '@/components/RelationshipIcon';
 
 interface DetailedViewProps {
   binding: ScrutinyEvent;
@@ -69,7 +69,7 @@ export function DetailedView({
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-              <span className="text-base">🔗</span>
+              <Link2 className="h-4 w-4" />
               <CardTitle>Binding Details</CardTitle>
             </div>
             <div className="flex items-center gap-2">
@@ -88,10 +88,8 @@ export function DetailedView({
                   className={`flex items-center gap-1 ${relationshipStyle.badgeClass}`}
                   title={relationshipStyle.description}
                 >
-                  {relationshipStyle.displayName === 'Vulnerability' && (
-                    <AlertTriangle className="h-3 w-3" />
-                  )}
-                  {relationshipStyle.icon} {relationshipStyle.displayName}
+                  <RelationshipIcon iconName={relationshipStyle.iconName} className="h-3 w-3" />
+                  {relationshipStyle.displayName}
                 </Badge>
               )}
               {legacyReason && (
@@ -148,7 +146,7 @@ export function DetailedView({
         {/* Products Column */}
         <div className="space-y-3">
           <h2 className="text-xs font-bold uppercase text-muted-foreground tracking-wide flex items-center gap-2">
-            <span className="text-base">📦</span>
+            <Package className="h-4 w-4" />
             <span>Products ({products.length})</span>
           </h2>
           {products.length === 0 ? (
@@ -179,7 +177,7 @@ export function DetailedView({
         {/* Metadata Column */}
         <div className="space-y-3">
           <h2 className="text-xs font-bold uppercase text-muted-foreground tracking-wide flex items-center gap-2">
-            <span className="text-base">📄</span>
+            <FileText className="h-4 w-4" />
             <span>Metadata ({metadata.length})</span>
           </h2>
           {metadata.length === 0 ? (

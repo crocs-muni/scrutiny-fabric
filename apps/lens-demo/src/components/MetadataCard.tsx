@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink, ChevronDown, ChevronRight, Shield, ShieldAlert, ShieldCheck, Loader2, AlertTriangle, Award } from 'lucide-react';
+import { Copy, ExternalLink, ChevronDown, ChevronRight, Shield, ShieldAlert, ShieldCheck, Loader2, AlertTriangle, Award, FileText, Check } from 'lucide-react';
 import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToShortNpub, pubkeyToNpub } from '@/lib/nip19';
 import {
@@ -347,13 +347,15 @@ export function MetadataCard({
 
       if (result.status === 'verified') {
         toast({
-          title: 'Hash Verified ✓',
+          title: 'Hash Verified',
+          icon: <Check className="h-4 w-4 text-green-500" />,
           description: 'The file hash matches the provided hash.',
           duration: 3000,
         });
       } else if (result.status === 'mismatch') {
         toast({
-          title: 'Hash Mismatch ⚠',
+          title: 'Hash Mismatch',
+          icon: <AlertTriangle className="h-4 w-4" />,
           description: 'The computed hash does not match the provided hash.',
           variant: 'destructive',
           duration: 5000,
@@ -437,7 +439,7 @@ export function MetadataCard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-            <span className="text-base">📄</span>
+            <FileText className="h-4 w-4" />
             <span>Metadata</span>
           </div>
           <div className="flex items-center gap-2">

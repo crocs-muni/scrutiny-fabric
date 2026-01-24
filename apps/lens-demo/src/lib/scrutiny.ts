@@ -177,61 +177,75 @@ export function isDemoScrutinyEvent(tags: string[][]): boolean {
 }
 
 /**
+ * Lucide icon names used for relationship types
+ */
+export type RelationshipIconName = 
+  | 'TestTube'
+  | 'AlertTriangle'
+  | 'Wrench'
+  | 'Award'
+  | 'BarChart3'
+  | 'Search'
+  | 'FileText'
+  | 'BookOpen'
+  | 'Link';
+
+/**
  * Relationship style configuration for binding events
  */
 export interface RelationshipStyle {
   displayName: string;
-  icon: string;
+  iconName: RelationshipIconName;
   badgeClass: string;
   description: string;
 }
 
-const RELATIONSHIP_STYLES: Record<string, RelationshipStyle> = {
+export const RELATIONSHIP_STYLES: Record<string, RelationshipStyle> = {
   test_of: {
     displayName: 'Test',
-    icon: '🧪',
+    iconName: 'TestTube',
     badgeClass: 'border-blue-400 text-blue-700 bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:bg-blue-950/30',
     description: 'Test result of product',
   },
   vulnerability_in: {
     displayName: 'Vulnerability',
-    icon: '⚠️',
+    iconName: 'AlertTriangle',
     badgeClass: 'border-red-400 text-red-700 bg-red-50 dark:border-red-700 dark:text-red-300 dark:bg-red-950/30',
     description: 'Vulnerability in product',
   },
   patch_for: {
     displayName: 'Patch',
-    icon: '🩹',
+    iconName: 'Wrench',
     badgeClass: 'border-orange-400 text-orange-700 bg-orange-50 dark:border-orange-700 dark:text-orange-300 dark:bg-orange-950/30',
     description: 'Patch/fix for product',
   },
   certification_of: {
     displayName: 'Certification',
-    icon: '🏆',
+    iconName: 'Award',
     badgeClass: 'border-green-400 text-green-700 bg-green-50 dark:border-green-700 dark:text-green-300 dark:bg-green-950/30',
     description: 'Certification report for product',
   },
   benchmark_of: {
     displayName: 'Benchmark',
-    icon: '📊',
+    iconName: 'BarChart3',
     badgeClass: 'border-cyan-400 text-cyan-700 bg-cyan-50 dark:border-cyan-700 dark:text-cyan-300 dark:bg-cyan-950/30',
     description: 'Performance benchmark of product',
   },
   audit_of: {
     displayName: 'Audit',
-    icon: '🔍',
+    iconName: 'Search',
     badgeClass: 'border-indigo-400 text-indigo-700 bg-indigo-50 dark:border-indigo-700 dark:text-indigo-300 dark:bg-indigo-950/30',
     description: 'Security audit of product',
   },
   analysis_of: {
     displayName: 'Analysis',
-    icon: '📝',
+    iconName: 'FileText',
     badgeClass: 'border-violet-400 text-violet-700 bg-violet-50 dark:border-violet-700 dark:text-violet-300 dark:bg-violet-950/30',
     description: 'Analysis/research about product',
   },
   documentation_of: {
     displayName: 'Documentation',
-    icon: '📚',
+    iconName: 'BookOpen',
     badgeClass: 'border-slate-400 text-slate-700 bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:bg-slate-900/30',
     description: 'Documentation for product',
   },
@@ -248,7 +262,7 @@ export function getBindingRelationshipStyle(event: NostrEvent): RelationshipStyl
   
   return RELATIONSHIP_STYLES[relationship] || {
     displayName: relationship.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    icon: '🔗',
+    iconName: 'Link',
     badgeClass: 'border-gray-400 text-gray-700 bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:bg-gray-900/30',
     description: `${relationship} relationship`,
   };

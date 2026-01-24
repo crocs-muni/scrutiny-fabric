@@ -5,6 +5,8 @@ import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToNpub, pubkeyToShortNpub } from '@/lib/nip19';
 import { ContentWithImages } from '@/components/ContentWithImages';
 import { getBindingRelationshipStyle, getLegacyScrutinyReason, isDemoScrutinyEvent, type ScrutinyEvent } from '@/lib/scrutiny';
+import { RelationshipIcon } from '@/components/RelationshipIcon';
+import { User, Package, FileText, Check, AlertTriangle } from 'lucide-react';
 
 interface BindingCardProps {
   binding: ScrutinyEvent;
@@ -50,7 +52,7 @@ export function BindingCard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">👤</span>
+            <User className="h-6 w-6 text-muted-foreground" />
             <div>
               <div className="font-semibold text-base text-foreground" title={fullNpub}>
                 {displayName}
@@ -71,10 +73,11 @@ export function BindingCard({
             {relationshipStyle && (
               <Badge
                 variant="outline"
-                className={`text-xs ${relationshipStyle.badgeClass}`}
+                className={`text-xs flex items-center gap-1 ${relationshipStyle.badgeClass}`}
                 title={relationshipStyle.description}
               >
-                {relationshipStyle.icon} {relationshipStyle.displayName}
+                <RelationshipIcon iconName={relationshipStyle.iconName} className="h-3 w-3" />
+                {relationshipStyle.displayName}
               </Badge>
             )}
             {legacyReason && (
@@ -105,12 +108,12 @@ export function BindingCard({
 
         <div className="flex items-center gap-4 pt-3 border-t text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span>📦</span>
+            <Package className="h-3.5 w-3.5" />
             <span>{productCount} {productCount === 1 ? 'Product' : 'Products'}</span>
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">
-            <span>📄</span>
+            <FileText className="h-3.5 w-3.5" />
             <span>{metadataCount} {metadataCount === 1 ? 'Metadata' : 'Metadata'}</span>
           </span>
           {(confirmationCount > 0 || contestationCount > 0) && (
@@ -118,13 +121,13 @@ export function BindingCard({
               <span>•</span>
               <div className="flex items-center gap-2">
                 {confirmationCount > 0 && (
-                  <Badge variant="outline" className="bg-confirmation/10 text-confirmation border-confirmation text-xs px-1.5 py-0">
-                    ✓ {confirmationCount}
+                  <Badge variant="outline" className="bg-confirmation/10 text-confirmation border-confirmation text-xs px-1.5 py-0 flex items-center gap-1">
+                    <Check className="h-3 w-3" /> {confirmationCount}
                   </Badge>
                 )}
                 {contestationCount > 0 && (
-                  <Badge variant="outline" className="bg-contestation/10 text-contestation border-contestation text-xs px-1.5 py-0">
-                    ⚠ {contestationCount}
+                  <Badge variant="outline" className="bg-contestation/10 text-contestation border-contestation text-xs px-1.5 py-0 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> {contestationCount}
                   </Badge>
                 )}
               </div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Copy, ChevronDown, ChevronRight, AlertCircle, ExternalLink, Box, Package } from 'lucide-react';
+import { Copy, ChevronDown, ChevronRight, AlertCircle, ExternalLink, Box, Package, Award, Check } from 'lucide-react';
 import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToShortNpub, pubkeyToNpub, eventIdToNote } from '@/lib/nip19';
 import {
@@ -283,7 +283,7 @@ export function ProductCard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase text-muted-foreground">
-            <span className="text-base">📦</span>
+            <Package className="h-4 w-4" />
             <span>Product</span>
           </div>
           <div className="flex items-center gap-2">
@@ -354,7 +354,7 @@ export function ProductCard({
           {/* Certification Banner */}
           {hasCert && (certType || eal || filteredSecurityLevels.length > 0) && (
             <div className="mt-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-md p-2.5 flex items-center gap-2 text-xs">
-              <span className="text-base">🏆</span>
+              <Award className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               <div className="flex items-center gap-2 flex-wrap">
                 {certType && <span className="font-semibold">{certType}</span>}
                 {eal && (
@@ -579,7 +579,7 @@ export function ProductCard({
                 <div className="bg-muted rounded-md p-2.5">
                   <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                     Canonical URL
-                    {urlHash && <span className="text-confirmation">✓ Verified</span>}
+                    {urlHash && <span className="text-confirmation flex items-center gap-1"><Check className="h-3 w-3" /> Verified</span>}
                   </div>
                   <a
                     href={primaryUrl}

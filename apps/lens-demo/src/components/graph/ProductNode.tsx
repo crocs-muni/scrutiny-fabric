@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { Badge } from '@/components/ui/badge';
+import { Link2, Package, Check } from 'lucide-react';
 import type { ScrutinyEvent } from '@/lib/scrutiny';
 
 interface ProductNodeData {
@@ -83,7 +84,13 @@ export const ProductNode = memo((props: { data: ProductNodeData }) => {
         style={{ background: '#10B981', top: '75%' }} 
       />
 
-      <div style={{ fontSize: '24px' }}>{isRelated ? '🔗' : '📦'}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {isRelated ? (
+          <Link2 style={{ width: '24px', height: '24px', color: '#8B5CF6' }} />
+        ) : (
+          <Package style={{ width: '24px', height: '24px', color: '#0070C0' }} />
+        )}
+      </div>
 
       <div
         style={{
@@ -115,9 +122,9 @@ export const ProductNode = memo((props: { data: ProductNodeData }) => {
       {confirmationCount && confirmationCount > 0 && (
         <Badge
           variant="outline"
-          className="bg-confirmation/10 text-confirmation border-confirmation text-xs px-1.5 py-0"
+          className="bg-confirmation/10 text-confirmation border-confirmation text-xs px-1.5 py-0 flex items-center gap-1"
         >
-          ✓ {confirmationCount}
+          <Check className="h-3 w-3" /> {confirmationCount}
         </Badge>
       )}
     </div>

@@ -505,8 +505,8 @@ const SignupDialog: React.FC<SignupDialogProps> = ({ isOpen, onClose, onComplete
                              </div>
                           </div>
                           {keySecured === 'downloaded' && (
-                             <div className='text-xs font-medium text-green-600'>
-                               ✓ Downloaded
+                             <div className='text-xs font-medium text-green-600 flex items-center gap-1'>
+                               <CheckCircle className='w-3 h-3' /> Downloaded
                              </div>
                            )}
                         </div>
