@@ -1,5 +1,6 @@
 import type { NostrEvent } from '@nostrify/nostrify';
 import { nip19 } from 'nostr-tools';
+import { normalizeLabel } from './labelRegistry';
 
 export type EventType = 'product' | 'metadata' | 'binding' | 'update' | 'contestation' | 'confirmation' | 'unknown';
 
@@ -22,13 +23,21 @@ export interface Relationships {
   productToBindings: Map<string, string[]>;
   metadataToBindings: Map<string, string[]>;
   contestationToAlternative: Map<string, string>;
+  /** Product-to-product: A contains B (composition/BOM) */
+  productContains: Map<string, string[]>;
+  /** Product-to-product: A depends on B (library/firmware dependency) */
+  productDependsOn: Map<string, string[]>;
+  /** Reverse lookup: which products contain this product */
+  productContainedBy: Map<string, string[]>;
+  /** Reverse lookup: which products depend on this product */
+  productDependedOnBy: Map<string, string[]>;
 }
 
 export function determineEventType(tags: string[][]): EventType {
   const tTags = tags.filter(t => t[0] === 't').map(t => t[1]);
 
   const includesAny = (base: string) => {
-    // (underscores)
+    // Modern format (underscores)
     const modern = [
       base,
       `#${base}`,
@@ -45,7 +54,15 @@ export function determineEventType(tags: string[][]): EventType {
       `#${legacyBase}-v0`
     ];
 
-    const allVariants = [...modern, ...legacy];
+    // Demo variants (with _demo suffix)
+    const demo = [
+      `${base}_demo`,
+      `#${base}_demo`,
+      `${base}_v01_demo`,
+      `#${base}_v01_demo`
+    ];
+
+    const allVariants = [...modern, ...legacy, ...demo];
     return allVariants.some(variant => tTags.includes(variant));
   };
 
@@ -129,6 +146,36 @@ export function isLegacyScrutinyEvent(tags: string[][]): boolean {
   return getLegacyScrutinyReason(tags) !== null;
 }
 
+/**
+ * Detects if an event uses demo tags (scrutiny_fabric_demo variant).
+ * Demo tags are the standard tags with "_demo" suffix:
+ * - scrutiny_fabric_demo
+ * - scrutiny_product_demo
+ * - scrutiny_binding_demo
+ * - scrutiny_metadata_demo
+ * - scrutiny_update_demo
+ * - scrutiny_contestation_demo
+ * - scrutiny_confirmation_demo
+ * - scrutiny_v02_demo
+ */
+export function isDemoScrutinyEvent(tags: string[][]): boolean {
+  const tTags = extractTTags(tags);
+  
+  // Check for any demo variant tags
+  const demoTags = [
+    'scrutiny_fabric_demo',
+    'scrutiny_product_demo',
+    'scrutiny_binding_demo',
+    'scrutiny_metadata_demo',
+    'scrutiny_update_demo',
+    'scrutiny_contestation_demo',
+    'scrutiny_confirmation_demo',
+    'scrutiny_v02_demo',
+  ];
+  
+  return demoTags.some(demoTag => hasAnyTag(tTags, tagVariants(demoTag)));
+}
+
 export function extractETags(event: NostrEvent, role: string | null = null): string[] {
   return event.tags
     .filter(t => t[0] === 'e' && (role === null || t[3] === role))
@@ -140,13 +187,110 @@ export function extractDTag(event: NostrEvent): string | null {
 }
 
 export function extractLabels(event: NostrEvent): Record<string, { value: string; type?: string }> {
-  return event.tags
-    .filter(t => t[0] === 'l')
-    .reduce((acc, t) => {
-      const [, name, value, type] = t;
-      acc[name] = { value, type };
-      return acc;
-    }, {} as Record<string, { value: string; type?: string }>);
+  const result: Record<string, { value: string; type?: string }> = {};
+
+  for (const tag of event.tags) {
+    if (tag[0] !== 'l') continue;
+
+    // NIP-32 tag structure: ["l", value, namespace, optional_type]
+    // The namespace identifies what kind of label it is (e.g., "scrutiny:product:vendor")
+    // The value is the actual content (e.g., "Infineon Technologies AG")
+    const [, value, namespace, type] = tag;
+    if (!value || !namespace) continue;
+
+    // Normalize the namespace (handles both legacy flat names and namespaced)
+    const normalizedName = normalizeLabel(namespace);
+
+    // Store under normalized name for backward compatibility
+    // Only store first occurrence (don't overwrite)
+    if (!result[normalizedName]) {
+      result[normalizedName] = { value, type };
+    }
+
+    // Also store under original namespace if different (for direct access)
+    if (namespace !== normalizedName && !result[namespace]) {
+      result[namespace] = { value, type };
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Extract all values for labels that can have multiple occurrences.
+ * Handles both legacy flat names and namespaced labels.
+ */
+export function extractMultiLabels(event: NostrEvent, labelName: string): string[] {
+  const normalizedTarget = normalizeLabel(labelName);
+  const values: string[] = [];
+
+  for (const tag of event.tags) {
+    if (tag[0] !== 'l') continue;
+
+    // NIP-32 tag structure: ["l", value, namespace]
+    const [, value, namespace] = tag;
+    if (!value || !namespace) continue;
+
+    const normalizedName = normalizeLabel(namespace);
+    if (normalizedName === normalizedTarget || namespace === labelName) {
+      values.push(value);
+    }
+  }
+
+  return values;
+}
+
+/**
+ * Extract product-to-product relationships from e-tags with relationship markers.
+ * Per SCRUTINY spec, relationships use e-tags with marker set to the relationship namespace.
+ */
+export interface ProductRelationships {
+  contains: string[];      // Event IDs of contained products
+  dependsOn: string[];     // Event IDs of dependencies
+  supersedes?: string;     // Event ID of product this supersedes
+  successor?: string;      // Event ID of successor product
+}
+
+export function extractProductRelationships(event: NostrEvent): ProductRelationships {
+  const result: ProductRelationships = {
+    contains: [],
+    dependsOn: [],
+  };
+
+  for (const tag of event.tags) {
+    if (tag[0] !== 'e') continue;
+
+    const [, eventId, , marker] = tag;
+    if (!eventId || !marker) continue;
+
+    // Check for relationship markers
+    if (marker === 'scrutiny:product:contains') {
+      result.contains.push(eventId);
+    } else if (marker === 'scrutiny:product:depends_on') {
+      result.dependsOn.push(eventId);
+    } else if (marker === 'scrutiny:product:supersedes') {
+      result.supersedes = eventId;
+    } else if (marker === 'scrutiny:product:successor') {
+      result.successor = eventId;
+    }
+  }
+
+  // Also check NIP-32 labels for relationships (fallback/additional source)
+  const labels = extractLabels(event);
+  if (labels['contains']?.value && !result.contains.includes(labels['contains'].value)) {
+    result.contains.push(labels['contains'].value);
+  }
+  if (labels['depends_on']?.value && !result.dependsOn.includes(labels['depends_on'].value)) {
+    result.dependsOn.push(labels['depends_on'].value);
+  }
+  if (labels['supersedes']?.value && !result.supersedes) {
+    result.supersedes = labels['supersedes'].value;
+  }
+  if (labels['successor']?.value && !result.successor) {
+    result.successor = labels['successor'].value;
+  }
+
+  return result;
 }
 
 export function extractURLAndHash(event: NostrEvent): { url?: string; hash?: string } {
@@ -314,7 +458,11 @@ export function mapRelationships(categorizedEvents: CategorizedEvents): Relation
     bindingToMetadata: new Map(),
     productToBindings: new Map(),
     metadataToBindings: new Map(),
-    contestationToAlternative: new Map()
+    contestationToAlternative: new Map(),
+    productContains: new Map(),
+    productDependsOn: new Map(),
+    productContainedBy: new Map(),
+    productDependedOnBy: new Map(),
   };
 
   console.log('🔗 Mapping relationships for', categorizedEvents.bindings.size, 'bindings...');
@@ -388,6 +536,41 @@ export function mapRelationships(categorizedEvents: CategorizedEvents): Relation
       const alternativeId = extractETags(contestation, 'mention')[0];
       if (alternativeId) {
         relationships.contestationToAlternative.set(contestation.id, alternativeId);
+      }
+    }
+  }
+
+  // Map product-to-product relationships (contains, depends_on)
+  console.log('🔗 Mapping product relationships for', categorizedEvents.products.size, 'products...');
+  for (const [id, product] of categorizedEvents.products) {
+    const productRels = extractProductRelationships(product);
+    const shortId = id.substring(0, 8);
+
+    // Contains relationships
+    if (productRels.contains.length > 0) {
+      relationships.productContains.set(id, productRels.contains);
+      console.log(`  📦 ${shortId} contains:`, productRels.contains.map(c => c.substring(0, 8)).join(', '));
+
+      // Reverse mapping: which products contain this one
+      for (const containedId of productRels.contains) {
+        if (!relationships.productContainedBy.has(containedId)) {
+          relationships.productContainedBy.set(containedId, []);
+        }
+        relationships.productContainedBy.get(containedId)!.push(id);
+      }
+    }
+
+    // Depends-on relationships
+    if (productRels.dependsOn.length > 0) {
+      relationships.productDependsOn.set(id, productRels.dependsOn);
+      console.log(`  📦 ${shortId} depends on:`, productRels.dependsOn.map(d => d.substring(0, 8)).join(', '));
+
+      // Reverse mapping: which products depend on this one
+      for (const depId of productRels.dependsOn) {
+        if (!relationships.productDependedOnBy.has(depId)) {
+          relationships.productDependedOnBy.set(depId, []);
+        }
+        relationships.productDependedOnBy.get(depId)!.push(id);
       }
     }
   }

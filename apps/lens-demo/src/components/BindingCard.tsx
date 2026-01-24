@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuthor } from '@/hooks/useAuthor';
 import { pubkeyToNpub, pubkeyToShortNpub } from '@/lib/nip19';
 import { ContentWithImages } from '@/components/ContentWithImages';
-import { getLegacyScrutinyReason, type ScrutinyEvent } from '@/lib/scrutiny';
+import { getLegacyScrutinyReason, isDemoScrutinyEvent, type ScrutinyEvent } from '@/lib/scrutiny';
 
 interface BindingCardProps {
   binding: ScrutinyEvent;
@@ -26,6 +26,7 @@ export function BindingCard({
   onClick,
 }: BindingCardProps) {
   const legacyReason = getLegacyScrutinyReason(binding.tags);
+  const isDemo = isDemoScrutinyEvent(binding.tags);
   const author = useAuthor(binding.pubkey);
   const fullNpub = pubkeyToNpub(binding.pubkey);
   const shortNpub = pubkeyToShortNpub(binding.pubkey);
@@ -57,6 +58,15 @@ export function BindingCard({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {isDemo && (
+              <Badge
+                variant="outline"
+                className="text-xs border-purple-300 text-purple-700 bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:bg-purple-950/30"
+                title="Demo event with _demo suffix tags"
+              >
+                Demo
+              </Badge>
+            )}
             {legacyReason && (
               <Badge
                 variant="outline"

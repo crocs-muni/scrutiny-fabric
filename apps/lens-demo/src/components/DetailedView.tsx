@@ -130,6 +130,7 @@ export function DetailedView({
                   updates={categorized.updates.get(product.id) || []}
                   confirmations={categorized.confirmations.get(product.id) || []}
                   contestations={categorized.contestations.get(product.id) || []}
+                  allProducts={categorized.products}
                 />
               ))}
             </div>

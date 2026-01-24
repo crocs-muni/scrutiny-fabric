@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EventId } from '@/components/EventId';
-import { extractDTag, extractLabels, getLegacyScrutinyReason } from '@/lib/scrutiny';
+import { extractDTag, extractLabels, extractMultiLabels, getLegacyScrutinyReason, isDemoScrutinyEvent } from '@/lib/scrutiny';
 import { getCountryFlag, validateCPE23 } from '@/lib/productUtils';
 import { ExternalLink } from 'lucide-react';
 import type { NostrEvent } from '@nostrify/nostrify';
@@ -50,6 +50,7 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
 
 export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetailsPanelProps) {
   const legacyReason = getLegacyScrutinyReason(event.tags);
+  const isDemo = isDemoScrutinyEvent(event.tags);
   const labels = extractLabels(event);
   const contentPreview = event.content.length > 160 ? `${event.content.slice(0, 160)}…` : event.content;
 
@@ -65,9 +66,7 @@ export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetails
   const scheme = labels['scheme']?.value;
 
   // Get all security_level entries (there can be multiple)
-  const securityLevels = event.tags
-    .filter(t => t[0] === 'l' && t[1] === 'security_level')
-    .map(t => t[2]);
+  const securityLevels = extractMultiLabels(event, 'security_level');
 
   const validFrom = labels['not_valid_before']?.value;
   const validTo = labels['not_valid_after']?.value;
@@ -116,6 +115,15 @@ export function EventDetailsPanel({ event, isProduct, isMetadata }: EventDetails
               )}
             </CardTitle>
             <div className="flex items-center gap-2">
+              {isDemo && (
+                <Badge
+                  variant="outline"
+                  className="text-xs border-purple-300 text-purple-700 bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:bg-purple-950/30"
+                  title="Demo event with _demo suffix tags"
+                >
+                  Demo
+                </Badge>
+              )}
               {legacyReason && (
                 <Badge
                   variant="outline"

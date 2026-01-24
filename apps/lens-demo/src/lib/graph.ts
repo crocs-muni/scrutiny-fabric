@@ -137,7 +137,7 @@ export function buildGraphData(
 
   // Recursively collect ALL related products (contains, depends_on, etc.)
   const allProductsMap = collectRelatedProductsRecursive(bindingProducts, categorized, 5);
-
+  
   // Convert to array, sorted by depth then by ID for consistent ordering
   const allProducts = Array.from(allProductsMap.entries())
     .sort((a, b) => a[1].depth - b[1].depth || a[0].localeCompare(b[0]))
