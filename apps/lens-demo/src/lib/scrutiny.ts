@@ -37,7 +37,7 @@ export function determineEventType(tags: string[][]): EventType {
   const tTags = tags.filter(t => t[0] === 't').map(t => t[1]);
 
   const includesAny = (base: string) => {
-    // (underscores)
+    // Modern format (underscores)
     const modern = [
       base,
       `#${base}`,
@@ -54,7 +54,15 @@ export function determineEventType(tags: string[][]): EventType {
       `#${legacyBase}-v0`
     ];
 
-    const allVariants = [...modern, ...legacy];
+    // Demo variants (with _demo suffix)
+    const demo = [
+      `${base}_demo`,
+      `#${base}_demo`,
+      `${base}_v01_demo`,
+      `#${base}_v01_demo`
+    ];
+
+    const allVariants = [...modern, ...legacy, ...demo];
     return allVariants.some(variant => tTags.includes(variant));
   };
 
@@ -136,6 +144,36 @@ export function getLegacyScrutinyReason(tags: string[][]): LegacyScrutinyReason 
 
 export function isLegacyScrutinyEvent(tags: string[][]): boolean {
   return getLegacyScrutinyReason(tags) !== null;
+}
+
+/**
+ * Detects if an event uses demo tags (scrutiny_fabric_demo variant).
+ * Demo tags are the standard tags with "_demo" suffix:
+ * - scrutiny_fabric_demo
+ * - scrutiny_product_demo
+ * - scrutiny_binding_demo
+ * - scrutiny_metadata_demo
+ * - scrutiny_update_demo
+ * - scrutiny_contestation_demo
+ * - scrutiny_confirmation_demo
+ * - scrutiny_v02_demo
+ */
+export function isDemoScrutinyEvent(tags: string[][]): boolean {
+  const tTags = extractTTags(tags);
+  
+  // Check for any demo variant tags
+  const demoTags = [
+    'scrutiny_fabric_demo',
+    'scrutiny_product_demo',
+    'scrutiny_binding_demo',
+    'scrutiny_metadata_demo',
+    'scrutiny_update_demo',
+    'scrutiny_contestation_demo',
+    'scrutiny_confirmation_demo',
+    'scrutiny_v02_demo',
+  ];
+  
+  return demoTags.some(demoTag => hasAnyTag(tTags, tagVariants(demoTag)));
 }
 
 export function extractETags(event: NostrEvent, role: string | null = null): string[] {

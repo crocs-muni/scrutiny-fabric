@@ -11,6 +11,7 @@ import {
   extractDTag,
   getDisplayEvent,
   getLegacyScrutinyReason,
+  isDemoScrutinyEvent,
   validatePURL,
   extractProductRelationships,
   type ScrutinyEvent,
@@ -70,6 +71,7 @@ export function ProductCard({
   const [relationshipsOpen, setRelationshipsOpen] = useState(true);
 
   const legacyReason = getLegacyScrutinyReason(product.tags);
+  const isDemo = isDemoScrutinyEvent(product.tags);
 
   const { display } = getDisplayEvent(product, update, showOriginal);
 
@@ -285,6 +287,15 @@ export function ProductCard({
             <span>Product</span>
           </div>
           <div className="flex items-center gap-2">
+            {isDemo && (
+              <Badge
+                variant="outline"
+                className="text-xs border-purple-300 text-purple-700 bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:bg-purple-950/30"
+                title="Demo event with _demo suffix tags"
+              >
+                Demo
+              </Badge>
+            )}
             {legacyReason && (
               <Badge
                 variant="outline"

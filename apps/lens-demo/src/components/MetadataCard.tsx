@@ -10,6 +10,7 @@ import {
   extractLabels,
   extractMultiLabels,
   getLegacyScrutinyReason,
+  isDemoScrutinyEvent,
   type ScrutinyEvent,
   getDisplayEvent,
 } from '@/lib/scrutiny';
@@ -71,6 +72,7 @@ export function MetadataCard({
   const [verificationError, setVerificationError] = useState<string | undefined>();
 
   const legacyReason = getLegacyScrutinyReason(metadata.tags);
+  const isDemo = isDemoScrutinyEvent(metadata.tags);
 
   const { display } = getDisplayEvent(metadata, update, showOriginal);
 
@@ -459,6 +461,15 @@ export function MetadataCard({
               >
                 <Award className="h-3 w-3 mr-1" />
                 Certification
+              </Badge>
+            )}
+            {isDemo && (
+              <Badge
+                variant="outline"
+                className="text-xs border-purple-300 text-purple-700 bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:bg-purple-950/30"
+                title="Demo event with _demo suffix tags"
+              >
+                Demo
               </Badge>
             )}
             {legacyReason && (
