@@ -42,46 +42,46 @@ export const ProductNode = memo((props: { data: ProductNodeData }) => {
       }}
     >
       {/* Main target handle for binding edges */}
-      <Handle 
-        type="target" 
-        position={isRelated ? Position.Right : Position.Left} 
+      <Handle
+        type="target"
+        position={isRelated ? Position.Right : Position.Left}
         id="binding-target"
-        style={{ background: isRelated ? '#8B5CF6' : '#0070C0', top: '50%' }} 
+        style={{ background: isRelated ? '#8B5CF6' : '#0070C0', top: '50%' }}
       />
       {/* Main source handle for binding edges */}
-      <Handle 
-        type="source" 
-        position={isRelated ? Position.Left : Position.Right} 
+      <Handle
+        type="source"
+        position={isRelated ? Position.Left : Position.Right}
         id="binding-source"
-        style={{ background: isRelated ? '#8B5CF6' : '#0070C0', top: '50%' }} 
+        style={{ background: isRelated ? '#8B5CF6' : '#0070C0', top: '50%' }}
       />
-      
+
       {/* Relationship handles - top for contains/depends_on */}
-      <Handle 
-        type="target" 
-        position={isRelated ? Position.Right : Position.Left} 
+      <Handle
+        type="target"
+        position={isRelated ? Position.Right : Position.Left}
         id="rel-target-top"
-        style={{ background: '#A855F7', top: '25%' }} 
+        style={{ background: '#A855F7', top: '25%' }}
       />
-      <Handle 
-        type="source" 
-        position={isRelated ? Position.Left : Position.Right} 
+      <Handle
+        type="source"
+        position={isRelated ? Position.Left : Position.Right}
         id="rel-source-top"
-        style={{ background: '#A855F7', top: '25%' }} 
+        style={{ background: '#A855F7', top: '25%' }}
       />
-      
+
       {/* Relationship handles - bottom for supersedes/successor */}
-      <Handle 
-        type="target" 
-        position={isRelated ? Position.Right : Position.Left} 
+      <Handle
+        type="target"
+        position={isRelated ? Position.Right : Position.Left}
         id="rel-target-bottom"
-        style={{ background: '#10B981', top: '75%' }} 
+        style={{ background: '#10B981', top: '75%' }}
       />
-      <Handle 
-        type="source" 
-        position={isRelated ? Position.Left : Position.Right} 
+      <Handle
+        type="source"
+        position={isRelated ? Position.Left : Position.Right}
         id="rel-source-bottom"
-        style={{ background: '#10B981', top: '75%' }} 
+        style={{ background: '#10B981', top: '75%' }}
       />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

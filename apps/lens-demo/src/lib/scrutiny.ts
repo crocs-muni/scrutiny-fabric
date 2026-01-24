@@ -179,7 +179,7 @@ export function isDemoScrutinyEvent(tags: string[][]): boolean {
 /**
  * Lucide icon names used for relationship types
  */
-export type RelationshipIconName = 
+export type RelationshipIconName =
   | 'TestTube'
   | 'AlertTriangle'
   | 'Wrench'
@@ -257,9 +257,9 @@ export const RELATIONSHIP_STYLES: Record<string, RelationshipStyle> = {
 export function getBindingRelationshipStyle(event: NostrEvent): RelationshipStyle | null {
   const labels = extractLabels(event);
   const relationship = labels['scrutiny:binding:relationship']?.value || labels['binding_relationship']?.value;
-  
+
   if (!relationship) return null;
-  
+
   return RELATIONSHIP_STYLES[relationship] || {
     displayName: relationship.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
     iconName: 'Link',

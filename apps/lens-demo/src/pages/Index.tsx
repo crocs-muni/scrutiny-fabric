@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSeoMeta } from '@unhead/react';
 import { Loader2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { FilterBar } from '@/components/FilterBar';
 import { RelaySelector } from '@/components/RelaySelector';
 import { Card, CardContent } from '@/components/ui/card';
 import { applyFilters, type EventFilters } from '@/lib/scrutiny';
+import { useAppContext } from '@/hooks/useAppContext';
 
 const Index = () => {
   useSeoMeta({
@@ -18,13 +19,65 @@ const Index = () => {
 
   const { data, isLoading, error } = useScrutinyEvents();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { config, updateConfig } = useAppContext();
   const [filters, setFilters] = useState<EventFilters>({
     dateRange: { start: null, end: null },
     authors: [],
     tTag: null,
   });
+  const hasInitializedUrlSync = useRef(false);
 
   const selectedBindingId = searchParams.get('binding');
+
+  const normalizeRelayUrl = (url: string): string | null => {
+    const trimmed = url.trim();
+    if (!trimmed) return null;
+    const normalized = trimmed.includes('://') ? trimmed : `wss://${trimmed}`;
+    try {
+      new URL(normalized);
+      return normalized;
+    } catch {
+      return null;
+    }
+  };
+
+  const parseFiltersFromParams = (params: URLSearchParams): EventFilters => {
+    const startParam = params.get('start');
+    const endParam = params.get('end');
+    const start = startParam ? Number.parseInt(startParam, 10) : null;
+    const end = endParam ? Number.parseInt(endParam, 10) : null;
+    const authors = params.getAll('author').filter(Boolean);
+    const tTagParam = params.get('t');
+
+    return {
+      dateRange: {
+        start: Number.isFinite(start) ? start : null,
+        end: Number.isFinite(end) ? end : null,
+      },
+      authors,
+      tTag: tTagParam && tTagParam.trim().length > 0 ? tTagParam : null,
+    };
+  };
+
+  const applyFiltersToParams = (params: URLSearchParams, nextFilters: EventFilters) => {
+    params.delete('start');
+    params.delete('end');
+    params.delete('author');
+    params.delete('t');
+
+    if (nextFilters.dateRange.start) {
+      params.set('start', String(nextFilters.dateRange.start));
+    }
+    if (nextFilters.dateRange.end) {
+      params.set('end', String(nextFilters.dateRange.end));
+    }
+    for (const author of nextFilters.authors) {
+      params.append('author', author);
+    }
+    if (nextFilters.tTag) {
+      params.set('t', nextFilters.tTag);
+    }
+  };
 
   const clearFilters = () => {
     setFilters({
@@ -33,6 +86,44 @@ const Index = () => {
       tTag: null,
     });
   };
+
+  // Initial load: read filters and relay from URL (runs once)
+  useEffect(() => {
+    if (hasInitializedUrlSync.current) return;
+
+    const parsedFilters = parseFiltersFromParams(searchParams);
+    setFilters(parsedFilters);
+
+    const relayParam = searchParams.get('relay');
+    if (relayParam) {
+      const normalizedRelay = normalizeRelayUrl(relayParam);
+      if (normalizedRelay && normalizedRelay !== config.relayUrl) {
+        updateConfig((current) => ({ ...current, relayUrl: normalizedRelay }));
+      }
+    }
+
+    hasInitializedUrlSync.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync state changes back to URL (after initial load)
+  useEffect(() => {
+    if (!hasInitializedUrlSync.current) return;
+
+    const next = new URLSearchParams(searchParams);
+    applyFiltersToParams(next, filters);
+    if (config.relayUrl) {
+      next.set('relay', config.relayUrl);
+    } else {
+      next.delete('relay');
+    }
+
+    const current = searchParams.toString();
+    const updated = next.toString();
+    if (current !== updated) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [filters, config.relayUrl, searchParams, setSearchParams]);
 
   const bindings = useMemo(() => {
     if (!data) return [];

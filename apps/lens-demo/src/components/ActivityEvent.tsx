@@ -23,7 +23,7 @@ interface ActivityEventProps {
 
 export function ActivityEvent({ event, type, alternativeMetadata }: ActivityEventProps) {
   const [showAltDetails, setShowAltDetails] = useState(false);
-  
+
   const author = useAuthor(event.pubkey);
   const fullNpub = pubkeyToNpub(event.pubkey);
   const shortNpub = pubkeyToShortNpub(event.pubkey);
@@ -36,7 +36,7 @@ export function ActivityEvent({ event, type, alternativeMetadata }: ActivityEven
   const isConfirmation = type === 'confirmation';
   const isContestation = type === 'contestation';
   const isUpdate = type === 'update';
-  
+
   const bgColor = isConfirmation
     ? 'bg-confirmation/10 border-confirmation'
     : isContestation
@@ -44,23 +44,23 @@ export function ActivityEvent({ event, type, alternativeMetadata }: ActivityEven
     : isUpdate
     ? 'bg-update/10 border-update'
     : 'bg-muted border-border';
-    
-  const textColor = isConfirmation 
-    ? 'text-confirmation' 
-    : isContestation 
+
+  const textColor = isConfirmation
+    ? 'text-confirmation'
+    : isContestation
     ? 'text-contestation'
     : isUpdate
     ? 'text-update'
     : 'text-foreground';
-    
-  const IconComponent = isConfirmation 
-    ? Check 
-    : isContestation 
-    ? AlertTriangle 
+
+  const IconComponent = isConfirmation
+    ? Check
+    : isContestation
+    ? AlertTriangle
     : isUpdate
     ? RefreshCw
     : FileText;
-    
+
   const label = isConfirmation
     ? 'Confirmation'
     : isContestation
