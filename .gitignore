@@ -326,3 +326,22 @@ out/
 
 # Misc
 .DS_Store
+
+# AI Agent Instructions (machine-generated, not for version control)
+AGENTS.md
+**/AGENTS.md
+
+# GitHub Copilot (VS Code + CLI)
+.copilot/
+.copilot-cache/
+copilot.log
+.copilot/lsp-config.json
+.github/copilot/
+
+# Claude Code local overrides and caches
+.claude/settings.local.json
+.claude/*.local.*
+CLAUDE.local.md
+.claude/settings.*.bak
+.claude/agents/*.local.*
+
