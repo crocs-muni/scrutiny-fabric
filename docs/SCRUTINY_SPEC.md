@@ -32,7 +32,7 @@ All SCRUTINY Fabric events MUST include these tag-based protocol identifiers:
 
 ```json
 ["t", "scrutiny_fabric"],
-["t", "srutiny_<type>"]
+["t", "scrutiny_<type>"]
 ```
 
 Where `<type>` is one of: `product`, `metadata`, `binding`, `update`.
