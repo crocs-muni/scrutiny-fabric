@@ -35,7 +35,7 @@ All SCRUTINY Fabric events MUST include these tag-based protocol identifiers:
 ["t", "scrutiny_<type>"]
 ```
 
-Where `<type>` is one of: `product`, `metadata`, `binding`, `update`.
+Where `<type>` is one of: `product`, `metadata`, `binding`, `update`, `retract`.
 
 All SCRUTINY Fabric events SHOULD include a version marker:
 
@@ -49,12 +49,13 @@ All SCRUTINY Fabric events SHOULD include a version marker:
 
 ## 3. Event Types
 
-SCRUTINY Fabric defines four event types, all using `kind: 1`:
+SCRUTINY Fabric defines five event types, all using `kind: 1`:
 
 - **ProductEvent:** Anchor node representing a specific product/model/version
 - **MetadataEvent:** Security-relevant information node (tests, vulnerabilities, certifications, audits, reviews)
 - **BindingEvent:** Typed edge connecting two events (Product↔Metadata, Product↔Product, Metadata↔Metadata)
-- **UpdateEvent:** Auditable correction/retraction of an existing SCRUTINY event
+- **UpdateEvent:** Auditable modification of an existing SCRUTINY event
+- **RetractionEvent:** Auditable withdrawal of an existing SCRUTINY event
 
 ---
 
@@ -148,7 +149,7 @@ To express multiple values for a label namespace, include multiple `l` tags with
 
 **Purpose:** Security-relevant information node. Can describe vulnerabilities, test results, certifications, audits, research papers, reviews, replications, or disputes.
 
-MetadataEvents MAY reference external artifacts (files, reports, datasets) using artifact reference tags (Section 9).
+MetadataEvents MAY reference external artifacts (files, reports, datasets) using artifact reference tags (Section 10).
 
 ### 5.1 Required Fields
 
@@ -203,7 +204,7 @@ MetadataEvents SHOULD include `i` tags for canonical identifiers:
 
 ### 5.4 Artifact References
 
-See Section 9 for complete artifact reference rules. Brief summary:
+See Section 10 for complete artifact reference rules. Brief summary:
 
 If the metadata references an external file (report, dataset, trace), include:
 
@@ -318,55 +319,37 @@ Interpretation: "Products abc123 and xyz789 are the same product"
 
 **The endpoints and relationship type of a BindingEvent are immutable.**
 
-Authoritative UpdateEvents (Section 8) MAY add or modify context labels (scope, limitations, validity window), but MUST NOT:
+Authoritative UpdateEvents (Section 7) MAY add or modify context labels (scope, limitations, validity window), but MUST NOT:
 - Change endpoint event IDs
 - Add, remove, or change the `scrutiny:binding:relationship` label
 
 If a binding is incorrect, the author MUST:
-1. Publish an authoritative UpdateEvent with `change_type = retraction`
+1. Publish an authoritative RetractionEvent for the incorrect BindingEvent
 2. Optionally publish a new corrected BindingEvent
 
 ---
 
 ## 7. UpdateEvent
 
-**Purpose:** Append-only correction, clarification, or retraction of an existing SCRUTINY event. Preserves audit history.
+**Purpose:** Append-only modification of an existing SCRUTINY event. Preserves audit history while allowing the original author to correct or enhance their event.
 
 ### 7.1 Required Fields
 
 - **kind:** `1`
-- **content:** Human-readable description of the update and its reason. SHOULD explain what changed and why.
+- **content:** Human-readable commit message explaining what changed and why. This message is displayed in generic Nostr clients when the update appears as a reply.
 - **tags:**
   - `["t", "scrutiny_fabric"]` (REQUIRED)
   - `["t", "scrutiny_update"]` (REQUIRED)
   - `["t", "scrutiny_v03"]` (RECOMMENDED)
   - `["e", "<target_event_id>", "", "root"]` (REQUIRED)
-  - `["e", "<target_event_id>", "", "reply"]` (REQUIRED)
 
-**Note:** Both `root` and `reply` markers MUST point to the same target event ID (NIP-10 convention for direct replies).
+### 7.2 Content Field Semantics
 
-### 7.2 Recommended Labels
+The `content` field is a **commit message** explaining what changed and why. It is shown as reply text and does not replace the target event's content. To replace content, use the `scrutiny:update:content` label (Section 7.5).
 
-```json
-["L", "scrutiny:update:change_type"],
-["l", "<type>", "scrutiny:update:change_type"]
-```
+**Example:** "Fixed typo in vendor name: 'Vendr' → 'Vendor'"
 
-**Change types:**
-- `correction` — corrects an error in the target event
-- `addition` — adds new information to the target event
-- `clarification` — clarifies ambiguous information
-- `deprecation` — marks the target event as deprecated (but not wrong)
-- `retraction` — soft-deletes the target event (author admits error/withdrawal)
-
-Optional reason field:
-
-```json
-["L", "scrutiny:update:reason"],
-["l", "<reason_text>", "scrutiny:update:reason"]
-```
-
-### 7.3 Authoritative vs. Non-Authoritative Updates
+### 7.3 Authoritative Updates
 
 **An UpdateEvent is authoritative if and only if:**
 
@@ -374,66 +357,180 @@ Optional reason field:
 UpdateEvent.pubkey == TargetEvent.pubkey
 ```
 
-**Authoritative updates** modify the effective view of the target event (Section 7.5).
+**Authoritative updates** are merged into the effective view of the target event (Section 7.6).
 
-**Non-authoritative updates** are treated as annotations/commentary; clients MAY display them but MUST NOT apply them to the effective view by default.
+**Non-authoritative updates** are ignored during effective view computation.
 
-### 7.4 Update Ordering (for Effective View Computation)
+### 7.4 Update Ordering
 
-When computing the effective view of an event, clients SHOULD:
+Apply authoritative updates in deterministic order: sort by `created_at` ascending; tie-break by lexicographic `id` ascending.
 
-1. Collect all authoritative UpdateEvents targeting the event
-2. Sort by:
-   - `created_at` ascending
-   - `id` ascending (tie-breaker for same-second updates)
+### 7.5 Updateable Fields
 
-### 7.5 Effective View Merge Semantics
+UpdateEvents can modify these fields of the effective view:
 
-Clients compute the **effective view** of an event by applying authoritative updates in order (Section 7.4) using these deterministic merge rules:
+#### A. NIP-32 Labels (L/l tags)
 
-**A) NIP-32 labels (L/l tags): namespace replacement**
-
-- For each label namespace `N` (e.g., `scrutiny:product:vendor`), if an authoritative UpdateEvent contains one or more `["l", value, N]` tags, the client MUST replace the entire prior value-set for namespace `N` with the new set.
-- If an UpdateEvent does not mention namespace `N`, the effective view retains the previous values for `N`.
-
-**B) Non-NIP-32 tags (e.g., r, x, m, size, i): tag-name replacement**
-
-- If an authoritative UpdateEvent contains one or more tags with tag name `T` (e.g., one or more `["r", ...]` tags), the client MUST replace all prior tags named `T` with the new set.
-- If an UpdateEvent contains no tags named `T`, the effective view retains the prior tags named `T`.
-
-**C) Protocol identification tags (t tags) are immutable**
-
-Clients MUST NOT apply UpdateEvent `t` tags to the target's effective view. The target event's `t` tags (including `scrutiny_fabric`, `scrutiny_v03`, and `scrutiny_<type>`) remain unchanged.
-
-**D) content field replacement**
-
-If an UpdateEvent's `content` is non-empty and substantive (not just hashtags), clients MAY prepend/append it to the original content (implementation-defined), but SHOULD NOT fully replace the original content to preserve audit history.
-
-### 7.6 Retraction Semantics
-
-If an authoritative UpdateEvent includes:
+Labels are updated via **namespace replacement**. Include any labels you want to change:
 
 ```json
-["l", "retraction", "scrutiny:update:change_type"]
+["L", "scrutiny:product:vendor"],
+["l", "NXP Semiconductors", "scrutiny:product:vendor"]
 ```
 
-Clients SHOULD:
-- Mark the target event as **RETRACTED**
-- Hide the target event in normal views by default
-- Preserve the target event in audit/history views
-- Display a retraction notice if users explicitly navigate to the event
+**Merge rule:** For each label namespace present in the UpdateEvent, replace all values in the effective view with the UpdateEvent's values for that namespace. Label namespaces NOT present in the UpdateEvent are preserved unchanged.
 
-**Rationale:** Soft deletion preserves transparency and audit trails.
+**Example — Updating ECC curves:**
 
-### 7.7 NIP-09 Deletion Events (Optional Interoperability)
+UpdateEvent contains:
+```json
+["L", "scrutiny:product:ecc_curves"],
+["l", "P-256", "scrutiny:product:ecc_curves"],
+["l", "P-384", "scrutiny:product:ecc_curves"],
+["l", "Curve25519", "scrutiny:product:ecc_curves"]
+```
 
-SCRUTINY Fabric does not require NIP-09 (`kind: 5`) deletion events for protocol correctness. Clients MAY optionally consume NIP-09 deletions as an additional hint, but the canonical removal mechanism is `UpdateEvent(change_type=retraction)`.
+Result: The effective view's `scrutiny:product:ecc_curves` namespace is replaced with these three values. Other label namespaces are preserved.
+
+#### B. Content Field
+
+To replace the effective view's content, include a content update label:
+
+```json
+["L", "scrutiny:update:content"],
+["l", "<new_content>", "scrutiny:update:content"]
+```
+
+**Merge rule:** If the UpdateEvent contains a `scrutiny:update:content` label, replace the effective view's content with the label's value. If no such label is present, preserve the effective view's current content.
+
+**Example:**
+```json
+["L", "scrutiny:update:content"],
+["l", "NXP J3A080 v3 (EOL) — Dual-interface smartcard, formerly EAL4+ certified", "scrutiny:update:content"]
+```
+
+#### C. Non-Label Tags (r, x, m, size, i)
+
+Artifact reference tags and canonical identifier tags are updated via **tag-type replacement**:
+
+```json
+["r", "https://new-mirror.example.com/report.pdf"],
+["x", "abc123..."],
+["m", "application/pdf"]
+```
+
+**Merge rule:** For each tag type (e.g., `r`, `x`, `m`, `size`, `i`) present in the UpdateEvent, replace all tags of that type in the effective view with the UpdateEvent's tags of that type. Tag types NOT present in the UpdateEvent are preserved unchanged.
+
+### 7.6 Immutable Fields
+
+The following fields are **immutable** and cannot be modified by UpdateEvents:
+
+- Protocol identification tags (`t` tags including `scrutiny_fabric`, `scrutiny_v03`, `scrutiny_product`, etc.)
+- Event kind
+- Event pubkey
+- Event ID
+- `created_at` timestamp
+
+If any of these need to change, the author must retract the event and publish a new one.
+
+### 7.7 Merge Rules Summary
+
+To compute the effective view (authoritative updates only):
+
+- Start with the target event's content and tags.
+- For each update in order:
+  - Replace any label namespaces present in the update (Section 7.5.A).
+  - Replace content only if `scrutiny:update:content` is present (Section 7.5.B).
+  - Replace tag types present (`r`, `x`, `m`, `size`, `i`) (Section 7.5.C).
+- Immutable fields never change (Section 7.6).
+
+### 7.8 Example
+
+```json
+{
+  "kind": 1,
+  "pubkey": "author_pubkey_hex...",
+  "created_at": 1708590000,
+  "content": "Product status changed to EOL as of 2024-01-15.",
+  "tags": [
+    ["t", "scrutiny_fabric"],
+    ["t", "scrutiny_update"],
+    ["t", "scrutiny_v03"],
+    ["e", "abc123...", "", "root"],
+    ["L", "scrutiny:product:status"],
+    ["l", "eol", "scrutiny:product:status"],
+    ["L", "scrutiny:product:eol_date"],
+    ["l", "2024-01-15", "scrutiny:product:eol_date"],
+    ["L", "scrutiny:update:content"],
+    ["l", "NXP J3A080 v3 (EOL) — Dual-interface smartcard. End of life: 2024-01-15.", "scrutiny:update:content"]
+  ],
+  "sig": "signature_hex..."
+}
+```
 
 ---
 
-## 8. Field Encoding Rules
+## 8. RetractionEvent
 
-### 8.1 NIP-32 Self-Labeling for Categorical Fields
+**Purpose:** Append-only withdrawal of an existing SCRUTINY event. Marks an event as retracted while preserving it in the audit trail.
+
+### 8.1 Required Fields
+
+- **kind:** `1`
+- **content:** Human-readable explanation of why the event is being retracted. This explanation is critical for transparency.
+- **tags:**
+  - `["t", "scrutiny_fabric"]` (REQUIRED)
+  - `["t", "scrutiny_retract"]` (REQUIRED)
+  - `["t", "scrutiny_v03"]` (RECOMMENDED)
+  - `["e", "<target_event_id>", "", "root"]` (REQUIRED)
+
+### 8.2 Authoritative Retraction
+
+**A RetractionEvent is authoritative if and only if:**
+
+```
+RetractionEvent.pubkey == TargetEvent.pubkey
+```
+
+Only the original author can retract their event.
+
+### 8.3 Retraction Semantics
+
+When an authoritative RetractionEvent targets an event, clients SHOULD:
+
+1. **Mark the target event as RETRACTED**
+2. **Hide the target event in normal views by default**
+3. **Preserve the target event in audit/history views**
+4. **Display the retraction explanation** if users explicitly navigate to the retracted event
+
+### 8.4 Retraction is Irreversible
+
+Once an event is retracted, it cannot be "un-retracted." If an author retracts in error, they should publish a new event with the correct information.
+
+### 8.5 Example
+
+```json
+{
+  "kind": 1,
+  "pubkey": "researcher_pubkey_hex...",
+  "created_at": 1708620000,
+  "content": "I am retracting this vulnerability report. After further analysis and peer review, I was unable to replicate the timing side-channel attack under realistic operating conditions. The original finding was based on a measurement artifact in my test setup. I apologize for any confusion caused.",
+  "tags": [
+    ["t", "scrutiny_fabric"],
+    ["t", "scrutiny_retract"],
+    ["t", "scrutiny_v03"],
+    ["e", "def456...", "", "root"]
+  ],
+  "sig": "signature_hex..."
+}
+```
+
+
+---
+
+## 9. Field Encoding Rules
+
+### 9.1 NIP-32 Self-Labeling for Categorical Fields
 
 Use NIP-32 labels (`L`/`l` tags) for categorical/classification-like fields:
 
@@ -463,7 +560,7 @@ Use NIP-32 labels (`L`/`l` tags) for categorical/classification-like fields:
 
 **Multiple values:** Include multiple `["l", ...]` tags with the same namespace.
 
-### 8.2 Canonical Identifiers (i tags)
+### 9.2 Canonical Identifiers (i tags)
 
 Use `i` tags for external canonical identifiers on **ProductEvent** and **MetadataEvent** only:
 
@@ -485,11 +582,11 @@ Use `i` tags for external canonical identifiers on **ProductEvent** and **Metada
 
 ---
 
-## 9. Artifact References & Verification
+## 10. Artifact References & Verification
 
 MetadataEvents often reference external artifacts (reports, datasets, power traces, test results).
 
-### 9.1 Baseline Artifact Reference
+### 10.1 Baseline Artifact Reference
 
 To reference an external artifact, include these tags in a MetadataEvent:
 
@@ -519,7 +616,7 @@ To reference an external artifact, include these tags in a MetadataEvent:
 }
 ```
 
-### 9.2 Hash Verification Rule (Client Requirement)
+### 10.2 Hash Verification Rule (Client Requirement)
 
 **If both `r` and `x` tags are present, clients MUST:**
 
@@ -530,7 +627,7 @@ To reference an external artifact, include these tags in a MetadataEvent:
 
 **Clients MAY display unverified artifacts (hash mismatch or missing `x`), but MUST clearly label them as "UNVERIFIED" or "HASH MISMATCH".**
 
-### 9.3 Multiple URLs (Mirroring/Fallback)
+### 10.3 Multiple URLs (Mirroring/Fallback)
 
 If an artifact is mirrored at multiple locations, include multiple `r` tags:
 
@@ -542,7 +639,7 @@ If an artifact is mirrored at multiple locations, include multiple `r` tags:
 
 The same `x` hash applies to all mirrors. Clients SHOULD try URLs in order until verification succeeds.
 
-### 9.4 Blossom Protocol Support
+### 10.4 Blossom Protocol Support
 
 **Blossom** is a protocol for storing blobs on media servers with hash-based addressing.
 
@@ -557,7 +654,7 @@ SCRUTINY Fabric supports Blossom URLs in `r` tags:
 
 **Blossom relay discovery:** Clients MAY discover Blossom servers via NIP-34 or other mechanisms (out of scope for this spec).
 
-### 9.5 Large Files
+### 10.5 Large Files
 
 For very large artifacts (>100MB), publishers SHOULD:
 - Use Blossom or dedicated artifact hosting
@@ -566,11 +663,11 @@ For very large artifacts (>100MB), publishers SHOULD:
 
 ---
 
-## 10. Trust & Admission Semantics
+## 11. Trust & Admission Semantics
 
 SCRUTINY Fabric uses a **whitelist-based trust model** where users define which pubkeys they trust, and nodes are "admitted" into their view based on trusted references.
 
-### 10.1 User Trust Configuration
+### 11.1 User Trust Configuration
 
 Each user maintains:
 - **Whitelist:** Set of trusted pubkeys (follow list)
@@ -579,7 +676,7 @@ Each user maintains:
 Trust depth 1: Only events published by whitelisted pubkeys  
 Trust depth 2: Events published by whitelisted pubkeys + events published by their follows
 
-### 10.2 Admission Rule (Direction A: Trust the Edges)
+### 11.2 Admission Rule (Direction A: Trust the Edges)
 
 **A node N is "admitted" into a user's view if:**
 
@@ -590,15 +687,15 @@ Trust depth 2: Events published by whitelisted pubkeys + events published by the
 
 **Rationale:** Many valuable nodes (products, metadata) exist but are not connected. Trusted curators publish BindingEvents that vouch for nodes, even if the node authors themselves are unknown.
 
-### 10.3 Ranking & Scoring
+### 11.3 Ranking & Scoring
 
 Clients MAY rank admitted nodes by:
 - **Trust score:** Number of distinct trusted pubkeys that reference the node
-- **PoW difficulty:** Higher difficulty = higher rank (optional, see Section 11)
+- **PoW difficulty:** Higher difficulty = higher rank (optional, see Section 14)
 - **Recency:** Newer events ranked higher
 - **User reactions:** Zaps (NIP-57), reactions (NIP-25) from trusted pubkeys
 
-### 10.3 Repost as Admission Edge (Optional)
+### 11.4 Repost as Admission Edge (Optional)
 
 Clients MAY treat Nostr reposts (`kind: 6` or `kind: 16`) by trusted pubkeys as admission edges:
 
@@ -606,7 +703,7 @@ Clients MAY treat Nostr reposts (`kind: 6` or `kind: 16`) by trusted pubkeys as 
 
 This is optional; conservative clients may require explicit BindingEvents.
 
-### 10.5 Filtering & Queries
+### 11.5 Filtering & Queries
 
 Users can further filter admitted nodes by:
 - Product vendor/category
@@ -616,9 +713,9 @@ Users can further filter admitted nodes by:
 
 ---
 
-## 11. Discovery & Graph Traversal
+## 12. Discovery & Graph Traversal
 
-### 11.1 Node-First Traversal Algorithm
+### 12.1 Node-First Traversal Algorithm
 
 **Starting from a ProductEvent:**
 
@@ -631,7 +728,7 @@ Users can further filter admitted nodes by:
 4. **Admit referenced nodes:** Extract all `e` tags from trusted BindingEvents; admit those nodes
 5. **Recurse:** For each admitted node, repeat steps 2-4 (bounded by trust depth or hop limit)
 
-### 11.2 Relay Query Patterns
+### 12.2 Relay Query Patterns
 
 **Find ProductEvents by CPE:**
 
@@ -673,7 +770,7 @@ Users can further filter admitted nodes by:
 }
 ```
 
-### 11.3 NIP-50 Full-Text Search
+### 12.3 NIP-50 Full-Text Search
 
 SCRUTINY-aware relays SHOULD implement NIP-50 search over `content` AND tags.
 
@@ -689,7 +786,7 @@ SCRUTINY-aware relays SHOULD implement NIP-50 search over `content` AND tags.
 
 Relay support for NIP-50 varies; clients should gracefully degrade to tag-only queries if unavailable.
 
-### 11.4 Graph Visualization
+### 12.4 Graph Visualization
 
 SCRUTINY clients MAY provide graph visualizations:
 - Nodes: Products and Metadata
@@ -699,25 +796,25 @@ SCRUTINY clients MAY provide graph visualizations:
 
 ---
 
-## 12. Compatibility with Generic Clients
+## 13. Compatibility with Generic Clients
 
 SCRUTINY Fabric events are designed to be readable in standard Nostr clients (Damus, Primal, Amethyst, Snort, Coracle, etc.) without custom support.
 
-### 12.1 ProductEvent in Generic Clients
+### 13.1 ProductEvent in Generic Clients
 
 Displays as a normal text note. The `content` field includes product name/vendor/version. Users can see:
 - Author (product vendor or trusted curator)
 - Timestamp
 - Replies (BindingEvents that reference this product)
 
-### 12.2 MetadataEvent in Generic Clients
+### 13.2 MetadataEvent in Generic Clients
 
 Displays as a normal text note with a summary and optional URL. Users see:
 - Description of the metadata (vulnerability, test result, certification)
 - Link to artifact (if present in `content`)
 - Replies (BindingEvents that reference this metadata)
 
-### 12.3 BindingEvent in Generic Clients
+### 13.3 BindingEvent in Generic Clients
 
 Displays as a **reply** to one or both endpoints (depending on relationship type):
 
@@ -733,13 +830,29 @@ Users can see:
 - Links to referenced events (if client renders `e` tags)
 - Timestamp
 
-### 12.4 UpdateEvent in Generic Clients
+### 13.4 UpdateEvent in Generic Clients
 
-Displays as a **reply** to the target event. The `content` field explains the update:
+Displays as a **reply** to the target event. The `content` field contains the commit message:
 
-> "Correction: The affected version is 3.0.1, not 3.0.0 as originally stated."
+> "Fixed typo in vendor name: 'NXP' → 'NXP Semiconductors'. Also added P-384 and Curve25519 curves."
 
-### 12.5 Limitations in Generic Clients
+Users can see:
+- The update author (who made the change)
+- What changed (from the commit message)
+- Links to the target event
+
+### 13.5 RetractionEvent in Generic Clients
+
+Displays as a **reply** to the target event. The `content` field explains the retraction:
+
+> "I am retracting this vulnerability report. After further analysis, I was unable to replicate..."
+
+Users can see:
+- The retraction author (same as original event author)
+- The reason for retraction
+- Links to the retracted event
+
+### 13.6 Limitations in Generic Clients
 
 Generic clients will NOT:
 - Understand SCRUTINY protocol semantics (relationship types, trust admission)
@@ -751,9 +864,9 @@ For full SCRUTINY functionality, users need a SCRUTINY-aware client.
 
 ---
 
-## 13. Optional Features
+## 14. Optional Features
 
-### 13.1 Proof-of-Work (NIP-13)
+### 14.1 Proof-of-Work (NIP-13)
 
 Events MAY include a `nonce` tag to demonstrate computational effort:
 
@@ -768,7 +881,7 @@ SCRUTINY clients MAY:
 
 PoW is not required for protocol correctness.
 
-### 13.2 Accessibility (NIP-31)
+### 14.2 Accessibility (NIP-31)
 
 Events SHOULD include an `alt` tag with a plain-text summary for screen readers and clients with limited formatting:
 
@@ -776,23 +889,23 @@ Events SHOULD include an `alt` tag with a plain-text summary for screen readers 
 ["alt", "ProductEvent: NXP J3A080 v3 smartcard with EAL4+ certification"]
 ```
 
-### 13.3 Lightning Zaps (NIP-57)
+### 14.3 Lightning Zaps (NIP-57)
 
 Users MAY zap SCRUTINY events to reward quality contributions. Clients MAY rank zapped events higher.
 
-### 13.4 Reactions (NIP-25)
+### 14.4 Reactions (NIP-25)
 
 Users MAY react to SCRUTINY events (`kind: 7`). Clients MAY use reactions as signals for ranking.
 
-### 13.5 Reports (NIP-56)
+### 14.5 Reports (NIP-56)
 
 Users MAY report spam/malicious SCRUTINY events (`kind: 1984`). Clients MAY downrank or hide reported events.
 
 ---
 
-## 14. Complete JSON Examples
+## 15. Complete JSON Examples
 
-### 14.1 ProductEvent Example
+### 15.1 ProductEvent Example
 
 ```json
 {
@@ -834,7 +947,7 @@ Users MAY report spam/malicious SCRUTINY events (`kind: 1984`). Clients MAY down
 }
 ```
 
-### 14.2 MetadataEvent Example (Vulnerability)
+### 15.2 MetadataEvent Example (Vulnerability)
 
 ```json
 {
@@ -872,7 +985,7 @@ Users MAY report spam/malicious SCRUTINY events (`kind: 1984`). Clients MAY down
 }
 ```
 
-### 14.3 BindingEvent Examples
+### 15.3 BindingEvent Examples
 
 #### Example A: Directed (vulnerability_in)
 
@@ -953,28 +1066,22 @@ Interpretation: Product `abc123` (J3A080) contains Product `xyz789` (ST33K1M5).
 
 Interpretation: Products `abc123` and `pqr678` are the same entity (unordered pair).
 
-### 14.4 UpdateEvent Example (Correction)
+### 15.4 UpdateEvent Example
 
 ```json
 {
-  "id": "stu678...",
+  "id": "ghi789...",
   "kind": 1,
   "pubkey": "researcher_pubkey_hex...",
-  "created_at": 1708610000,
-  "content": "Correction to CVE-2024-1234 report\n\nThe originally reported affected version was incorrect. The vulnerability affects firmware version 3.0.1 specifically, not all 3.x versions. Version 3.0.0 and 3.0.2+ are not affected.\n\nOriginal report: nostr:note1def456...",
+  "created_at": 1708580000,
+  "content": "Corrected affected version range. The vulnerability affects firmware 3.0.1 specifically, not all 3.x versions. Versions 3.0.0 and 3.0.2+ are not affected.",
   "tags": [
     ["t", "scrutiny_fabric"],
     ["t", "scrutiny_update"],
     ["t", "scrutiny_v03"],
     ["e", "def456...", "", "root"],
-    ["e", "def456...", "", "reply"],
-    ["L", "scrutiny:update:change_type"],
-    ["l", "correction", "scrutiny:update:change_type"],
-    ["L", "scrutiny:update:reason"],
-    ["l", "Corrected affected version range after further testing", "scrutiny:update:reason"],
     ["L", "scrutiny:binding:scope"],
-    ["l", "Affects firmware version 3.0.1 only", "scrutiny:binding:scope"],
-    ["alt", "Update: Correction to CVE-2024-1234 affected versions"]
+    ["l", "Affects firmware version 3.0.1 only", "scrutiny:binding:scope"]
   ],
   "sig": "signature_hex..."
 }
@@ -982,45 +1089,41 @@ Interpretation: Products `abc123` and `pqr678` are the same entity (unordered pa
 
 If the UpdateEvent pubkey matches the original MetadataEvent pubkey (def456), clients compute an effective view with the corrected scope.
 
-### 14.5 UpdateEvent Example (Retraction)
+### 15.5 RetractionEvent Example
 
 ```json
 {
-  "id": "vwx901...",
+  "id": "jkl012...",
   "kind": 1,
   "pubkey": "researcher_pubkey_hex...",
   "created_at": 1708620000,
-  "content": "Retraction of CVE-2024-1234 report\n\nAfter further analysis, I was unable to replicate the reported timing side-channel under realistic conditions. The original finding was based on a measurement error. I am retracting this vulnerability report.\n\nRetracted report: nostr:note1def456...\n\n#retraction",
+  "content": "I am retracting this vulnerability report. After further analysis and peer review, I was unable to replicate the timing side-channel under realistic conditions. The original finding was based on a measurement artifact in my test setup.",
   "tags": [
     ["t", "scrutiny_fabric"],
-    ["t", "scrutiny_update"],
+    ["t", "scrutiny_retract"],
     ["t", "scrutiny_v03"],
-    ["e", "def456...", "", "root"],
-    ["e", "def456...", "", "reply"],
-    ["L", "scrutiny:update:change_type"],
-    ["l", "retraction", "scrutiny:update:change_type"],
-    ["L", "scrutiny:update:reason"],
-    ["l", "Unable to replicate; measurement error in original analysis", "scrutiny:update:reason"],
-    ["alt", "Update: Retraction of CVE-2024-1234"]
+    ["e", "def456...", "", "root"]
   ],
   "sig": "signature_hex..."
 }
 ```
 
-Clients should mark event `def456` as RETRACTED and hide it by default.
+Clients should mark event `def456` as RETRACTED and hide it by default in normal views. The event remains visible in audit/history views with the retraction explanation.
 
 ---
 
-## 15. Implementation Guidance
+## 16. Implementation Guidance
 
-### 15.1 For SCRUTINY Client Developers
+### 16.1 For SCRUTINY Client Developers
 
 **Minimum viable client:**
 1. Display ProductEvents with labels rendered as key-value pairs
-2. Query for BindingEvents referencing a product (`#e` tag query)
-3. Apply whitelist filter to BindingEvents
-4. Fetch and display admitted MetadataEvents
-5. Support basic search (by CPE/vendor/name)
+2. Compute effective views by applying authoritative UpdateEvents in order
+3. Display retracted events only in audit/history views with retraction notice
+4. Query for BindingEvents referencing a product (`#e` tag query)
+5. Apply whitelist filter to BindingEvents
+6. Fetch and display admitted MetadataEvents
+7. Support basic search (by CPE/vendor/name)
 
 **Full-featured client:**
 - Compute effective views (apply authoritative updates)
@@ -1030,7 +1133,7 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 - PoW ranking
 - Zap/reaction display
 
-### 15.2 For SCRUTINY Relay Operators
+### 16.2 For SCRUTINY Relay Operators
 
 **Recommended relay features:**
 - Index `#t`, `#i`, `#e` tags (standard)
@@ -1038,7 +1141,7 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 - Optionally index NIP-32 labels for advanced filtering
 - Support PoW filtering (NIP-13)
 
-### 15.3 For Metadata Producers
+### 16.3 For Metadata Producers
 
 **Publishing workflow:**
 1. Create MetadataEvent with detailed `content` and labels
@@ -1054,7 +1157,7 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 - Mirror artifacts at multiple URLs
 - Respond to disputes with clarifications or retractions
 
-### 15.4 For Product Vendors
+### 16.4 For Product Vendors
 
 **Bootstrapping product presence:**
 1. Create ProductEvent with complete labels (vendor/name/version/category)
@@ -1070,9 +1173,9 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 
 ---
 
-## 16. Risks & Mitigations
+## 17. Risks & Mitigations
 
-### 16.1 Spam & Malicious Bindings
+### 17.1 Spam & Malicious Bindings
 
 **Risk:** Attackers publish fake BindingEvents linking random products to fake vulnerabilities.
 
@@ -1082,16 +1185,16 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 - Reporting (NIP-56) flags malicious content
 - Competing BindingEvents (`contests` relationship) allow disputes
 
-### 16.2 Key Compromise
+### 17.2 Key Compromise
 
 **Risk:** A trusted pubkey is compromised; attacker publishes malicious content.
 
 **Mitigations:**
 - Users maintain multiple trusted sources (no single point of failure)
-- UpdateEvents allow legitimate owner to retract compromised events
+- RetractionEvents allow legitimate owner to retract compromised events
 - Future: Key rotation/revocation schemes
 
-### 16.3 Artifact Tampering
+### 17.3 Artifact Tampering
 
 **Risk:** Attacker modifies artifact at URL; users download malicious file.
 
@@ -1100,7 +1203,7 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 - Multiple mirrors (`r` tags) provide redundancy
 - Blossom content-addressed storage eliminates URL-based tampering
 
-### 16.4 Low Adoption
+### 17.4 Low Adoption
 
 **Risk:** Not enough producers contribute metadata.
 
@@ -1108,7 +1211,7 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 - Bootstrap with existing datasets (CVEs, sec-certs, jcalgtest)
 - Mirror existing databases into SCRUTINY format
 
-### 16.5 Relay Censorship
+### 17.5 Relay Censorship
 
 **Risk:** Relays refuse to store/serve certain events.
 
@@ -1119,7 +1222,7 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 
 ---
 
-## 17. Future Work
+## 18. Future Work
 
 - **Key rotation/revocation:** Secure migration to new keys after compromise
 - **Delegation:** Allow organizations to delegate signing authority
@@ -1129,7 +1232,7 @@ Clients should mark event `def456` as RETRACTED and hide it by default.
 
 ---
 
-## 18. References
+## 19. References
 
 - [NIP-01](https://nips.nostr.com/1) — Basic Protocol
 - [NIP-10](https://nips.nostr.com/10) — Event Markers (root/reply/mention)
