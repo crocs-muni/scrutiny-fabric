@@ -219,7 +219,7 @@ If the metadata references an external file (report, dataset, trace), include:
 
 ## 6. BindingEvent
 
-**Purpose:** Typed edge connecting two Nostr events, typically linking Products to Metadata or expressing relationships between Products.
+**Purpose:** An edge connecting two Nostr events, typically linking Products to Metadata or expressing relationships between Products.
 
 BindingEvents MAY target any Nostr event (not only SCRUTINY events), enabling integration with existing Nostr content (e.g., long-form articles, announcements).
 
@@ -286,7 +286,7 @@ BindingEvents MUST include exactly **two** endpoint `e` tags using NIP-10 marker
 Interpretation: **root → reply**
 
 **For symmetric relationships (unordered pair):**
-- Both endpoints MUST use marker `"reply"` (do not use `"root"`)
+- Both endpoints MUST use marker `"mention"` (do not use `"root"` or `"root"`)
 
 Interpretation: unordered association
 
@@ -304,15 +304,15 @@ Interpretation: "Metadata def456 describes a vulnerability in Product abc123"
 **Example (symmetric):**
 
 ```json
-["e", "product_event_id_abc123", "", "reply"],
-["e", "product_event_id_xyz789", "", "reply"],
+["e", "product_event_id_abc123", "", "mention"],
+["e", "product_event_id_xyz789", "", "mention"],
 ["L", "scrutiny:binding:relationship"],
 ["l", "same_as", "scrutiny:binding:relationship"]
 ```
 
 Interpretation: "Products abc123 and xyz789 are the same product"
 
-**Rationale:** Using `root` + `reply` for directed edges makes the binding appear as a reply to the source node in generic clients' thread views. Using `reply` + `reply` for symmetric edges ensures both nodes show the binding as a reply.
+**Rationale:** Using `root` + `reply` for directed edges makes the binding appear as a reply to the source node in generic clients' thread views. Using `mention` + `mention` for symmetric edges ensures both nodes show the binding as a reply.
 
 
 ### 6.4 Binding Immutability Rule
@@ -991,8 +991,6 @@ Users MAY report spam/malicious SCRUTINY events (`kind: 1984`). Clients MAY down
     ["l", "vulnerability_in", "scrutiny:binding:relationship"],
     ["L", "scrutiny:binding:scope"],
     ["l", "Affects firmware version 3.x only", "scrutiny:binding:scope"],
-    ["L", "scrutiny:binding:confidence"],
-    ["l", "high", "scrutiny:binding:confidence"],
     ["alt", "Binding: CVE-2024-1234 affects NXP J3A080 v3"]
   ],
   "sig": "signature_hex..."
