@@ -420,7 +420,6 @@ Artifact reference tags are updated via **tag-type replacement**:
 The following fields are **immutable** and cannot be modified by UpdateEvents:
 
 - Protocol identification tags (`t` tags including `scrutiny_fabric`, `scrutiny_v03`, `scrutiny_product`, etc.)
-- Canonical identifier tags (`i` tags) — once set, cannot be added, removed, or changed
 - Event kind
 - Event pubkey
 - Event ID
@@ -437,8 +436,8 @@ To compute the effective view (authoritative updates only):
 - For each update in order:
   - Replace any label namespaces present in the update (Section 7.5.A).
   - Replace content only if `scrutiny:update:content` is present (Section 7.5.B).
-  - Replace artifact tag types present (`r`, `x`, `m`, `size`) (Section 7.5.C).
   - For label namespace deletion, empty string `""` signals removal (Section 9.3).
+  - Replace tag types present (`r`, `x`, `m`, `size`, `i`) (Section 7.5.C).
 - Immutable fields never change (Section 7.6).
 
 ### 7.8 Example
@@ -581,8 +580,6 @@ To delete a label namespace from an event, publish an UpdateEvent containing:
 
 After this UpdateEvent, the effective view will have **zero** `["l", "value", "scrutiny:product:ecc_curves"]` labels, while all other labels remain unchanged.
 
-**Non-destructive:** The original ProductEvent is unchanged; deletion only affects the effective view when computing authoritative updates. The historical record (original + update) remains auditable.
-
 ### 9.4 Canonical Identifiers (i tags)
 
 Use `i` tags for external canonical identifiers on **ProductEvent** and **MetadataEvent** only:
@@ -601,7 +598,6 @@ Use `i` tags for external canonical identifiers on **ProductEvent** and **Metada
 **Rules:**
 - Values SHOULD be lowercase where applicable
 - Multiple `i` tags allowed
-- `i` tags are immutable
 
 ---
 
@@ -933,8 +929,6 @@ Users MAY report spam/malicious SCRUTINY events (`kind: 1984`). Clients MAY down
     ["l", "2024-02-15", "scrutiny:metadata:date"],
     ["L", "scrutiny:metadata:vuln:cvss_score"],
     ["l", "7.5", "scrutiny:metadata:vuln:cvss_score"],
-    ["L", "scrutiny:metadata:vuln:severity"],
-    ["l", "high", "scrutiny:metadata:vuln:severity"],
     ["alt", "CVE-2024-1234: Timing side-channel in RSA implementation"]
   ],
   "sig": "signature_hex..."
@@ -960,8 +954,6 @@ Users MAY report spam/malicious SCRUTINY events (`kind: 1984`). Clients MAY down
     ["e", "abc123...", "", "reply"],
     ["L", "scrutiny:binding:relationship"],
     ["l", "vulnerability_in", "scrutiny:binding:relationship"],
-    ["L", "scrutiny:binding:scope"],
-    ["l", "Affects firmware version 3.x only", "scrutiny:binding:scope"],
     ["alt", "Binding: CVE-2024-1234 affects NXP J3A080 v3"]
   ],
   "sig": "signature_hex..."
@@ -1008,8 +1000,8 @@ Interpretation: Product `abc123` (J3A080) contains Product `xyz789` (ST33K1M5).
     ["t", "scrutiny_fabric"],
     ["t", "scrutiny_binding"],
     ["t", "scrutiny_v03"],
-    ["e", "abc123...", "", "reply"],
-    ["e", "pqr678...", "", "reply"],
+    ["e", "abc123...", "", "mention"],
+    ["e", "pqr678...", "", "mention"],
     ["L", "scrutiny:binding:relationship"],
     ["l", "same_as", "scrutiny:binding:relationship"],
     ["alt", "Binding: Products abc123 and pqr678 are the same"]
@@ -1024,24 +1016,27 @@ Interpretation: Products `abc123` and `pqr678` are the same entity (unordered pa
 
 ```json
 {
-  "id": "ghi789...",
+  "id": "stu901...",
   "kind": 1,
   "pubkey": "researcher_pubkey_hex...",
-  "created_at": 1708580000,
-  "content": "Corrected affected version range. The vulnerability affects firmware 3.0.1 specifically, not all 3.x versions. Versions 3.0.0 and 3.0.2+ are not affected.",
+  "created_at": 1708605000,
+  "content": "Corrected CVSS score. Upon further analysis, the vulnerability is more severe than initially assessed due to the broad applicability of the attacking technique.",
   "tags": [
     ["t", "scrutiny_fabric"],
     ["t", "scrutiny_update"],
     ["t", "scrutiny_v03"],
     ["e", "def456...", "", "root"],
-    ["L", "scrutiny:binding:scope"],
-    ["l", "Affects firmware version 3.0.1 only", "scrutiny:binding:scope"]
+    ["L", "scrutiny:metadata:vuln:cvss_score"],
+    ["l", "8.5", "scrutiny:metadata:vuln:cvss_score"],
+    ["L", "scrutiny:metadata:vuln:severity"],
+    ["l", "high", "scrutiny:metadata:vuln:severity"],
+    ["alt", "UpdateEvent: Corrected CVSS score for CVE-2024-1234"]
   ],
   "sig": "signature_hex..."
 }
 ```
 
-If the UpdateEvent pubkey matches the original MetadataEvent pubkey (def456), clients compute an effective view with the corrected scope.
+If the UpdateEvent pubkey matches the original MetadataEvent pubkey (def456), clients replace the label namespaces present in the update (CVSS score and severity) in the effective view, while preserving all other labels.
 
 ### 15.5 RetractionEvent Example
 
@@ -1056,7 +1051,8 @@ If the UpdateEvent pubkey matches the original MetadataEvent pubkey (def456), cl
     ["t", "scrutiny_fabric"],
     ["t", "scrutiny_retract"],
     ["t", "scrutiny_v03"],
-    ["e", "def456...", "", "root"]
+    ["e", "def456...", "", "root"],
+    ["alt", "RetractionEvent: Retracting vulnerability report with explanation"]
   ],
   "sig": "signature_hex..."
 }
