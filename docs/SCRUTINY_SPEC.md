@@ -578,7 +578,7 @@ Use `i` tags for external canonical identifiers on **ProductEvent** and **Metada
 **Rules:**
 - Values SHOULD be lowercase where applicable
 - Multiple `i` tags allowed
-- Do NOT use `i` tags on BindingEvents
+- `i` tags are immutable
 
 ---
 
@@ -616,18 +616,7 @@ To reference an external artifact, include these tags in a MetadataEvent:
 }
 ```
 
-### 10.2 Hash Verification Rule (Client Requirement)
-
-**If both `r` and `x` tags are present, clients MUST:**
-
-1. Download the artifact from the URL
-2. Compute its SHA-256 hash
-3. Verify that the computed hash equals the value in the `x` tag
-4. Only treat the artifact as authentic if verification succeeds
-
-**Clients MAY display unverified artifacts (hash mismatch or missing `x`), but MUST clearly label them as "UNVERIFIED" or "HASH MISMATCH".**
-
-### 10.3 Multiple URLs (Mirroring/Fallback)
+### 10.3 Multiple URLs
 
 If an artifact is mirrored at multiple locations, include multiple `r` tags:
 
@@ -636,8 +625,6 @@ If an artifact is mirrored at multiple locations, include multiple `r` tags:
 ["r", "https://mirror1.example.org/file.pdf"],
 ["r", "https://mirror2.example.net/file.pdf"]
 ```
-
-The same `x` hash applies to all mirrors. Clients SHOULD try URLs in order until verification succeeds.
 
 ### 10.4 Blossom Protocol Support
 
@@ -649,8 +636,6 @@ SCRUTINY Fabric supports Blossom URLs in `r` tags:
 ["r", "https://blossom.example.com/<sha256_hex>"],
 ["x", "<sha256_hex>"]
 ```
-
-**Clients MUST still verify the downloaded content hash matches the `x` tag.**
 
 **Blossom relay discovery:** Clients MAY discover Blossom servers via NIP-34 or other mechanisms (out of scope for this spec).
 
