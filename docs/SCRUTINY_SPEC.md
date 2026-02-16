@@ -317,13 +317,7 @@ Interpretation: "Products abc123 and xyz789 are the same product"
 
 ### 6.4 Binding Immutability Rule
 
-**The endpoints and relationship type of a BindingEvent are immutable.**
-
-Authoritative UpdateEvents (Section 7) MAY add or modify context labels (scope, limitations, validity window), but MUST NOT:
-- Change endpoint event IDs
-- Add, remove, or change the `scrutiny:binding:relationship` label
-
-If a binding is incorrect, the author MUST:
+**BindingEvents are completely immutable.** No UpdateEvents can modify any part of a BindingEvent. If a binding is incorrect, the author MUST:
 1. Publish an authoritative RetractionEvent for the incorrect BindingEvent
 2. Optionally publish a new corrected BindingEvent
 
@@ -409,9 +403,9 @@ To replace the effective view's content, include a content update label:
 ["l", "NXP J3A080 v3 (EOL) — Dual-interface smartcard, formerly EAL4+ certified", "scrutiny:update:content"]
 ```
 
-#### C. Non-Label Tags (r, x, m, size, i)
+#### C. Non-Label Tags (r, x, m, size)
 
-Artifact reference tags and canonical identifier tags are updated via **tag-type replacement**:
+Artifact reference tags are updated via **tag-type replacement**:
 
 ```json
 ["r", "https://new-mirror.example.com/report.pdf"],
@@ -419,17 +413,19 @@ Artifact reference tags and canonical identifier tags are updated via **tag-type
 ["m", "application/pdf"]
 ```
 
-**Merge rule:** For each tag type (e.g., `r`, `x`, `m`, `size`, `i`) present in the UpdateEvent, replace all tags of that type in the effective view with the UpdateEvent's tags of that type. Tag types NOT present in the UpdateEvent are preserved unchanged.
+**Merge rule:** For each tag type (e.g., `r`, `x`, `m`, `size`) present in the UpdateEvent, replace all tags of that type in the effective view with the UpdateEvent's tags of that type. Tag types NOT present in the UpdateEvent are preserved unchanged.
 
 ### 7.6 Immutable Fields
 
 The following fields are **immutable** and cannot be modified by UpdateEvents:
 
 - Protocol identification tags (`t` tags including `scrutiny_fabric`, `scrutiny_v03`, `scrutiny_product`, etc.)
+- Canonical identifier tags (`i` tags) — once set, cannot be added, removed, or changed
 - Event kind
 - Event pubkey
 - Event ID
 - `created_at` timestamp
+- **Entire BindingEvent targets** — BindingEvents cannot be updated at all
 
 If any of these need to change, the author must retract the event and publish a new one.
 
@@ -441,7 +437,8 @@ To compute the effective view (authoritative updates only):
 - For each update in order:
   - Replace any label namespaces present in the update (Section 7.5.A).
   - Replace content only if `scrutiny:update:content` is present (Section 7.5.B).
-  - Replace tag types present (`r`, `x`, `m`, `size`, `i`) (Section 7.5.C).
+  - Replace artifact tag types present (`r`, `x`, `m`, `size`) (Section 7.5.C).
+  - For label namespace deletion, empty string `""` signals removal (Section 9.3).
 - Immutable fields never change (Section 7.6).
 
 ### 7.8 Example
@@ -560,7 +557,33 @@ Use NIP-32 labels (`L`/`l` tags) for categorical/classification-like fields:
 
 **Multiple values:** Include multiple `["l", ...]` tags with the same namespace.
 
-### 9.2 Canonical Identifiers (i tags)
+### 9.2 Label Value Constraints
+
+Label values have one **reserved** value:
+
+- **Empty string `""`** — Reserved to signal label namespace deletion. MUST NOT be used as a normal label value.
+
+When an UpdateEvent includes a label with empty string value, the effective view removes all labels in that namespace from its previous value.
+
+### 9.3 Label Namespace Deletion
+
+To delete a label namespace from an event, publish an UpdateEvent containing:
+
+```json
+["l", "", "<namespace>"]
+```
+
+**Example:** Remove all ECC curve labels from a ProductEvent:
+
+```json
+["l", "", "scrutiny:product:ecc_curves"]
+```
+
+After this UpdateEvent, the effective view will have **zero** `["l", "value", "scrutiny:product:ecc_curves"]` labels, while all other labels remain unchanged.
+
+**Non-destructive:** The original ProductEvent is unchanged; deletion only affects the effective view when computing authoritative updates. The historical record (original + update) remains auditable.
+
+### 9.4 Canonical Identifiers (i tags)
 
 Use `i` tags for external canonical identifiers on **ProductEvent** and **MetadataEvent** only:
 
