@@ -713,49 +713,7 @@ Users can further filter admitted nodes by:
 4. **Admit referenced nodes:** Extract all `e` tags from trusted BindingEvents; admit those nodes
 5. **Recurse:** For each admitted node, repeat steps 2-4 (bounded by trust depth or hop limit)
 
-### 12.2 Relay Query Patterns
-
-**Find ProductEvents by CPE:**
-
-```json
-{
-  "kinds": [1],
-  "#t": ["scrutiny_product"],
-  "#i": ["cpe:2.3:h:nxp:j3a080:3:*:*:*:*:*:*:*"]
-}
-```
-
-**Find MetadataEvents by CVE:**
-
-```json
-{
-  "kinds": [1],
-  "#t": ["scrutiny_metadata"],
-  "#i": ["cve:2024-1234"]
-}
-```
-
-**Find BindingEvents for a specific product:**
-
-```json
-{
-  "kinds": [1],
-  "#t": ["scrutiny_binding"],
-  "#e": ["<product_event_id>"]
-}
-```
-
-**Find all SCRUTINY events by a specific pubkey:**
-
-```json
-{
-  "kinds": [1],
-  "#t": ["scrutiny_fabric"],
-  "authors": ["<pubkey_hex>"]
-}
-```
-
-### 12.3 NIP-50 Full-Text Search
+### 12.2 NIP-50 Full-Text Search
 
 SCRUTINY-aware relays SHOULD implement NIP-50 search over `content` AND tags.
 
@@ -770,16 +728,6 @@ SCRUTINY-aware relays SHOULD implement NIP-50 search over `content` AND tags.
 ```
 
 Relay support for NIP-50 varies; clients should gracefully degrade to tag-only queries if unavailable.
-
-### 12.4 Graph Visualization
-
-SCRUTINY clients MAY provide graph visualizations:
-- Nodes: Products and Metadata
-- Edges: BindingEvents (arrows for directed, lines for symmetric)
-- Colors: By trust score or node type
-- Interactive: Click to expand node details, traverse edges
-
----
 
 ## 13. Compatibility with Generic Clients
 
