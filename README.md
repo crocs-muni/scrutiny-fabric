@@ -2,17 +2,45 @@
 
 A decentralized, permissionless protocol built on Nostr for binding security-relevant metadata to products. SCRUTINY Fabric enables transparent, auditable, and verifiable security information sharing through cryptographic signatures and hash verification. It supports comprehensive product lifecycle tracking, from certification and test results to vulnerability disclosures and performance benchmarks.
 
-The protocol uses standard Nostr `kind:1` text notes with structured hashtags (`t` tags) and NIP-32 labels for semantic metadata. Events are immutable anchors that can be updated via reply chains, contested with evidence, and confirmed by independent parties. This creates a decentralized knowledge graph for security-critical products like smart cards, HSMs, cryptographic libraries, and hardware security modules.
+```mermaid
+graph RL
+    %% Define Nodes
+    P[<b>Infineon M7794A12</b><br/>BSI-DSZ-CC-0814-2012<br/>CC EAL4+]:::product
+    
+    B1([Binding]):::binding
+    B2([Binding]):::binding
+    B3([Binding]):::binding
+    
+    M1[<b>RSA keypairs</b><br/>Distribution of primes P<br/>and Q]:::metadata
+    M2[<b>ECDSA signature</b><br/>Dependency of sig time on<br/>private key]:::metadata
+    M3[<b>CVE-2017-15361</b><br/>Vulnerability in keygen<br/>&lpar;ROCA&rpar;]:::metadata
+
+    %% Connections
+    B1 -->|e root| P
+    B2 -->|e root| P
+    B3 -->|e root| P
+    
+    M1 -->|q| B1
+    M2 -->|q| B2
+    M3 -->|q| B3
+
+    %% Styling
+    classDef product fill:#fff,stroke:#1f77b4,stroke-width:3px,color:#000
+    classDef binding fill:#fff,stroke:#8cc63f,stroke-width:3px,color:#000
+    classDef metadata fill:#fff,stroke:#f15a24,stroke-width:3px,color:#000
+```
+
+The protocol uses standard Nostr `kind:1` text notes with structured tags (`t` tags) and NIP-32 labels for semantic metadata. Events are immutable anchors that can be updated or retracted by their original author, allowing for a decentralized, append-only knowledge graph for security-critical products like smart cards, HSMs, cryptographic libraries, and hardware security modules.
 
 > [!warning]
 > **Work in Progress - Experimental Prototype**
 >
 > SCRUTINY Fabric is in early development and should not be used for production security decisions. The protocol specification and implementation is incomplete:
 >
-> - **Protocol**: Core specification defined (v0.2) with all event types documented
-> - **Lens Demo**: Functional React app for viewing events; supports legacy formats
-> - **Event Publisher**: Basic Svelte app for product events only; metadata and binding creation not yet implemented
-> - **Python Tooling**: CLI tools for publishing events; basic tests included
+> - **Protocol**: Core specification defined (v0.3.2) with all event types documented in `docs/protocol-spec.md`.
+> - **Lens Demo**: ~~Functional~~ Outdated React app for viewing events; supports legacy formats
+> - **Event Publisher**: Outdated basic Svelte app for product events only; metadata and binding creation not yet implemented
+> - **Python Tooling**: Outdated CLI tools for publishing events; basic tests included
 >
 > Features like full metadata publishing, binding creation, update/contestation UI, and relay optimizations are planned but not implemented. Expect breaking changes and use at your own risk. Contributions welcome!
 
@@ -55,18 +83,19 @@ A React-based demo web application for exploring and visualizing SCRUTINY Fabric
 
 ## Protocol
 
-SCRUTINY Fabric defines six event types for comprehensive security metadata management:
+## Protocol
 
-- **Product Events**: Immutable anchors for security products (smart cards, HSMs, libraries)
-- **Metadata Events**: Pointers to relevant external data
-- **Binding Events**: Links one or more products to one or more metadata events, establishing semantic relationships
-- **Update Events**: Auditable corrections and additions via NIP-10 reply chains
-- **Contestation Events**: Formal disputes with counter-evidence
-- **Confirmation Events**: Independent endorsements and replications
+SCRUTINY Fabric defines five core event types for comprehensive security metadata management:
 
-All events use Nostr `kind:1` notes with structured `t` tags for categorization and NIP-32 labels for rich metadata.
+- **Product Events**: Identify a specific product, hardware model, or software package.
+- **Metadata Events**: Describe security-relevant observations, test results, or vulnerabilities (often including NIP-92 `imeta` attachments).
+- **Binding Events**: Connect precisely one Product to one Metadata event (or Product to Product) with a directional, semantic relationship (e.g., "tests", "vulnerability").
+- **Update Events**: Append-only modifications of labels or content by the original author.
+- **Retraction Events**: Append-only withdrawals of a previous statement by the original author.
 
-See [docs/SCRUTINY_SPEC.md](docs/SCRUTINY_SPEC.md) for the complete protocol specification.
+All events use Nostr `kind:1` notes with structured `t` tags (`scrutiny_product`, `scrutiny_binding`, etc.) for categorization and NIP-32 labels (`L`, `l`) for rich key-value metadata. External identifiers use the canonical `i` tag (e.g., `cve:CVE-2017-15361`).
+
+See [docs/protocol-spec.md](docs/protocol-spec.md) for the complete protocol specification.
 
 ## Requirements
 
