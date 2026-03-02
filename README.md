@@ -35,7 +35,7 @@ The protocol uses standard Nostr `kind:1` text notes with structured tags (`t` t
 > [!warning]
 > **Work in Progress - Experimental Prototype**
 >
-> SCRUTINY Fabric is in early development and should not be used for production security decisions. The protocol specification and implementation is incomplete:
+> SCRUTINY Fabric is in early development and should not be used for production security decisions. The protocol specification and implementation are incomplete:
 >
 > - **Protocol**: Core specification defined (v0.3.2) with all event types documented in `docs/protocol-spec.md`.
 > - **Lens Demo**: ~~Functional~~ Outdated React app for viewing events; supports legacy formats
@@ -80,8 +80,6 @@ Supports NIP-07 wallet integration for signing events and includes form validati
 
 ### Lens Demo (`pnpm dev:lens`)
 A React-based demo web application for exploring and visualizing SCRUTINY Fabric events from Nostr relays. Features an interactive graph view showing relationships between products, metadata, and bindings. Includes detailed event viewers, author filtering, and support for legacy event formats. Demonstrates real-time querying and rendering of the decentralized security knowledge graph.
-
-## Protocol
 
 ## Protocol
 

@@ -172,7 +172,7 @@ Append-only modifications.
 *   **Authoritative Rule:** Valid ONLY if `UpdateEvent.pubkey == TargetEvent.pubkey`.
 *   **Target:** `e root` MUST point to a `ProductEvent` or `MetadataEvent`.
 *   **Semantics:** 
-    *   Replaces content via `scrutiny:update:content`.
+    *   Replaces the target event's content directly with the `UpdateEvent`'s `content` field. If the `UpdateEvent`'s `content` is empty, the target's `content` remains unchanged.
     *   Replaces labels per namespace (empty `l` deletes the namespace).
     *   `i` and `imeta` replacements are full-set operations if present in the update.
 
