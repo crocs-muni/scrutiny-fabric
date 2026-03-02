@@ -98,8 +98,6 @@ const engine = createScrutinyEngine({
 });
 ```
 
-*This core package has been heavily audited and possesses a 100% test coverage threshold for its core evaluation logic, including native NIP-01 in-memory `matchFilter` evaluations.*
-
 ### Event Publisher (`pnpm dev:pub`)
 A SvelteKit web application for creating and publishing SCRUTINY Fabric events to Nostr relays. Users can define products (e.g., smart cards, HSMs), ~~metadata (test results, certifications, vulnerabilities), and create bindings that link them together~~ (planned for future releases).
 
