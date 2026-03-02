@@ -2,7 +2,7 @@
 
 **Project:** Scrutiny Lens Demo
 **Version:** 1.0
-**Last Updated:** October 24, 2025
+**Last Updated:** March 1, 2026
 
 ---
 
@@ -45,16 +45,16 @@ The application uses a **three-phase data fetching model** via the `useScrutinyE
 
 ```typescript
 Phase 1: Query all SCRUTINY tagged events
-  ↓ (Fetch products, metadata, bindings, updates, confirmations, contestations)
+  ↓ (Fetch products, metadata, bindings, updates, retractions)
 
-Phase 1.5: Extract e-tag mentions from bindings
-  ↓ (Fetch any missing referenced products/metadata)
+Phase 1.5: Extract binding endpoints (`e root`, `q`)
+  ↓ (Fetch any missing referenced product/metadata events)
 
 Phase 2: Query events that reference products/metadata/bindings
-  ↓ (Fetch updates, confirmations, contestations for known events)
+  ↓ (Fetch updates/retractions for known events)
 
-Phase 3: Fetch alternative metadata from contestations
-  ↓ (Get alternative metadata referenced in contestation events)
+Phase 3: Resolve missing references and apply effective view
+  ↓ (Exclude retracted updates, apply authoritative updates, mark retracted targets)
 
 Result: Categorized events + Relationship mappings
 ```
@@ -67,19 +67,13 @@ type EventType =
   | 'metadata'       // External security data (test results, certs, etc.)
   | 'binding'        // Links product(s) to metadata
   | 'update'         // Author updates their own event
-  | 'confirmation'   // Third-party endorses an event
-  | 'contestation'   // Third-party disputes metadata with alternative
+  | 'retract'        // Author retracts their own event
   | 'unknown';       // Not a SCRUTINY event
 ```
 
-**Tag Variants:** Each event type accepts **4 tag variants**:
+**Canonical tags:** Prefer `scrutiny_fabric`, `scrutiny_v032`, and exactly one type tag.
 
-- Plain: `scrutiny_product`
-- Hashed: `#scrutiny_product`
-- V01: `scrutiny_product_v01`
-- Hashed V01: `#scrutiny_product_v01`
-
-**Legacy Support:** Also accepts hyphenated variants (e.g., `scrutiny-product`, `scrutiny-product-v0`)
+**Legacy support (optional):** Clients MAY parse older tag variants for backwards compatibility, but new features MUST target v0.3.2 semantics.
 
 ### Data Structure
 
@@ -94,17 +88,15 @@ interface CategorizedEvents {
   bindings: Map<id, Event>;           // All binding events
   products: Map<id, Event>;           // All product events
   metadata: Map<id, Event>;           // All metadata events
-  updates: Map<originalId, Event>;    // Updates keyed by original event ID
-  confirmations: Map<targetId, Event[]>;  // Confirmations by target
-  contestations: Map<targetId, Event[]>;  // Contestations by target
+  updates: Map<targetId, Event[]>;    // Updates keyed by target event ID
+  retractions: Map<targetId, Event[]>;// Retractions keyed by target event ID
 }
 
 interface Relationships {
-  bindingToProducts: Map<bindingId, productId[]>;
-  bindingToMetadata: Map<bindingId, metadataId[]>;
+  bindingToAnchor: Map<bindingId, eventId>;     // from e(root)
+  bindingToOther: Map<bindingId, eventId>;      // from q
   productToBindings: Map<productId, bindingId[]>;
   metadataToBindings: Map<metadataId, bindingId[]>;
-  contestationToAlternative: Map<contestationId, alternativeMetadataId>;
 }
 ```
 
@@ -211,7 +203,7 @@ const { categorized, relationships } = data;
 - Binding description (content preview)
 - Author name (with njump.me link)
 - Created timestamp (relative)
-- Activity indicators (confirmations count)
+- Activity indicators (updates/retractions)
 - Click to expand to `DetailedView`
 
 #### `ProductCard.tsx`
@@ -226,7 +218,7 @@ const { categorized, relationships } = data;
 - Country flags for certification schemes
 - Technical specifications (crypto algorithms, JavaCard versions)
 - URLs and links
-- Activity (confirmations, other bindings)
+- Activity (updates/retractions, other bindings)
 - Update indicator (toggle between original/updated)
 
 **Helper Functions:**
@@ -249,7 +241,7 @@ const { categorized, relationships } = data;
 - File type, size
 - Labels (source, type, tool)
 - "View External File" button
-- Activity (confirmations, contestations with alternatives)
+- Activity (updates/retractions)
 - Update indicator
 
 #### `DetailedView.tsx`
@@ -308,7 +300,7 @@ DetailedView/
 - `BindingNode` (center, green border)
 - `ProductNode` (left side, blue border)
 - `MetadataNode` (right side, orange border)
-- `ReplyNode` (confirmations/contestations)
+- `ReplyNode` (updates/retractions)
 
 **Features:**
 
@@ -582,8 +574,8 @@ describe('determineEventType', () => {
   it('identifies all tag variants', () => {
     expect(determineEventType([['t', 'scrutiny_product']])).toBe('product');
     expect(determineEventType([['t', '#scrutiny_product']])).toBe('product');
-    expect(determineEventType([['t', 'scrutiny_product_v01']])).toBe('product');
-    expect(determineEventType([['t', '#scrutiny_product_v01']])).toBe('product');
+    expect(determineEventType([['t', 'scrutiny_product']])).toBe('product');
+    expect(determineEventType([['t', '#scrutiny_product']])).toBe('product');
   });
 
   it('prioritizes reply events', () => {
@@ -627,13 +619,13 @@ describe('applyFilters', () => {
 
 ```bash
 # Run all tests
-npm test
+pnpm test
 
-# Watch mode
-npm run dev
+# Development server
+pnpm dev
 
-# Coverage report
-npm run test -- --coverage
+# Coverage report (optional)
+pnpm test -- --coverage
 ```
 
 ---
@@ -654,8 +646,7 @@ type EventType =
   | 'metadata'
   | 'binding'
   | 'update'
-  | 'confirmation'
-  | 'contestation'
+  | 'retract'
   | 'vulnerability'  // New type
   | 'unknown';
 ```
@@ -687,8 +678,6 @@ case 'vulnerability':
   // ...existing tags
   'scrutiny_vulnerability',
   '#scrutiny_vulnerability',
-  'scrutiny_vulnerability_v01',
-  '#scrutiny_vulnerability_v01',
 ]
 ```
 
@@ -876,8 +865,7 @@ import { StatsDashboard } from '@/components/StatsDashboard';
 // Reply events contain BOTH their reply tag AND the original event's tag
 
 if (includesAny('scrutiny_update')) return 'update';           // 1st
-if (includesAny('scrutiny_contestation')) return 'contestation'; // 2nd
-if (includesAny('scrutiny_confirmation')) return 'confirmation'; // 3rd
+if (includesAny('scrutiny_retract')) return 'retract';         // 2nd
 
 // Then check base events
 if (includesAny('scrutiny_product')) return 'product';
@@ -961,8 +949,7 @@ function shouldReplace(original, update): boolean {
   // 4. Must have update tag (any variant)
   const hasUpdateTag = update.tags.some(t =>
     t[0] === 't' &&
-    ['scrutiny_update', '#scrutiny_update',
-     'scrutiny_update_v01', '#scrutiny_update_v01'].includes(t[1])
+    ['scrutiny_update', '#scrutiny_update'].includes(t[1])
   );
 
   return hasUpdateTag;
@@ -1008,7 +995,7 @@ if (labels['cpe23']) {
 **Roles:**
 
 - `mention`: References another event (binding → product/metadata)
-- `root`: Original event for updates/confirmations/contestations
+- `root`: Target event for updates/retractions
 - `reply`: Direct reply (not commonly used in SCRUTINY)
 
 ```typescript
@@ -1195,8 +1182,7 @@ useQuery({
 --metadata: #FD7E14;       /* Orange */
 --binding: #28A745;        /* Green */
 --update: #FD7E14;         /* Orange */
---confirmation: #20C997;   /* Success green */
---contestation: #DC3545;   /* Red */
+--retract: #DC3545;        /* Red */
 
 /* UI Colors */
 --primary: #2C5AA0;
@@ -1251,7 +1237,7 @@ p-6: 24px (large card padding)
 <Badge variant="outline">Default</Badge>
 <Badge variant="destructive">Error</Badge>
 <Badge variant="secondary">Info</Badge>
-<Badge className="bg-confirmation">Confirmed</Badge>
+<Badge className="bg-retract">Retracted</Badge>
 ```
 
 ---
@@ -1262,7 +1248,7 @@ p-6: 24px (large card padding)
 
 1. **`AGENTS.md`** - Base system prompt for AI agents (this file's parent)
 2. **`docs/ARCHITECTURE.md`** - Detailed architecture and data flow
-3. **`docs/SCRUTINY_CONTEXT.md`** - SCRUTINY protocol specification
+3. **`../docs/protocol-spec.md`** - Primary SCRUTINY protocol specification
 4. **`docs/GRAPH_VISUALIZATION.md`** - Graph feature specification
 5. **`docs/NOSTR_COMMENTS.md`** - Comment system (if implemented)
 6. **`docs/NOSTR_INFINITE_SCROLL.md`** - Infinite scroll patterns
@@ -1271,7 +1257,7 @@ p-6: 24px (large card padding)
 ### When to Consult Documentation
 
 - **Adding new features:** Check `ARCHITECTURE.md` for patterns
-- **Understanding SCRUTINY protocol:** Read `SCRUTINY_CONTEXT.md`
+- **Understanding SCRUTINY protocol:** Read `../docs/protocol-spec.md`
 - **Modifying graph:** Review `GRAPH_VISUALIZATION.md`
 - **Implementing feeds:** Reference `NOSTR_INFINITE_SCROLL.md`
 - **General guidance:** Start with `AGENTS.md`
@@ -1284,16 +1270,16 @@ p-6: 24px (large card padding)
 
 ```bash
 # Development server
-npm run dev
+pnpm dev
 
 # Production build
-npm run build
+pnpm build
 
 # Run all tests + build
-npm test
+pnpm test
 
 # Deploy to Nostr
-npm run deploy
+pnpm deploy
 ```
 
 ### Build Output
@@ -1428,10 +1414,9 @@ Before considering a feature complete:
 |------|-------|---------|------------|
 | Product | `scrutiny_product` | Hardware/software product | vendor, product_name, version, cpe23, purl |
 | Metadata | `scrutiny_metadata` | External security data | url, x (hash), m (MIME), size |
-| Binding | `scrutiny_binding` | Links product to metadata | e tags (mention) → products & metadata |
-| Update | `scrutiny_update` | Author revises event | e tag (root) → original event |
-| Confirmation | `scrutiny_confirmation` | Third-party endorsement | e tag (root) → confirmed event |
-| Contestation | `scrutiny_contestation` | Dispute with alternative | e (root) → contested, e (mention) → alternative |
+| Binding | `scrutiny_binding` | Links metadata/product relationships | `e(root)` = anchor, `q` = other endpoint |
+| Update | `scrutiny_update` | Author revises event | `e(root)` → target Product/Metadata event |
+| Retraction | `scrutiny_retract` | Author withdraws event | `e(root)` → target event |
 
 ### Common Tag Patterns
 

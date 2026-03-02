@@ -1,0 +1,23 @@
+{
+  "name": "@scrutiny-fabric/scrutiny-fabric",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.7",
+    "@vitest/coverage-v8": "3.2.4",
+    "nostr-tools": "^2.19.4",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

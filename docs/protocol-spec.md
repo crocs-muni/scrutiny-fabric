@@ -245,9 +245,18 @@ These NIPs are fully compatible with SCRUTINY Fabric and enhance the ecosystem w
 
 ---
 
-## 9. Examples
+## 9. Security Considerations
 
-### 9.1 Product and Metadata Bound Together 
+### 9.1 Artifact Verification (`imeta`) and Zip-Bombs
+When verifying NIP-92 `imeta` attachments (e.g., matching the `x` SHA-256 hash to a downloaded file from `url`), clients MUST exercise extreme caution. 
+- **Streaming Validation**: Clients SHOULD NEVER download an artifact directly to disk or buffer it entirely in memory prior to validation. Instead, clients should stream the remote response body sequentially into a cryptographic hasher. 
+- **Size Limits**: Clients MUST enforce a strict byte-size limit (derived from the `size` tag or a local maximum policy) during streaming. If the stream exceeds this limit, the socket must be immediately aborted. Failure to do so exposes the client to memory exhaustion attacks or Zip-bombs (where a malicious actor hosts an infinitely streaming zero-byte payload to crash the validator).
+
+---
+
+## 10. Examples
+
+### 10.1 Product and Metadata Bound Together 
 
 *A simplified view of binding a ROCA vulnerability analysis to the Infineon M7794A12 smartcard.*
 
