@@ -1017,7 +1017,7 @@ Line-ending normalization (`\r\n` → `\n`), trailing-newline handling, and loca
 
 ## §10 — Recommendation Matrix
 
-This section is reserved for the external security reviewer (Cybernetica AS) to populate with prioritized remediation recommendations. The matrix structure is provided for completion.
+This section is reserved for external security review findings and prioritized remediation recommendations. The matrix structure is provided for completion.
 
 | Priority | Threat(s) | Recommendation | Effort | Impact |
 |---|---|---|---|---|

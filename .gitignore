@@ -351,3 +351,8 @@ skills-lock.json
 # Windows executables (e.g. misc/nak.exe dev tooling)
 *.exe
 
+
+# Local scratch and abandoned tooling (archived to ~/scrutiny-fabric-archive)
+.opencode/
+tmp/
+fonstr-data/
