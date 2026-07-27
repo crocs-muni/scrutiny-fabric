@@ -17,7 +17,7 @@
 - **New SIG-1 (§3).** A signature commits to the `id`, so a signature-only check passes for an event whose `content` or `tags` were altered while retaining the original `id` and `sig`. Both the signature *and* the `id`-equals-SHA-256 check MUST be performed, on **every event consumed** — including kind 5 deletions and kind 1040 attestations, not only events carrying a `scrutiny-fabric` tag. An unverified deletion is indistinguishable from a forged one. §3.2's NIP-01 row amended so inherited-semantics deference cannot be read as putting SIG-1 out of scope.
 - **§5.2 consumer grammar corrected; new C7.** The grammar required at least one hunk block (`[ hunk-block ]+`), contradicting N2, which accepts a header-only no-op — and postfix `+` is regex, not ABNF. Now `header-block *hunk-block`. The grammar's "a conforming consumer MUST accept" obligation is registered as C7.
 - **New TR-7.** §6.2 said untrusted events were "filtered out before any other processing." Taken literally that conceals root self-forks and HALT conditions in the chain of a root admitted via a trusted Binding, because such a root's own patches may be authored by a pubkey the user does not trust directly — the chain then renders linear and complete when it is neither. Filtering is now explicitly a **presentation-time** operation applied to the results of chain and overlay computation. §7.4 step 5 and §7.5 aligned.
-- **New CA-1 (§4 preamble).** `created_at` is the time the *event* was created, not the time of the fact it describes. Deployed relays commonly reject events whose `created_at` falls outside a bounded window, so backdated events are **silently refused** — nothing stored, no error. Publishers mapping historical records MUST NOT backdate; historical dates belong in `content`.
+- **New CA-1 (§4 preamble).** `created_at` is the time the *event* was created, not the time of the fact it describes. Deployed relays commonly reject events whose `created_at` falls outside a bounded window, so backdated events are **silently refused** — nothing stored, no error. Publishers mapping historical records SHOULD NOT backdate; historical dates belong in `content`.
 - §6.0's Validity manifest now cites `E1–E6` rather than `E*` (which swept in E7, an Application rule) and includes C7; its Discovery bullet cites `TR-2..TR-7`. Appendix B no longer describes merges as planned for `v060`.
 - Version tag `scrutiny-v059` → `scrutiny-v060`.
 
@@ -205,11 +205,11 @@ graph RL
     classDef metadata fill:#fff,stroke:#f15a24,stroke-width:3px,color:#000
 ```
 
-**`created_at` semantics.** `created_at` is the time the *event* was created, not the time of the fact it describes. Publishers mapping historical records — certification dates, disclosure dates, release dates — MUST NOT backdate `created_at` to the historical date. Deployed relays commonly reject events whose `created_at` falls outside a bounded window (commonly a few minutes ahead and one to three years behind), so backdated events are silently refused: nothing is stored and no error is returned. Historical dates belong in `content`.
+**`created_at` semantics.** `created_at` is the time the *event* was created, not the time of the fact it describes. Publishers mapping historical records — certification dates, disclosure dates, release dates — SHOULD NOT backdate `created_at` to the historical date. Deployed relays commonly reject events whose `created_at` falls outside a bounded window (commonly a few minutes ahead and one to three years behind), so backdated events are silently refused: nothing is stored and no error is returned. Historical dates belong in `content`.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
-| CA-1 | D | — | Publishers MUST NOT backdate `created_at` to a historical date the event describes. Deployed relays reject events outside a bounded timestamp window; historical dates belong in `content`. |
+| CA-1 | D | — | Publishers SHOULD NOT backdate `created_at` to a historical date the event describes. Deployed relays reject events outside a bounded timestamp window; historical dates belong in `content`. |
 
 ### 4.1 Product (`scrutiny-product`)
 
@@ -821,7 +821,7 @@ A standalone "effective view" event type is not defined; the patched content is 
 
 SCRUTINY operates on a public Nostr relay mesh with three actor types. Everything that follows in this specification derives from these assumptions — they are stated here so every admission rule, chain resolution procedure, and discovery pattern can be evaluated against a declared threat baseline.
 
-**Publishers** (root authors, foreign annotators, binding creators) sign every event with their Nostr key. Cryptography guarantees: nobody else can produce a valid signature for a publisher's pubkey; nobody can modify a signed event without invalidating the signature; nobody can delete another publisher's event (NIP-09 pubkey check). Publishers cannot be prevented from setting an arbitrary `created_at` — signing proves identity, not time (CA-1 forbids backdating; nothing enforces it cryptographically). Root authors are sovereign over their own canonical chains: they extend the chain with their own patches and resolve self-forks via kind 5 deletion. Foreign authors cannot overwrite canonical content; their patches are always rendered as overlays. Any pubkey can create Binding edges — trust controls which edges are visible, not whether they exist.
+**Publishers** (root authors, foreign annotators, binding creators) sign every event with their Nostr key. Cryptography guarantees: nobody else can produce a valid signature for a publisher's pubkey; nobody can modify a signed event without invalidating the signature; nobody can delete another publisher's event (NIP-09 pubkey check). Publishers cannot be prevented from setting an arbitrary `created_at` — signing proves identity, not time (CA-1 directs publishers not to backdate; nothing enforces it cryptographically). Root authors are sovereign over their own canonical chains: they extend the chain with their own patches and resolve self-forks via kind 5 deletion. Foreign authors cannot overwrite canonical content; their patches are always rendered as overlays. Any pubkey can create Binding edges — trust controls which edges are visible, not whether they exist.
 
 **Relays** store and serve events, apply filters (`#t`, `#e`, `#i`), and relay new events among peers. They are assumed **honest but curious** in the steady state: a well-behaved relay returns matching events and propagates publications to peers. Relays MAY be malicious: they can omit results (censorship), serve stale data, drop NIP-specific filter support (`#i`, NIP-50), or degrade into total non-response. The protocol's defense against relay malice is multiplicity: query multiple relays, cache results locally, cross-reference. No single relay is trusted with completeness. Relay operators MAY also face external pressure (legal, economic) from vendors seeking to suppress unfavorable findings.
 
@@ -1324,7 +1324,7 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | VER-4 | 3 | V | — | MUST NOT reject higher-version events *solely* for the version tag. |
 | OTS-1 | 3 | A | NIP-03 | OTS is audit signal only; not used for chain construction or tip selection. |
 | SIG-1 | 3 | V | NIP-01 | Every consumed event MUST have both its signature and its `id` verified before processing. |
-| CA-1 | 4 | D | — | `created_at` MUST NOT be backdated to a historical date; historical dates belong in `content`. |
+| CA-1 | 4 | D | — | `created_at` SHOULD NOT be backdated to a historical date; historical dates belong in `content`. |
 | PR-1 | 4.1 | V | — | Product `content` field is required. |
 | PR-2 | 4.1 | D | — | Product SHOULD carry ≤64 `i` tags. |
 | PR-3 | 4.1 | D | — | Product SHOULD carry ≤64 `k` tags. |
