@@ -655,7 +655,7 @@ An A-rule failure does NOT reject the event: the event is preserved (often surfa
 
 **D — Discovery.** How do consumers find, gate visibility, and resolve events across the relay mesh? D rules cover:
 
-- Indexer discipline (§4.5 IX-1, IX-2, IX-4; §4.1 PR-2, PR-3; §4.2 MD-2, MD-3).
+- Indexer discipline (§4.5 IX-1, IX-2, IX-4; §4.1 PR-2, PR-3, PR-4; §4.2 MD-2, MD-3, MD-4).
 - Relay-hint fallback and fetch behaviour (§4.3 BD-8).
 - Pending-Binding rendering (§4.3 BD-6) and duplicate Binding collapse (§4.3 BD-11).
 - Trust admission and visibility gating (§6.2–§6.4 TR-2..TR-7; §7.3 OV-5, OV-7).
