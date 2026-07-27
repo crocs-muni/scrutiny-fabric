@@ -339,9 +339,15 @@ copilot.log
 .github/copilot/
 
 # Claude Code local overrides and caches
-.claude/settings.local.json
+.claude/*
 .claude/*.local.*
-CLAUDE.local.md
-.claude/settings.*.bak
-.claude/agents/*.local.*
+
+# AI assistant / agent tool directories (Kiro, generic agent runners)
+.agent/
+.agents/
+.kiro/
+skills-lock.json
+
+# Windows executables (e.g. misc/nak.exe dev tooling)
+*.exe
 

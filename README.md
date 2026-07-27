@@ -1,6 +1,6 @@
 # SCRUTINY Fabric
 
-A decentralized, permissionless protocol built on Nostr for binding security-relevant metadata to products. SCRUTINY Fabric enables transparent, auditable, and verifiable security information sharing through cryptographic signatures and hash verification. It supports comprehensive product lifecycle tracking, from certification and test results to vulnerability disclosures and performance benchmarks.
+A decentralized **discovery layer** built on Nostr for linking security-relevant metadata to products. SCRUTINY Fabric exposes signed nodes (Products, Metadata) and signed edges (Bindings) — letting users find which security context (SBOMs, advisories, certifications, test reports, vulnerabilities) is about which products, and follow trust through who said so. Deep semantic interpretation of payloads is delegated to AI agents and clients reading them in their native formats.
 
 ```mermaid
 graph RL
@@ -30,15 +30,17 @@ graph RL
     classDef metadata fill:#fff,stroke:#f15a24,stroke-width:3px,color:#000
 ```
 
-The protocol uses standard Nostr `kind:1` text notes with structured tags (`t` tags) and NIP-32 labels for semantic metadata. Events are immutable anchors that can be updated or retracted by their original author, allowing for a decentralized, append-only knowledge graph for security-critical products like smart cards, HSMs, cryptographic libraries, and hardware security modules.
+The protocol uses standard Nostr `kind:1` text notes identified by `t` tags (`scrutiny-fabric`, `scrutiny-product`, `scrutiny-metadata`, `scrutiny-binding`, `scrutiny-patch`) and NIP-73 canonical identifiers (`i` tags for CVE/CPE/PURL/CC/etc.) for cheap relay-side discovery. Updates are git-style patches with real unified-diff content, replies form chains, foreign-authored replies form disputes, and NIP-09 kind 5 events handle deletions — yielding a decentralized, auditable knowledge graph for security-critical products like smart cards, HSMs, cryptographic libraries, and hardware security modules.
 
 > [!warning]
 > **Work in Progress - Experimental Prototype**
 >
 > SCRUTINY Fabric is in early development and should not be used for production security decisions. The protocol specification and implementation are incomplete:
 >
-> - **Protocol**: Core specification defined (v0.3.2) with all event types documented in `docs/protocol-spec.md`.
-> - **Lens Demo**: ~~Functional~~ Outdated React app for viewing events; supports legacy formats
+> - **Protocol**: Core specification defined (v0.5.0 — discovery-layer pivot) with all event types documented in `docs/protocol-spec.md`.
+> - **Lens Apps**:
+>   - `apps/scrutiny-lens`: current SvelteKit lens app (active development)
+>   - `apps/lens-demo`: legacy POC React viewer retained for reference
 > - **Event Publisher**: Outdated basic Svelte app for product events only; metadata and binding creation not yet implemented
 > - **Python Tooling**: Outdated CLI tools for publishing events; basic tests included
 >
@@ -52,7 +54,8 @@ pnpm install
 
 # Development
 pnpm dev:pub      # Start event publisher (Svelte)
-pnpm dev:lens     # Start lens demo (React)
+pnpm dev:lens     # Start scrutiny-lens (SvelteKit)
+pnpm dev:lens-demo # Start legacy lens demo (React)
 
 # Build for production
 pnpm build
@@ -64,7 +67,8 @@ pnpm build
 scrutiny-nostr/
 ├── apps/
 │   ├── event-publisher/     # Svelte publisher app
-│   └── lens-demo/           # React demo client
+│   ├── scrutiny-lens/       # SvelteKit lens app (current)
+│   └── lens-demo/           # React demo client (legacy)
 ├── docs/                    # Protocol specification
 ├── packages/
 │   └── scrutiny-fabric/     # Core protocol TypeScript library (types, parsers, validators)
@@ -76,8 +80,8 @@ scrutiny-nostr/
 ## Packages
 
 ### Core Protocol Library (`packages/scrutiny-fabric`)
-A highly robust, strictly-typed implementation of the SCRUTINY Fabric protocol (v0.3.2) in TypeScript. It provides:
-- **Type-safe Builders**: Zero-mistake event construction templates guaranteeing accurate NIP-32 label tagging.
+A strictly-typed implementation of the SCRUTINY Fabric protocol in TypeScript. **Note:** the current package targets the prior v0.3.2 protocol; updating to v0.5.0 (current spec) is pending. Existing capabilities:
+- **Type-safe Builders**: Event construction templates.
 - **Strict Validation**: Parsing and validation with built-in defenses against adversarial inputs (e.g. tag-limit DoS protections).
 - **Web-of-Trust (WoT) & Graph resolution**: Configurable N-hop bound Breadth-First Search (BFS) for endorsement aggregation and directed edge routing.
 - **Secure Artifact Verification**: Memory-safe streaming architecture for safely hashing and validating NIP-92 `imeta` artifacts without risking Zip-bombs or memory exhaustion.
@@ -103,20 +107,22 @@ A SvelteKit web application for creating and publishing SCRUTINY Fabric events t
 
 Supports NIP-07 wallet integration for signing events and includes form validation for protocol compliance.
 
-### Lens Demo (`pnpm dev:lens`)
-A React-based demo web application for exploring and visualizing SCRUTINY Fabric events from Nostr relays. Features an interactive graph view showing relationships between products, metadata, and bindings. Includes detailed event viewers, author filtering, and support for legacy event formats. Demonstrates real-time querying and rendering of the decentralized security knowledge graph.
+### SCRUTINY Lens (`pnpm dev:lens`)
+A SvelteKit web application for exploring and visualizing SCRUTINY Fabric events from Nostr relays. It includes search, event detail views, graph visualization, trust-aware filtering, and publishing workflows for product/metadata/binding events.
+
+### Lens Demo (`pnpm dev:lens-demo`)
+A legacy React-based demo client retained for compatibility experiments and historical reference.
 
 ## Protocol
 
-SCRUTINY Fabric defines five core event types for comprehensive security metadata management:
+SCRUTINY Fabric (v0.5.0) defines four core event types as the discovery-layer graph:
 
 - **Product Events**: Identify a specific product, hardware model, or software package.
-- **Metadata Events**: Describe security-relevant observations, test results, or vulnerabilities (often including NIP-92 `imeta` attachments).
-- **Binding Events**: Connect precisely one Product to one Metadata event (or Product to Product) with a directional, semantic relationship (e.g., "tests", "vulnerability").
-- **Update Events**: Append-only modifications of labels or content by the original author.
-- **Retraction Events**: Append-only withdrawals of a previous statement by the original author.
+- **Metadata Events**: Describe security-relevant observations, test results, certifications, or vulnerabilities (often with full payloads attached via NIP-92 `imeta` + Blossom).
+- **Binding Events**: Immutable directional edges connecting two events (Product↔Metadata, Product↔Product, etc.) with a relationship described in `content` and optionally hinted via an `i` tag.
+- **Patch Events**: Git-style unified-diff replies that evolve a Product or Metadata over time. Same-pubkey replies form the canonical chain; foreign-pubkey replies form disputes that overlay as opinions.
 
-All events use Nostr `kind:1` notes with structured `t` tags (`scrutiny_product`, `scrutiny_binding`, etc.) for categorization and NIP-32 labels (`L`, `l`) for rich key-value metadata. External identifiers use the canonical `i` tag (e.g., `cve:CVE-2017-15361`).
+All events use Nostr `kind:1` notes with kebab-case `t` tags (`scrutiny-fabric`, `scrutiny-product`, `scrutiny-binding`, `scrutiny-patch`, etc.) for categorization. External identifiers use the canonical NIP-73 `i` tag (e.g., `cve:CVE-2017-15361`, `cpe:2.3:h:...`). Deletions use NIP-09 kind 5 events (no SCRUTINY-specific retraction event).
 
 See [docs/protocol-spec.md](docs/protocol-spec.md) for the complete protocol specification.
 

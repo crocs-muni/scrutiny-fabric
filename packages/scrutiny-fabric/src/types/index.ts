@@ -71,6 +71,7 @@ export const DIRECTED_RELATIONSHIPS = [
   'analysis',
   'contains',
   'depends_on',
+  'provides',
 ] as const;
 
 export const SYMMETRIC_RELATIONSHIPS = ['same', 'related'] as const;

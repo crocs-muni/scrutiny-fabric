@@ -17,6 +17,9 @@ const TYPE_TO_TAG: Record<ScrutinyType, string> = {
   retract: 'scrutiny_retract',
 };
 
+// SCRUTINY v0.3.x currently uses Nostr kind:1 text notes for all events.
+export const SCRUTINY_EVENT_KIND = 1 as const;
+
 const uniq = <T>(items: T[]): T[] => [...new Set(items)];
 
 const cleanIds = (ids: string[]): string[] =>
@@ -36,7 +39,10 @@ export const buildScrutinyTypesFilter = (
   versionTag: string = CURRENT_VERSION_TAG,
 ): RelayFilter => {
   const tags = uniq([NAMESPACE_TAG, versionTag, ...types.map((t) => TYPE_TO_TAG[t])]);
-  return { kinds: [1], '#t': tags };
+  // NIP-01 tag arrays are relay-side OR matching, so this filter intentionally
+  // returns a superset. Callers should perform client-side validation to enforce
+  // strict SCRUTINY conformance.
+  return { kinds: [SCRUTINY_EVENT_KIND], '#t': tags };
 };
 
 /**
@@ -44,7 +50,7 @@ export const buildScrutinyTypesFilter = (
  * Fetch BindingEvents anchored to a specific product.
  */
 export const buildProductBindingsFilter = (productEventId: string): RelayFilter => ({
-  kinds: [1],
+  kinds: [SCRUTINY_EVENT_KIND],
   '#t': [NAMESPACE_TAG, 'scrutiny_binding'],
   '#e': [productEventId],
 });
@@ -58,7 +64,7 @@ export const buildProductBindingsFilter = (productEventId: string): RelayFilter 
  * ```
  */
 export const buildMetadataBindingsFilter = (metadataEventId: string): RelayFilter => ({
-  kinds: [1],
+  kinds: [SCRUTINY_EVENT_KIND],
   '#t': [NAMESPACE_TAG, 'scrutiny_binding'],
   '#q': [metadataEventId],
 });
@@ -77,7 +83,7 @@ export const buildEventsByIdsFilter = (ids: string[], limit?: number): RelayFilt
   }
 
   const filter: { kinds: number[]; ids: string[]; limit?: number } = {
-    kinds: [1],
+    kinds: [SCRUTINY_EVENT_KIND],
     ids: cleaned,
   };
   if (typeof limit === 'number') {
@@ -101,7 +107,7 @@ export const buildEventsTargetingFilter = (targetIds: string[]): RelayFilter => 
   }
 
   return {
-    kinds: [1],
+    kinds: [SCRUTINY_EVENT_KIND],
     '#e': cleaned,
     '#t': [NAMESPACE_TAG, 'scrutiny_update', 'scrutiny_retract', 'scrutiny_binding'],
   };

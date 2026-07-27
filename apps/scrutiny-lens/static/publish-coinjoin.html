@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SCRUTINY CoinJoin — Publish Events</title>
+<style>
+  body { font-family: system-ui; max-width: 640px; margin: 40px auto; padding: 16px; background: #111; color: #eee; }
+  button { padding: 10px 20px; margin: 4px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; }
+  button:hover { opacity: 0.85; }
+  .primary { background: #7c3aed; color: #fff; }
+  .pub { background: #059669; color: #fff; }
+  .danger { background: #dc2626; color: #fff; }
+  .event { background: #1a1a2e; border: 1px solid #333; border-radius: 8px; padding: 12px; margin: 8px 0; font-family: monospace; font-size: 12px; overflow-x: auto; white-space: pre-wrap; }
+  .label { color: #a78bfa; font-weight: bold; margin-top: 16px; }
+  .ok { color: #34d399; }
+  .err { color: #f87171; }
+</style>
+</head>
+<body>
+<h1>SCRUTINY CoinJoin — Publish Events</h1>
+
+<button class="primary" onclick="sign()">1. Sign with NIP-07</button>
+<button class="pub" onclick="publishAll()" id="pubBtn" disabled>2. Publish to wss://nos.lol</button>
+<button class="danger" onclick="localStorage.clear();location.reload()">Reset</button>
+
+<div id="status"></div>
+<div id="events"></div>
+
+<script>
+const RELAY = 'wss://nos.lol';
+let signedEvents = [];
+
+async function sign() {
+  if (!window.nostr) return log('NIP-07 extension not found! Install nos2x or flotilla.', 'err');
+  const pubkey = await window.nostr.getPublicKey();
+  log('Pubkey: ' + pubkey, 'ok');
+  const now = Math.floor(Date.now()/1000);
+
+  const templates = [{
+    name: 'PRODUCT',
+    content: 'Wasabi2 CoinJoin Coordinator \u2014 kruw.io\n\nBitcoin CoinJoin coordinator operated by kruw.io.\nPart of the Wasabi Wallet 2.0 coordinator ecosystem.\n\nData source: Masaryk University CoinJoin Statistics\nhttps://crocs-muni.github.io/coinjoin/wasabi2/wasabi2_kruw.html',
+    tags: [['t','scrutiny-fabric'],['t','scrutiny-product'],['t','scrutiny-v053'],['i','coinjoin-coordinator:wasabi2:kruw'],['k','coinjoin-coordinator']]
+  }, {
+    name: 'METADATA',
+    content: '# CoinJoin Daily \u2014 wasabi2/kruw.io \u2014 2026-05-12\n\n![Cumulative values](https://www.fi.muni.cz/~xsvenda/cjs/nightly/wasabi2_kruw/wasabi2_kruw_cummul_values_norm.png?v2026-05-12)\n\n## Snapshot\n\n| Metric | Value |\n|--------|-------|\n| Total CoinJoins | 19,689 |\n| Period | 2024-05-07 to 2026-05-11 |\n| Inputs per CJ (min/avg/median/max) | 15 / 235.1 / 241.0 / 498 |\n| Outputs per CJ (min/avg/median/max) | 12 / 279.6 / 287.0 / 652 |\n| Fresh inputs | 173,107 / 4,628,063 (3.7%) |\n| Remixed inputs (count) | 4,388,379 / 4,628,063 (94.8%) |\n| Remixed inputs (BTC) | 465,938.60 / 532,575.45 (87.5%) |\n| Fresh inflows (BTC) | 60,746.88 |\n| Leaving outputs (BTC) | 63,964.75 |\n| Unmoved outputs (BTC) | 3,573.89 |\n| Last block | 949,007 |\n\n## Attachments\n\n[json data verified via imeta: SHA256 of liquidity_summary_wasabi2_kruw.json]',
+    tags: [['t','scrutiny-fabric'],['t','scrutiny-metadata'],['t','scrutiny-v053'],['i','bitcoin-block:949007'],['k','bitcoin-block']]
+  }, {
+    name: 'BINDING',
+    content: 'Daily CoinJoin statistics binding: kruw.io Wasabi2 coordinator <-> 2026-05-12 daily snapshot',
+    tags: [] // filled after signing
+  }];
+
+  signedEvents = [];
+  for (const t of templates) {
+    const unsigned = { kind: 1, content: t.content, created_at: now + signedEvents.length, tags: t.tags };
+    const signed = await window.nostr.signEvent(unsigned);
+    signed._name = t.name;
+    signedEvents.push(signed);
+    showEvent(signed);
+    log('Signed: ' + t.name + ' (' + signed.id.substring(0,8) + '...)', 'ok');
+    now += 1;
+  }
+
+  // Fill binding e tags with actual event IDs
+  const p = signedEvents[0], m = signedEvents[1], b = signedEvents[2];
+  b.tags = [
+    ['t','scrutiny-fabric'],['t','scrutiny-binding'],['t','scrutiny-v053'],['t','contains'],
+    ['e', p.id, '', 'root', p.pubkey],
+    ['e', m.id, '', 'link', m.pubkey]
+  ];
+  const rebind = { kind: 1, content: b.content, created_at: b.created_at, tags: b.tags };
+  signedEvents[2] = await window.nostr.signEvent(rebind);
+  signedEvents[2]._name = 'BINDING';
+  showEvent(signedEvents[2]);
+  log('Re-signed BINDING with rooted e tags', 'ok');
+
+  document.getElementById('pubBtn').disabled = false;
+}
+
+function showEvent(e) {
+  const div = document.createElement('div');
+  div.className = 'event';
+  div.textContent = JSON.stringify(e);
+  document.getElementById('events').appendChild(div);
+}
+
+async function publishAll() {
+  if (!signedEvents.length) return log('No events to publish! Sign first.', 'err');
+  const ws = new WebSocket(RELAY);
+  ws.onopen = () => {
+    for (const e of signedEvents) ws.send(JSON.stringify(['EVENT', e]));
+    log('Sent ' + signedEvents.length + ' events to ' + RELAY + '...', 'ok');
+  };
+  ws.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if (data[0] === 'OK') {
+      log('OK: ' + data[1].substring(0,8) + '... ' + (data[2] ? '\u2713 accepted' : '\u2717 ' + data[3]), data[2] ? 'ok' : 'err');
+    }
+    if (data[0] === 'NOTICE') log('NOTICE: ' + data[1], 'err');
+  };
+  ws.onerror = () => log('WebSocket error connecting to ' + RELAY, 'err');
+  setTimeout(() => ws.close(), 5000);
+}
+
+function log(msg, cls) {
+  const el = document.getElementById('status');
+  el.innerHTML += '<div class="' + (cls||'') + '">' + msg + '</div>';
+}
+</script>
+</body>
+</html>
