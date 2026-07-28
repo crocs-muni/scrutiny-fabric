@@ -1,0 +1,1006 @@
+{
+  "specVersion": "0.6.1",
+  "category": "validity",
+  "layer": "V",
+  "cases": [
+    {
+      "name": "scope/not-a-scrutiny-event",
+      "rule": "TAG-1",
+      "why": "An event without the fabric tag is out of scope, which is not the same as invalid.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000007",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [],
+        "content": "just a note",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "not-scrutiny"
+      }
+    },
+    {
+      "name": "product/well-formed",
+      "rule": "PR-1",
+      "why": "The baseline: the three required t tags and a content field.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000008",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "tags/duplicate-fabric-tag",
+      "rule": "TAG-1",
+      "why": "Exactly one fabric tag. A second is a V failure, not a surplus tag to ignore.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000009",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "t",
+            "scrutiny-fabric"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "TAG-1"
+        ]
+      }
+    },
+    {
+      "name": "tags/missing-version-tag",
+      "rule": "TAG-2",
+      "why": "Exactly one version tag is required.",
+      "event": {
+        "id": "000000000000000000000000000000000000000000000000000000000000000a",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "TAG-2"
+        ]
+      }
+    },
+    {
+      "name": "tags/two-event-type-tags",
+      "rule": "TAG-3",
+      "why": "Exactly one event-type tag; two makes the event type undecidable.",
+      "event": {
+        "id": "000000000000000000000000000000000000000000000000000000000000000b",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "t",
+            "scrutiny-metadata"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "TAG-3"
+        ]
+      }
+    },
+    {
+      "name": "tags/unknown-tags-are-ignored",
+      "rule": "TAG-5",
+      "why": "Surplus and unknown tags are ignored, never grounds for rejection.",
+      "event": {
+        "id": "000000000000000000000000000000000000000000000000000000000000000c",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "nonce",
+            "9000"
+          ],
+          [
+            "zzz",
+            "whatever"
+          ],
+          [
+            "t",
+            "other-topic"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "version/higher-version-admitted-opaquely",
+      "rule": "VER-2",
+      "why": "A higher-version event satisfying every V invariant is admitted, never dropped for its tag.",
+      "event": {
+        "id": "000000000000000000000000000000000000000000000000000000000000000d",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v099"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid",
+        "mustNotEmit": [
+          "VER-3"
+        ]
+      }
+    },
+    {
+      "name": "version/higher-version-with-an-unrecognised-type",
+      "rule": "VER-3",
+      "why": "A higher-version event yielding zero recognised event-type tags MUST NOT be rendered.",
+      "event": {
+        "id": "000000000000000000000000000000000000000000000000000000000000000e",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v099"
+          ],
+          [
+            "t",
+            "scrutiny-attestation"
+          ]
+        ],
+        "content": "",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "VER-3",
+          "TAG-3"
+        ]
+      }
+    },
+    {
+      "name": "product/i-tag-prefix-not-lowercase-ascii",
+      "rule": "IR-1",
+      "why": "The i prefix is lowercase ASCII matching [a-z0-9-]+.",
+      "event": {
+        "id": "000000000000000000000000000000000000000000000000000000000000000f",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "i",
+            "CVE:CVE-1"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "IR-1"
+        ]
+      }
+    },
+    {
+      "name": "product/unregistered-i-prefix-is-accepted",
+      "rule": "IR-4",
+      "why": "Unknown prefixes pass through as opaque indexers rather than invalidating the event.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000010",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "i",
+            "cc-cert-id:BSI-DSZ-CC-0814-2012"
+          ],
+          [
+            "k",
+            "cc-cert-id"
+          ],
+          [
+            "i",
+            "pp:BSI-CC-PP-0084"
+          ],
+          [
+            "k",
+            "pp"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "product/missing-k-for-a-present-i-prefix",
+      "rule": "PR-4",
+      "why": "The k value is derivable from the i value, so its absence is advisory (D), not invalidity.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000011",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "i",
+            "cve:CVE-1"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid",
+        "mustEmit": [
+          "PR-4"
+        ]
+      }
+    },
+    {
+      "name": "binding/well-formed-once-both-endpoints-are-observed",
+      "rule": "BD-3",
+      "why": "e root is a Product and e link is Metadata, both observed, so the typing check passes.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000012",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-binding"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000003",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000004",
+            "",
+            "link",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        ],
+        "content": "An edge.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000003",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000004",
+          "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-metadata"
+            ]
+          ],
+          "content": "Some metadata.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "binding/pending-while-an-endpoint-is-unobserved",
+      "rule": "BD-6",
+      "why": "Endpoint typing cannot be checked yet. Holding is required; rejecting would break UR-1.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000013",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-binding"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000003",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000004",
+            "",
+            "link",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        ],
+        "content": "An edge.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000003",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "pending",
+        "mustEmit": [
+          "BD-6"
+        ],
+        "awaiting": [
+          "0000000000000000000000000000000000000000000000000000000000000004"
+        ]
+      }
+    },
+    {
+      "name": "binding/root-endpoint-is-not-a-product",
+      "rule": "BD-5",
+      "why": "A typing contradiction is permanent, so the rejection is cacheable (BD-7).",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000014",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-binding"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000004",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000004",
+            "",
+            "link",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        ],
+        "content": "An edge.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000004",
+          "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-metadata"
+            ]
+          ],
+          "content": "Some metadata.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "BD-3",
+          "BD-5",
+          "BD-7"
+        ]
+      }
+    },
+    {
+      "name": "binding/author-hint-mismatch-is-not-invalidity",
+      "rule": "BD-12",
+      "why": "The NIP-10 author hint is advisory; a mismatch does not invalidate the edge.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000015",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-binding"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000003",
+            "",
+            "root",
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000004",
+            "",
+            "link",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        ],
+        "content": "",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000003",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000004",
+          "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-metadata"
+            ]
+          ],
+          "content": "Some metadata.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid",
+        "mustEmit": [
+          "BD-12"
+        ]
+      }
+    },
+    {
+      "name": "patch/well-formed-payload",
+      "rule": "C1",
+      "why": "A conformant payload in a backtick-fenced diff block. Note it carries zero context lines.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000016",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "```diff\n--- a/content\n+++ b/content\n@@ -1 +1 @@\n-old\n+new\n```",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000005",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "patch/prose-only-is-valid",
+      "rule": "N1",
+      "why": "No fenced block matching E2 makes the patch a no-op, which is a valid shape.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000017",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "Deprecating this entry. No content change.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000005",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "patch/pending-while-its-root-is-unobserved",
+      "rule": "UR-2",
+      "why": "Root-author versus foreign needs the root pubkey, so the class is undecidable until then.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000018",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "```diff\n--- a/content\n+++ b/content\n@@ -1 +1 @@\n-old\n+new\n```",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "pending",
+        "awaiting": [
+          "0000000000000000000000000000000000000000000000000000000000000005"
+        ]
+      }
+    },
+    {
+      "name": "patch/overlay-to-overlay-reply-is-rejected",
+      "rule": "PT-7",
+      "why": "Recursive overlays are §11 future work; such an event MUST NOT be rendered as an overlay.",
+      "event": {
+        "id": "0000000000000000000000000000000000000000000000000000000000000019",
+        "pubkey": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v061"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000006",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000005",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000006",
+          "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v061"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "0000000000000000000000000000000000000000000000000000000000000005",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "0000000000000000000000000000000000000000000000000000000000000005",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "PT-7"
+        ]
+      }
+    }
+  ]
+}

@@ -9,6 +9,7 @@
 
 ### v0.6.1
 
+- **New Appendix G "Conformance vectors." `vectors/application.json`, `vectors/validity.json`.** The corpus is now published and digest-pinned rather than listed as future work; §11's "Test vectors" bullet is struck and Appendix E points at the corpus its fixtures seeded. Three phases of a reference implementation each had to substitute their own gate for the missing vectors, which is the point at which a deferral stops being one. Appendix G is normative, but the prose still governs: where a vector and the prose disagree the vector is the defect. Three limits are stated rather than left to be discovered — halt *reasons* are advisory because this specification defines no vocabulary for them; A-layer vectors carry placeholder `id` and `sig` fields and presuppose SIG-1, so they MUST NOT be used to exercise it; and UR-1 makes every `chain` case an assertion over **every permutation** of its event set, not the order printed. `.gitattributes` pins `vectors/**` to LF, without which the digests are unverifiable on a Windows checkout.
 - Version tag `scrutiny-v060` → `scrutiny-v061`. §3's forward-compatibility example, which used `scrutiny-v061` as its illustration of a *higher* version, now uses `scrutiny-v062`.
 
 ### v0.6.0
@@ -1059,7 +1060,6 @@ The α/β rule applies symmetrically to overlays whose targets simply have not y
 - **Metadata-to-Metadata binding.** The current spec restricts Bindings to Product↔Metadata only (§4.3). A future version may permit Metadata↔Metadata edges for derived findings, supplementing relationships, or cross-advisory references.
 - **Cherry-pick.** Attribution of diffs adopted from other patches. Includes machine-readable source references (`e` tags with marker `cherry-pick`) and optional cryptographic verification of the adopted diff's fidelity to the source. Deferred until ecosystem usage provides design requirements.
 - **Snapshot pins.** State anchoring for bindings (`root:rev` / `link:rev` markers pointing to specific patch event IDs). Enables binding authors to record "evaluated against state X" with verified state anchoring, providing stronger historical audit context than `created_at` correlation alone.
-- **Test vectors.** Companion document with canonical events plus expected patched content, for implementation conformance.
 - **Data Vending Machine integration.** NIP-90 job requests for SCRUTINY-derived computations (e.g., "summarize all CVE metadata bound to product X as a PDF"). Would require a reserved job-request kind and output MIME-type convention. Deferred until at least one DVM provider expresses interest.
 
 ---
@@ -1307,7 +1307,7 @@ with the full report at `scrutiny-fabric-tools/investigations/diff-parity/REPORT
 - **Empty-patch shape divergence.** `git diff` emits zero bytes when `a === b`; `jsdiff.createPatch` emits a header-only fenced block. The §5.2 "no-op equivalence" clause exists specifically to absorb this divergence — both shapes are accepted as semantic identity.
 - **Producer adapter not needed for canonical bytes.** `jsdiff.formatPatch({isGit:true})` with names `'a/content'` / `'b/content'` natively emits spec-canonical bytes; the only systematic divergence from `git diff` output is `@@ -L +L @@` shorthand vs `@@ -L,1 +L,1 @@` full form, both explicitly accepted by §5.2.
 
-The study's fixtures are recommended as a starting point for §11's planned conformance test-vector document.
+The study's fixtures seeded the conformance corpus published under Appendix G.
 
 ---
 
@@ -1451,3 +1451,57 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | DEL-9 | 10 | A | — | MUST cache received kind 5 events and apply during chain construction. |
 | DEL-10 | 10 | D | — | Clients SHOULD offer a "show deleted events" toggle exposing deleted events + descendants. |
 | DEL-11 | 10 | D | NIP-09 | SCRUTINY-aware relays SHOULD store kind 5 deletions targeting scrutiny-fabric events alongside originals. |
+
+---
+
+## Appendix G — Conformance vectors
+
+This appendix is **normative**. The vector files it names are the machine-readable conformance corpus for this specification: an implementation that reports a different outcome for any case does not conform.
+
+The prose in the cited sections remains the authoritative definition of every rule. Where a vector and the prose disagree, **the prose governs and the vector is a defect** — report it rather than implementing to it.
+
+### G.1 Files and digests
+
+The vectors live in this repository under `vectors/`, one file per rule category, and are pinned by digest so a released implementation stays testable offline against the exact corpus it claimed to pass.
+
+| File | Category | Layer | Cases | SHA-256 |
+|---|---|---|---|---|
+| `vectors/application.json` | application | A | 46 | `c3b8282e6be50a1d8f755ad36e7fd0ffcec2cde5120f70946e02a494179ee971` |
+| `vectors/validity.json` | validity | V | 19 | `bf1af55a8687c6380acd597fd7dd1488f997736b7afdf9813f78c349e849f90f` |
+
+Two further categories are reserved and not yet published: `vectors/discovery.json` (D-layer) and `vectors/serialization.json` (§3 event-id serialization). Their absence is not a statement that the D layer is untestable.
+
+**Digest definition.** The SHA-256 is computed over the file's exact bytes as committed: UTF-8, LF line endings, terminated by exactly one LF, with no byte-order mark. A checkout that rewrites line endings changes the digest; `.gitattributes` pins `vectors/**` to LF for this reason. Implementations vendoring the corpus SHOULD verify the digest in CI in both directions — that the vendored copy matches this appendix, and that this appendix matches the corpus.
+
+### G.2 Case structure
+
+Every case in every file carries three common fields:
+
+| Field | Meaning |
+|---|---|
+| `name` | Stable identifier, `category/slug`. Names are permanent; a case is added or removed, never silently redefined. |
+| `rule` | The mnemonic rule ID (Appendix F) the case pins. One case may exercise several rules; `rule` names the one it exists for. |
+| `why` | Prose stating what would be wrong if the case failed. Informational. |
+
+**`validity.json`** — one event in, an admission verdict out. Each case carries an `event` (a complete Nostr event object), an optional `observed` array of further events the validator may dereference, and an `expect` object:
+
+- `status` — one of `valid`, `invalid`, `pending`, `not-scrutiny`. Normative.
+- `mustEmit` / `mustNotEmit` — rule IDs the implementation is required to report, or required not to report. **Containment, not equality:** an implementation reporting additional advisory issues still conforms. Only the listed codes are constrained.
+- `awaiting` — for `pending`, the event IDs the verdict is waiting on.
+
+**`application.json`** — two case shapes, discriminated by `kind`:
+
+- `kind: "apply"` — §5.3 application of one `payload` against one `content` string. `expect.outcome` is `applied`, `noop` or `halt`; for `applied`, `expect.content` is the resulting byte sequence and is normative under PB-1.
+- `kind: "chain"` — §7 resolution over an `events` set, rooted at `rootId`. `expect.chain` pins the chain state and only those fields the case is about; `expect.overlays` pins overlay classification per §7.3; `expect.annotations` / `expect.noAnnotations` list the rule IDs whose annotation must, or must not, be present.
+
+Where a case depends on a §5.4 ceiling, it carries an explicit `options` object stating the ceiling assumed. Ceilings are local and configurable (RL-2), so a vector that did not state its ceiling would not be reproducible.
+
+### G.3 What the vectors do and do not establish
+
+**Halt reasons are advisory.** Where an `apply` case expects `halt`, the accompanying `reason` records why the reference implementation halted. This specification defines no vocabulary of halt reasons, so `reason` is **not** normative: conformance requires agreeing that application halted, and — where it succeeded — on the resulting bytes.
+
+**Signatures and event IDs are not exercised.** Events in the A-layer vectors are structurally well-formed but their `id` and `sig` fields are placeholders and are **not** cryptographically valid. A-layer vectors presuppose that §3 SIG-1 and V-layer admission have already succeeded; they MUST NOT be used to exercise either. Serialization and signature checking are the reserved `serialization.json`'s subject.
+
+**Confluence is asserted over the whole corpus.** UR-1 requires that state depend only on the *set* of events observed. Every `chain` case therefore MUST yield its stated expectation under **any permutation** of its `events` array, not merely the order given. A runner that only tries the given order has not run the corpus.
+
+**The corpus is incomplete by design.** It is authored incrementally as rules are implemented. A rule's absence from the corpus is not a claim that the rule is untestable, nor that an implementation may ignore it — Appendix F remains the complete registry, and §6.0 the complete statement of what each layer's failure means.
