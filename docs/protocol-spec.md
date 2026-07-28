@@ -547,7 +547,7 @@ line-content   = *( %x00-09 / %x0B-FF )   ; any octet sequence except LF
 trailing       = [ SP line-content ]  ; tolerated, ignored: timestamps, whitespace, etc.
 ```
 
-Three properties of this grammar are easy to misread and are therefore stated explicitly:
+Four properties of this grammar are easy to misread and are therefore stated explicitly:
 
 - **`line-content` is any octet except LF**, deliberately not ABNF's `VCHAR` (`%x21-7E`). `VCHAR` excludes both the space and every non-ASCII byte, which would reject any context line containing an internal space, any UTF-8 payload — including the em dash in this section's own example below — and the `patch -u` timestamps C2 requires consumers to tolerate.
 - **A hunk line may be empty.** A context line whose content is empty is emitted as a single space, and a lone trailing space is the first thing stripped by editors, mail transports, web forms and any pipeline that trims lines. `git apply` and jsdiff both accept the stripped form, so the grammar admits a bare LF at hunk-line position as a context line with an empty body.
