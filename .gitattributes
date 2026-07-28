@@ -1,0 +1,8 @@
+# Conformance vectors are digest-pinned in Appendix G. A checkout that converted them to CRLF
+# would change every byte-count and break every digest, so line endings are fixed here rather
+# than left to core.autocrlf.
+vectors/** text eol=lf
+
+# The spec pins those digests, and §5.2 P3 makes LF normative inside patch payloads that the
+# spec quotes verbatim.
+docs/*.md text eol=lf
