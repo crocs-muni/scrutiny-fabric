@@ -10,6 +10,10 @@
 ### v0.6.1
 
 - **New Appendix G "Conformance vectors." `vectors/application.json`, `vectors/validity.json`.** The corpus is now published and digest-pinned rather than listed as future work; §11's "Test vectors" bullet is struck and Appendix E points at the corpus its fixtures seeded. Three phases of a reference implementation each had to substitute their own gate for the missing vectors, which is the point at which a deferral stops being one. Appendix G is normative, but the prose still governs: where a vector and the prose disagree the vector is the defect. Three limits are stated rather than left to be discovered — halt *reasons* are advisory because this specification defines no vocabulary for them; A-layer vectors carry placeholder `id` and `sig` fields and presuppose SIG-1, so they MUST NOT be used to exercise it; and UR-1 makes every `chain` case an assertion over **every permutation** of its event set, not the order printed. `.gitattributes` pins `vectors/**` to LF, without which the digests are unverifiable on a Windows checkout.
+- **§5.2 consumer grammar corrected: `line-content` replaces `*VCHAR`, and an empty hunk line is admitted.** The grammar is ABNF, where `VCHAR` is `%x21-7E` — printable ASCII *excluding* the space, which the grammar's own `trailing = SP *VCHAR` confirms was intended. Read literally it therefore rejected every context line containing an internal space, every payload carrying a non-ASCII byte — including the em dash in §5.2's own example — and the `patch -u` timestamps C2 obliges consumers to tolerate. Separately, `hunk-line` required a prefix character, so a blank context line that lost its lone trailing space to an editor or mail transport matched no production, even though `git apply`, `patch -u` and jsdiff all accept that form. `trailing` is now `[ SP line-content ]` and is cited without a repetition operator.
+- **`index-preamble` makes the `Index:` line optional relative to the `===…` separator.** jsdiff — named in §5.2's reference toolchain — emits the separator alone when a patch is produced through `structuredPatch` + `formatPatch` rather than `createPatch`, and `createPatch` names its paths `content` rather than `a/content` / `b/content`, so neither jsdiff entry point emitted a payload the previous grammar accepted unmodified.
+- **C5 rekeyed on the `\` prefix; its text is now explicitly informational.** GNU diff and git translate the marker through gettext, so the same content diffed under `LANG=de_DE.UTF-8` emits `\ Kein Zeilenumbruch am Dateiende`. A consumer matching the English string silently loses the no-trailing-newline signal, which changes the resulting bytes — and PB-1 makes those bytes normative. The grammar already admitted `\` without constraining what follows, so only C5's wording needed the fix.
+- **P2's remedy corrected.** P2 advised "Use `--no-index` with git, or strip these post-hoc". The first clause is false: `--no-index` makes git diff two paths outside a repository and has no effect on index-line emission. Since §5.2's reference toolchain recommends exactly that invocation, a producer following the spec literally emitted payloads P2 declared invalid. The rule itself was sound and is unchanged.
 - Version tag `scrutiny-v060` → `scrutiny-v061`. §3's forward-compatibility example, which used `scrutiny-v061` as its illustration of a *higher* version, now uses `scrutiny-v062`.
 
 ### v0.6.0
@@ -523,15 +527,23 @@ A conforming consumer MUST accept any patch payload matching the following struc
 
 ```
 patch-payload  = [ index-preamble ] [ diff-git-line ] header-block *hunk-block
-index-preamble = "Index: content" LF "=" 1*"=" LF      ; optional, jsdiff style
-diff-git-line  = "diff --git a/content b/content" *trailing LF   ; optional
-header-block   = "--- a/content" *trailing LF
-                 "+++ b/content" *trailing LF
+index-preamble = [ "Index: " line-content LF ] "=" 1*"=" LF   ; optional, jsdiff style
+diff-git-line  = "diff --git a/content b/content" trailing LF   ; optional
+header-block   = "--- a/content" trailing LF
+                 "+++ b/content" trailing LF
 hunk-block     = hunk-header LF *hunk-line
-hunk-header    = "@@ -" lineno [ "," count ] " +" lineno [ "," count ] " @@" *trailing
-hunk-line      = ( " " / "+" / "-" / "\" ) *VCHAR LF
-trailing       = SP *VCHAR    ; tolerated, ignored: timestamps, whitespace, etc.
+hunk-header    = "@@ -" lineno [ "," count ] " +" lineno [ "," count ] " @@" trailing
+hunk-line      = ( " " / "+" / "-" / "\" ) line-content LF
+               / LF                ; a context line that is itself empty
+line-content   = *( %x00-09 / %x0B-FF )   ; any octet sequence except LF
+trailing       = [ SP line-content ]  ; tolerated, ignored: timestamps, whitespace, etc.
 ```
+
+Three properties of this grammar are easy to misread and are therefore stated explicitly:
+
+- **`line-content` is any octet except LF**, deliberately not ABNF's `VCHAR` (`%x21-7E`). `VCHAR` excludes both the space and every non-ASCII byte, which would reject any context line containing an internal space, any UTF-8 payload — including the em dash in this section's own example below — and the `patch -u` timestamps C2 requires consumers to tolerate.
+- **A hunk line may be empty.** A context line whose content is empty is emitted as a single space, and a lone trailing space is the first thing stripped by editors, mail transports, web forms and any pipeline that trims lines. `git apply` and jsdiff both accept the stripped form, so the grammar admits a bare LF at hunk-line position as a context line with an empty body.
+- **The `Index:` line is optional relative to the `===…` separator.** jsdiff emits the separator without the `Index:` line when a patch is produced through `structuredPatch` + `formatPatch` rather than `createPatch`.
 
 Normative consumer rules:
 
@@ -541,7 +553,7 @@ Normative consumer rules:
 | C2 | V | unified-diff | Trailing data on `---`, `+++`, `diff --git`, and `@@` lines (timestamps as emitted by `patch -u` / GNU `diff -u`, whitespace, etc.) MUST be tolerated and ignored. |
 | C3 | V | unified-diff | The `Index:` preamble (capital `I`, followed by an `===…` separator line) MAY appear; consumers MUST tolerate it. It is *not* the same as the `index <sha>..<sha>` line emitted by `git diff` by default, which is forbidden (see P2). |
 | C4 | V | unified-diff | The `diff --git a/content b/content` line MAY appear before the headers; consumers MUST tolerate it. It is not required. |
-| C5 | A | unified-diff | A `\ No newline at end of file` marker MAY appear in hunks; consumers MUST handle it per the unified-diff spec (it signals the absence of a trailing newline in the corresponding side of the diff). |
+| C5 | A | unified-diff | A hunk line beginning with `\` is a no-newline-at-end-of-file marker: it signals the absence of a trailing newline in the corresponding side of the diff, and consumers MUST handle it per the unified-diff spec. Consumers MUST key on the `\` prefix; **the marker's text is informational and MUST NOT be relied upon**, because GNU diff and git translate it through gettext (`\ No newline at end of file` under an English locale, `\ Kein Zeilenumbruch am Dateiende` under `LANG=de_DE.UTF-8`). Matching the English text loses the signal on a payload produced under another locale, which changes the resulting bytes that PB-1 makes normative. |
 | C6 | A | — | Hunk `@@` line numbers are advisory. Consumers MUST locate each hunk by context match against the current content, subject to the determinism requirement in §5.3. |
 | C7 | V | — | A conforming consumer MUST accept any patch payload matching the consumer grammar above, including a payload carrying a header block and zero hunks (the header-only no-op shape, N2). |
 
@@ -560,7 +572,7 @@ Additional producer rules:
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
 | P1 | V | unified-diff | Minimum 3 lines of context before and after each change block (the default for all reference tools). |
-| P2 | V | — | No `index <oldsha>..<newsha> <mode>` lines (the lowercase-`index` form emitted by `git diff` by default), no `mode` lines, no `similarity index` lines, and no rename metadata. Use `--no-index` with git, or strip these post-hoc. |
+| P2 | V | — | No `index <oldsha>..<newsha> <mode>` lines (the lowercase-`index` form emitted by `git diff` by default), no `mode` lines, no `similarity index` lines, and no rename metadata. Strip these post-hoc. Note that `--no-index` does **not** suppress them — it makes git diff two paths outside a repository and has no effect on index-line emission — so a producer using the `git` invocation recommended above MUST filter the index line itself. |
 | P3 | V | — | UTF-8 encoding, LF line endings inside the payload. |
 | P4 | A | — | Producers SHOULD verify their patch applies cleanly against the target event's resolved content before publishing. |
 
@@ -1385,11 +1397,11 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | C2 | 5.2 | V | unified-diff | Trailing data on header/`@@` lines MUST be tolerated and ignored. |
 | C3 | 5.2 | V | unified-diff | `Index:` preamble MAY appear; MUST be tolerated. |
 | C4 | 5.2 | V | unified-diff | `diff --git` line MAY appear; MUST be tolerated. |
-| C5 | 5.2 | A | unified-diff | `\ No newline at end of file` marker MUST be handled per unified-diff spec. |
+| C5 | 5.2 | A | unified-diff | A hunk line beginning with `\` is a no-newline marker; key on the prefix, not the (localised) text. |
 | C6 | 5.2 | A | — | `@@` line numbers advisory; consumers locate hunks by context match. |
 | C7 | 5.2 | V | — | Consumers MUST accept any payload matching the §5.2 consumer grammar, including zero-hunk payloads. |
 | P1 | 5.2 | V | unified-diff | Minimum 3 lines of context before/after each change block. |
-| P2 | 5.2 | V | — | No `index <sha>..<sha>`, `mode`, `similarity index`, or rename metadata. |
+| P2 | 5.2 | V | — | No `index <sha>..<sha>`, `mode`, `similarity index`, or rename metadata; `--no-index` does not suppress them. |
 | P3 | 5.2 | V | — | UTF-8 encoding, LF line endings inside the payload. |
 | P4 | 5.2 | A | — | Producers SHOULD verify their patch applies cleanly before publishing. |
 | T1 | 5.3 | A | — | Determinism: context+`-` lines MUST occur exactly once in current content. |
