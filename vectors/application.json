@@ -276,7 +276,7 @@
         "chain": {
           "status": "resolved",
           "content": "a\n",
-          "tipId": null,
+          "tipId": "003580e200000000000000000000000000000000000000000000000000000000",
           "applied": []
         }
       }
@@ -512,8 +512,8 @@
     {
       "kind": "chain",
       "name": "chain/foreign-patch-never-enters-the-chain",
-      "rule": "CHN-3",
-      "why": "A foreign patch is an overlay; canonical bytes are unchanged by its presence (RC-2).",
+      "rule": "RC-5",
+      "why": "A foreign patch is an overlay; canonical bytes are unchanged by its presence (RC-2). The chain carries no patches, so the root is the tip (RC-5) and an overlay anchored there is clean, not stale.",
       "rootId": "003580e200000000000000000000000000000000000000000000000000000000",
       "events": [
         {
@@ -579,9 +579,15 @@
         "chain": {
           "status": "resolved",
           "content": "a\n",
-          "tipId": null,
+          "tipId": "003580e200000000000000000000000000000000000000000000000000000000",
           "applied": []
-        }
+        },
+        "overlays": [
+          {
+            "id": "00000c8bf1000000000000000000000000000000000000000000000000000000",
+            "state": "clean"
+          }
+        ]
       }
     },
     {
@@ -690,7 +696,7 @@
         "chain": {
           "status": "resolved",
           "content": "a\n",
-          "tipId": null,
+          "tipId": "003580e200000000000000000000000000000000000000000000000000000000",
           "applied": []
         }
       }
@@ -1310,7 +1316,7 @@
         "chain": {
           "status": "resolved",
           "content": "a\n",
-          "tipId": null,
+          "tipId": "003580e200000000000000000000000000000000000000000000000000000000",
           "applied": []
         }
       }
