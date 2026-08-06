@@ -5,6 +5,16 @@ are terse and cite the affected rule IDs (Appendix F); the rationale for why a *
 as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
 — licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+## v0.6.2
+
+- **New PT-10, PT-11.** §4.4's `e root` reference had a typing rule only for the pending case (§7.6
+  UR-2); no rule rejected an *observed* wrong-typed root — the identical gap BD-3/BD-5 close for
+  Binding endpoints. A Patch whose observed `e root` is not a `scrutiny-product` or
+  `scrutiny-metadata` event is now invalid and MUST NOT be admitted. UR-2/UR-3 needed no change; the
+  rejection partitions the same way BD-6/BD-7 already do. See PT-10, PT-11.
+- Version tag `scrutiny-v061` → `scrutiny-v062`. §3's forward-compatibility example moved from
+  `scrutiny-v062` to `scrutiny-v063`.
+
 ## v0.6.1
 
 - **Appendix G "Conformance vectors."** New `vectors/application.json` (46 cases) and
