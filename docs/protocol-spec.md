@@ -47,27 +47,25 @@ SCRUTINY Fabric is that graph layer. It does NOT redefine SBOM or vulnerability 
 
 ## 3. Versioning & event identification
 
-All SCRUTINY events use `kind: 1` (Nostr short text note). They are identified by required `t` tags and a required `v` tag:
+All SCRUTINY events use `kind: 1` (Nostr short text note). They are identified by required `t` tags:
 
 - `["t", "scrutiny-fabric"]` — required on every SCRUTINY event.
+- `["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"]` — version tag, e.g. `["t", "scrutiny-v0.7.0"]`. Exactly one MUST be present.
 - Exactly one event-type tag:
   - `["t", "scrutiny-product"]`
   - `["t", "scrutiny-metadata"]`
   - `["t", "scrutiny-binding"]`
   - `["t", "scrutiny-patch"]`
-- `["v", "<MAJOR>.<MINOR>.<PATCH>"]` — version tag, e.g. `["v", "0.7.0"]`. Exactly one MUST be present.
 
-An event carrying `scrutiny-fabric` but missing the `v` tag, carrying more than one `v` tag, or carrying more than one `["t","scrutiny-fabric"]` tag, or containing zero or more than one event-type tag, is an invalid SCRUTINY event and MUST NOT be processed as a Product, Metadata, Binding, or Patch. Standard Nostr events (those without `scrutiny-fabric`) are not SCRUTINY events and are outside the scope of this specification.
+An event carrying `scrutiny-fabric` but missing the version tag, carrying more than one version tag, or carrying more than one `["t","scrutiny-fabric"]` tag, or containing zero or more than one event-type tag, is an invalid SCRUTINY event and MUST NOT be processed as a Product, Metadata, Binding, or Patch. Standard Nostr events (those without `scrutiny-fabric`) are not SCRUTINY events and are outside the scope of this specification.
 
-Tag-name convention: SCRUTINY uses kebab-case (`scrutiny-fabric`, `scrutiny-product`, etc.). Underscored variants from older drafts are not recognized.
+Tag-name convention: SCRUTINY uses kebab-case (`scrutiny-fabric`, `scrutiny-product`, etc.). Underscored variants from older drafts are not recognized. The version tag's value is the one exception: `MAJOR.MINOR.PATCH` uses dot separators, matching universal semantic-versioning notation, inside an otherwise kebab-case `t`-tag value.
 
-**Version-tag form.** The version tag is a single-letter `v` tag, outside the `t` tag namespace, following the same NIP-01 single-letter relay-indexing precedent (`#v`) that `i`/`k` already use (§3.1) — unlike `i`/`k`, the `v` tag is not NIP-73-shaped or externally defined; it is SCRUTINY's own. Its value matches the regular expression `^\d+\.\d+\.\d+$`: three unpadded decimal integers, `MAJOR.MINOR.PATCH` (`["v", "0.7.0"]` ≡ v0.7.0), with no fixed width and no digit-count ceiling in any field — MAJOR included. This retires the three-digit `scrutiny-vMMP` `t`-tag scheme outright (`^scrutiny-v\d{3}$`, one digit per field): there is no dual-path acceptance of the old form anywhere in this specification, since no real corpus exists to preserve compatibility with.
+**Version-tag form.** Version tags match the regular expression `^scrutiny-v\d+\.\d+\.\d+$`: `MAJOR`, `MINOR`, `PATCH` are unpadded decimal integers (`scrutiny-v0.7.0` ≡ v0.7.0), with no fixed width and no digit-count ceiling in any field — MAJOR included. This retires the three-digit `scrutiny-vMMP` form outright (`^scrutiny-v\d{3}$`, one digit per field): there is no dual-path acceptance of the old form anywhere in this specification, since no real corpus exists to preserve compatibility with. The fix stays inside the `t` tag namespace SCRUTINY already owns via the `scrutiny-` prefix, rather than minting a new single-letter tag with no NIP behind it (see DECISIONS.md S7).
 
-**Version-tag ordering.** Ordering between two version tags is a per-field numeric tuple comparison: parse `MAJOR`, `MINOR`, `PATCH` as separate decimal integers from the `v` tag value and compare `(MAJOR, MINOR, PATCH)` field-by-field as numbers. This is never a wholesale string or lexicographic comparison of the tag value. The retired scheme's "lexicographic comparison coincides with semantic ordering" claim held only because every field was fixed at exactly one digit; the moment a field needs two digits, the claim stops holding — a two-character `"10"` sorts before a one-character `"9"` under a string `<` comparison, the opposite of numeric order — and it does not survive the ceiling's removal.
+**Version-tag ordering.** Ordering between two version tags is a per-field numeric tuple comparison: parse `MAJOR`, `MINOR`, `PATCH` as separate decimal integers from the tag value and compare `(MAJOR, MINOR, PATCH)` field-by-field as numbers. This is never a wholesale string or lexicographic comparison of the tag value. The retired scheme's "lexicographic comparison coincides with semantic ordering" claim held only because every field was fixed at exactly one digit; the moment a field needs two digits, the claim stops holding — a two-character `"10"` sorts before a one-character `"9"` under a string `<` comparison, the opposite of numeric order — and it does not survive the ceiling's removal.
 
-**Mutability.** A `v` tag is fixed per-event by construction: patches modify only `content` (§4.4), never tags. The mutability question §4.5's IX-3 raises for `i`/`k` tags on root events — whether an indexer can change after publication — does not arise for `v`: it types the wire format of the one event carrying it, not a chain's evolving content, so no analogous rule is needed.
-
-**Forward-compatibility.** Unknown tags MUST be ignored by parsers. An event carrying a higher version tag than the implementation's own (e.g., a v0.7.0 implementation encountering `["v", "0.7.1"]`) MAY be admitted opaquely — i.e., admitted to local storage and discoverable — provided that the event still satisfies every Validity invariant of this specification (§6.0). An event carrying a higher version tag that violates a v0.7.0 Validity invariant (e.g., a new event-type `t` tag that this specification does not recognise, producing zero recognised event-type tags) MUST be treated as an unknown event type and MUST NOT be rendered as a Product, Metadata, Binding, or Patch. Implementations MUST NOT reject higher-version events *solely* because of the version tag.
+**Forward-compatibility.** Unknown tags MUST be ignored by parsers. An event carrying a higher version tag than the implementation's own (e.g., a v0.7.0 implementation encountering `scrutiny-v0.7.1`) MAY be admitted opaquely — i.e., admitted to local storage and discoverable — provided that the event still satisfies every Validity invariant of this specification (§6.0). An event carrying a higher version tag that violates a v0.7.0 Validity invariant (e.g., a new event-type `t` tag that this specification does not recognise, producing zero recognised event-type tags) MUST be treated as an unknown event type and MUST NOT be rendered as a Product, Metadata, Binding, or Patch. Implementations MUST NOT reject higher-version events *solely* because of the version tag.
 
 **Signature and identifier verification.** Before processing any event, implementations MUST verify both that its `sig` is a valid Schnorr signature for its `pubkey` over its `id`, and that its `id` equals the SHA-256 of its NIP-01 canonical serialization. Verifying the signature alone is insufficient: the signature commits to the `id`, so an event whose `content` or `tags` were altered while retaining the original `id` and `sig` still passes a signature-only check.
 
@@ -76,7 +74,7 @@ This applies to **every event an implementation consumes**, including kind 5 del
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
 | TAG-1 | V | — | Every SCRUTINY event MUST carry exactly one `["t","scrutiny-fabric"]` tag. |
-| TAG-2 | V | — | Every SCRUTINY event MUST carry exactly one `v` tag whose value matches `^\d+\.\d+\.\d+$`. |
+| TAG-2 | V | — | Every SCRUTINY event MUST carry exactly one version `t` tag matching `^scrutiny-v\d+\.\d+\.\d+$`. |
 | TAG-3 | V | — | Every SCRUTINY event MUST carry exactly one event-type `t` tag from `{scrutiny-product, scrutiny-metadata, scrutiny-binding, scrutiny-patch}`. |
 | TAG-4 | V | — | Tag names use kebab-case; underscored variants from older drafts are not recognised. |
 | TAG-5 | V | NIP-01 | Unknown tags MUST be ignored by parsers. |
@@ -107,8 +105,6 @@ SCRUTINY Fabric depends on the following NIPs from the Nostr protocol ecosystem:
 
 SCRUTINY uses `i` tags with `#i` relay indexing (enabled by NIP-01's single-letter tag indexing convention). The `i` tag format is modeled on NIP-73's `<prefix>:<value>` convention and pairs each `i` tag with a corresponding `k` tag indicating the prefix kind. SCRUTINY defines its own prefix registry (§9) rather than using NIP-73's predefined types (ISBN, DOI, ISAN, etc.), which are media-oriented and unsuitable for security indexers.
 
-SCRUTINY uses the same NIP-01 single-letter tag indexing convention for its `v` (version) tag, relay-indexable via `#v` (§3). Unlike `i`/`k`, the `v` tag is not modeled on any NIP — its grammar and semantics are wholly SCRUTINY's own; NIP-01 supplies only the indexing mechanism, not the tag's meaning.
-
 #### Optional publisher and consumer signals (MAY)
 
 The following NIPs provide auxiliary signals that implementations MAY use for ranking, spam deterrence, or attention economics. None are required for protocol conformance. Each operates on a distinct axis:
@@ -131,8 +127,7 @@ SCRUTINY is a thin layer on top of Nostr and CommonMark. Behaviour in the follow
 
 | Topic | Inherited from | What this means for SCRUTINY |
 |---|---|---|
-| Event structure, JSON encoding, signatures, relay protocol, single-letter tag indexing (`#e`, `#t`, `#i`, `#k`, `#v`, …) | NIP-01 | SCRUTINY events are kind:1 events. NIP-01 defines the signature scheme and id derivation; SCRUTINY requires that both be *performed* before processing (SIG-1). Tag-based relay indexing is NIP-01's responsibility. |
-| `v` tag: version identification, `["v", "<MAJOR>.<MINOR>.<PATCH>"]` (§3) | NIP-01 (single-letter indexing convention only) | Unlike the `i`/`k` row above, the `v` tag's grammar and semantics are wholly SCRUTINY's own, not inherited from any NIP or NIP-73-shaped external registry — NIP-01 supplies only the `#v` relay-indexing mechanism. |
+| Event structure, JSON encoding, signatures, relay protocol, single-letter tag indexing (`#e`, `#t`, `#i`, `#k`, …) | NIP-01 | SCRUTINY events are kind:1 events. NIP-01 defines the signature scheme and id derivation; SCRUTINY requires that both be *performed* before processing (SIG-1). Tag-based relay indexing is NIP-01's responsibility. |
 | Kind 5 deletion: author-match rule, multi-`e`-tag deletions, optional `k`-tag scoping, relay honour semantics | NIP-09 | A kind 5 event MAY carry multiple `e` tags; each `e` target is treated as an independent deletion intent, gated by the per-target author-match check. Kind 5 events typically do not carry a `scrutiny-fabric` `t` tag; discovery uses `{kinds:[5], #e:[<id>]}` (§8). |
 | `e` tag marker grammar (`root` / `reply`), relay-hint empty-string convention, advisory author hint | NIP-10 | The relay-hint field MAY be the empty string `""` meaning "no hint." A mismatch between the author-hint suffix and the actual event `pubkey` does not invalidate the referencing event (§4.3). |
 | `i` tag / `k` tag semantics: external content IDs as `<prefix>:<value>`, `k` as the *kind* of identifier | NIP-73 | SCRUTINY defines its own prefix registry (§9) rather than NIP-73's media-oriented predefined types, but uses NIP-73's tag *shape* and *semantics* unchanged. `k` is the set of identifier kinds present in the event (§4.1, §9), not a per-`i` label. |
@@ -145,7 +140,7 @@ Where the base layer offers a normative choice (e.g., NIP-09 allows but does not
 
 ## 4. Event types
 
-All events in this section additionally carry the required `t` tags per §3 (`scrutiny-fabric` and exactly one event-type tag) and the required `v` tag. The tables below show event-type-specific tags only.
+All events in this section additionally carry the required `t` tags per §3 (`scrutiny-fabric`, `scrutiny-v0.7.0`, and exactly one event-type tag). The tables below show event-type-specific tags only.
 
 ```mermaid
 graph RL
@@ -195,7 +190,7 @@ A Product event identifies a specific product, hardware model, software package,
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["i", "cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*"],
     ["k", "cpe"]
   ]
@@ -235,7 +230,7 @@ The shape is identical to Product. The distinction is purely semantic, expressed
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-metadata"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["i", "cve:CVE-2017-15361"],
     ["k", "cve"],
     ["i", "cwe:CWE-310"],
@@ -295,7 +290,7 @@ Bindings are immutable signed assertions. Third parties who believe a binding is
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-binding"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111...", "", "root", "vendor_pk..."],
     ["e", "bbb222...", "", "link", "researcher_pk..."]
   ]
@@ -342,7 +337,7 @@ A patch event MUST carry zero or one fenced `diff` / `patch` code block. If mult
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111...", "", "root", "vendor_pk..."],
     ["e", "aaa111...", "", "reply", "vendor_pk..."]
   ]
@@ -632,7 +627,7 @@ The three layers are:
 
 **V — Validity.** Is this event well-formed and admissible as a SCRUTINY event? V rules cover:
 
-- The §3 tag invariants (exactly one `["t","scrutiny-fabric"]` tag, exactly one `v` tag, exactly one event-type `t` tag).
+- The §3 tag invariants (exactly one `["t","scrutiny-fabric"]` tag, exactly one version `t` tag, exactly one event-type `t` tag).
 - The event-type-specific schema in §4 (required `e` tag markers, well-formed cardinalities, endpoint typing once endpoints are observable per the §4.3 pending-endpoint lifecycle).
 - The patch-payload envelope and unified-diff format grammar (§5.2 E1–E3, E5, E6, C1–C4, C7, P2). §5.1's prose defines the payload boundary that grammar applies to, but its own two rules are Application rules and are listed under A below — this bullet cites no rule from §5.1.
 - The `i` tag value grammar (§9 IR-1, IR-2, IR-3).
@@ -1155,7 +1150,7 @@ Event IDs use the convention `<letters><digits>` for clarity (real Nostr IDs are
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["i", "cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*"],
     ["k", "cpe"],
     ["i", "cc:BSI-DSZ-CC-0814-2012"],
@@ -1176,7 +1171,7 @@ Event IDs use the convention `<letters><digits>` for clarity (real Nostr IDs are
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-metadata"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["i", "cve:CVE-2017-15361"],
     ["k", "cve"],
     ["i", "cwe:CWE-310"],
@@ -1199,7 +1194,7 @@ The researcher publishes a Binding asserting the vulnerability connection.
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-binding"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "bbb222", "", "link", "researcher_pk"]
   ]
@@ -1222,7 +1217,7 @@ The vendor publishes a patch updating the Product's description with firmware re
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "aaa111", "", "reply", "vendor_pk"]
   ]
@@ -1245,7 +1240,7 @@ An auditor objects to the firmware-revision wording, asserting the chip was actu
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["v", "0.7.0"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "ddd444", "", "reply", "vendor_pk"]
   ]
@@ -1321,7 +1316,7 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | ID | § | Layer | Inherits from | Summary |
 |---|---|---|---|---|
 | TAG-1 | 3 | V | — | Exactly one `["t","scrutiny-fabric"]` tag. |
-| TAG-2 | 3 | V | — | Exactly one `v` tag matching `^\d+\.\d+\.\d+$`. |
+| TAG-2 | 3 | V | — | Exactly one version `t` tag matching `^scrutiny-v\d+\.\d+\.\d+$`. |
 | TAG-3 | 3 | V | — | Exactly one event-type `t` tag from the recognised set. |
 | TAG-4 | 3 | V | — | Tag names use kebab-case. |
 | TAG-5 | 3 | V | NIP-01 | Unknown tags MUST be ignored. |
