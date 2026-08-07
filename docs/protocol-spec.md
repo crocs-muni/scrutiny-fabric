@@ -1471,8 +1471,8 @@ The vectors live in this repository under `vectors/`, one file per rule category
 
 | File | Category | Layer | Cases | SHA-256 |
 |---|---|---|---|---|
-| `vectors/application.json` | application | A | 46 | `692d0343d4ed7e14885718243c00fcd1f69b9931fa5938fd7a55b5b1c5f0e07c` |
-| `vectors/validity.json` | validity | V | 19 | `b4709aa981d4fd855b4de57eeb7d3ff6364feafb132aaf4334f19085d61a40bf` |
+| `vectors/application.json` | application | A | 46 | `969e93e95a3b818daedda8a7b47d3cfcafcfc0d5b3848e1e13a5d4fcffaefdf9` |
+| `vectors/validity.json` | validity | V | 19 | `bff8eaca6c85e8676c15b63b87f836a59a45d4ea9117b0bce8807eb9d4b43f1e` |
 
 Two further categories are reserved and not yet published: `vectors/discovery.json` (D-layer) and `vectors/serialization.json` (§3 event-id serialization). Their absence is not a statement that the D layer is untestable.
 
