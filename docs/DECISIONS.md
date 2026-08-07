@@ -49,8 +49,12 @@ a reader asking "why does T2 work this way?" had to know which release touched T
 Three digits, MAJOR/MINOR/PATCH, `^scrutiny-v\d{3}$` (VER-1), embedded on every wire event. SemVer's
 model doesn't fit a fixed-width protocol-visible field, and neither does CalVer or W3C's dated-URI
 scheme — changing the tag format itself would be a breaking change to every implementation. Kept
-as-is. **Open question below**: PATCH-slot exhaustion behaviour at the ten-revisions-per-MINOR
-boundary is not yet specified.
+as-is.
+
+**Superseded by S7 (v0.7.0).** The "changing the format is itself breaking, so don't" reasoning above
+turned out to be exactly backwards: not changing the format meant the ordering claim (VER-1) was
+already false the moment any field needed two digits, not just at the eventual digit-count wall. F14
+retires the `t`-tag scheme this decision kept.
 
 ## S5 — Governance / citation / contributing infrastructure deferred
 
@@ -85,6 +89,41 @@ Three options were identified, none clean without a decision that wasn't this pa
 **Decision:** skip CI for now — `scrutiny-fabric-tools` stays private. Revisit once that changes;
 option 3 is the one that also removes the blocker for good rather than working around it.
 
+## S7 — Version-tag scheme retired: dedicated `v` tag replaces `scrutiny-vMMP` (F13/F14 landing)
+
+S4 kept the three-digit `t`-tag scheme on the reasoning that changing the format was itself a breaking
+change to avoid. F13/F14's independent re-verification (`scrutiny-fabric-tools/docs/SPEC-FEEDBACK-
+v0.6.0.md`) found the ordering claim (VER-1) was already false the moment any field needed two
+digits — not only at the eventual MAJOR=9/MINOR=9 wall D45 first hit. Fixing the ordering claim
+without also removing the fixed-width ceiling would just relocate the same defect one release later,
+so this pass retires the scheme outright: a dedicated `["v", "<MAJOR>.<MINOR>.<PATCH>"]` tag,
+unpadded decimal integers, no digit-count ceiling in any field, no dual-path acceptance of the old
+form.
+
+**One release or two.** F13 (PT-10/PT-11 — two new V rules, additive, no downstream sweep) landed
+alone as v0.6.2. F14 (the breaking wire-format rewrite, whole-document sweep, Appendix G vector
+regeneration) landed separately as v0.7.0. Bundling them would have made F13's already-fully-
+specified fix wait on F14's much larger scope for no reason.
+
+**Version number: v0.7.0, not v0.6.3 or v1.0.0.** Not PATCH — F14 breaks every previously-valid
+event's wire format, no grandfather clause. Not MAJOR — D45's own precedent (v0.5.9 → v0.6.0) already
+established that this spec treats a breaking change as the MINOR slot while MAJOR stays 0, the
+standard pre-1.0 semver carve-out ("anything MAY change" under major-zero). D45's forcing was a hit
+ceiling; F14's is a deliberate breaking rewrite, but the same MINOR-not-MAJOR logic applies to both.
+
+**Appendix G vectors regenerated here; `scrutiny-fabric-tools`'s vendored copies are not.** Both
+`vectors/application.json` and `vectors/validity.json` carried the old `t`-tag scheme in every
+fixture event (100 occurrences total) and were swept to the `v` tag in this release, with fresh
+SHA-256 digests recorded in Appendix G. This was safe without any signing infrastructure: every
+fixture in both files already carries an all-zero placeholder `id`/`sig` (G.3 states this for
+`application.json`; it holds for `validity.json` too, on inspection) — retagging changed no
+cryptographic relationship that existed to begin with.
+
+What this repo cannot fix: `scrutiny-fabric-tools/packages/core`'s checksum-pinned vendored copies of
+these two files (D33's gate) are pinned to the pre-F14 digest. The moment this release merges, that
+pin is stale — the vendored corpus no longer matches what Appendix G's table now says it should.
+Re-vendoring at the new digest is that repo's own follow-up, not scheduled here.
+
 ---
 
 ## Open questions
@@ -93,7 +132,3 @@ option 3 is the one that also removes the blocker for good rather than working a
 - No formal **Scope** clause, **Conformance** clause, or collected **Normative References** section.
   Currently implicit in §1 Abstract, the rule tables collectively, and each rule's "inherits from"
   column, respectively. A rigorous spec states these explicitly; whether to add them is undecided.
-- **PATCH-slot exhaustion.** What happens at the `scrutiny-v0510`-equivalent boundary — does MINOR
-  roll and PATCH reset (`scrutiny-v070`), or does the tag format itself change? Currently
-  unspecified, and this is the first revision close enough to the boundary (`v061` of ten) that the
-  question stops being hypothetical.

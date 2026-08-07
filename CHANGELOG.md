@@ -5,6 +5,25 @@ are terse and cite the affected rule IDs (Appendix F); the rationale for why a *
 as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
 — licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+## v0.7.0
+
+- **Why 0.7.0 and not 0.6.3.** F14 retires the `scrutiny-vMMP` `t`-tag version scheme outright — every
+  event's wire format changes, no dual-path acceptance. Pre-1.0 semver treats a breaking change as the
+  MINOR slot (MAJOR stays 0), the same convention D45 applied when the ceiling first forced
+  v0.5.9→v0.6.0. See DECISIONS.md S7.
+- **TAG-2 and VER-1 rewritten.** Version identification moves to a dedicated single-letter `v` tag,
+  `["v", "<MAJOR>.<MINOR>.<PATCH>"]`, unpadded decimal integers with no digit-count ceiling in any
+  field. Ordering is now an explicit per-field numeric tuple comparison, never lexicographic — the old
+  "zero-padded" claim held only under the one-digit-per-field ceiling this removes. See TAG-2, VER-1,
+  §3.
+- **New §3.2 row for `v`.** Unlike `i`/`k`, the `v` tag is SCRUTINY's own, not NIP-73-shaped; NIP-01
+  supplies only the `#v` relay-indexing mechanism. See §3.1, §3.2.
+- **Downstream sweep.** Every mini-example in §4.1–§4.4 and Appendix D's worked example moved from
+  `["t", "scrutiny-v0NN"]` to the `v` tag. Appendix G's own vectors (`vectors/application.json`,
+  `vectors/validity.json`) regenerated under the new scheme; digests in the Appendix G table updated
+  accordingly. `scrutiny-fabric-tools`'s checksum-pinned vendored copies are stale as of this release
+  — see DECISIONS.md S7.
+
 ## v0.6.2
 
 - **New PT-10, PT-11.** §4.4's `e root` reference had a typing rule only for the pending case (§7.6
