@@ -89,16 +89,30 @@ Three options were identified, none clean without a decision that wasn't this pa
 **Decision:** skip CI for now — `scrutiny-fabric-tools` stays private. Revisit once that changes;
 option 3 is the one that also removes the blocker for good rather than working around it.
 
-## S7 — Version-tag scheme retired: dedicated `v` tag replaces `scrutiny-vMMP` (F13/F14 landing)
+## S7 — Version-tag scheme retired: unpadded `scrutiny-v<MAJOR>.<MINOR>.<PATCH>` replaces `scrutiny-vMMP` (F13/F14 landing)
 
 S4 kept the three-digit `t`-tag scheme on the reasoning that changing the format was itself a breaking
 change to avoid. F13/F14's independent re-verification (`scrutiny-fabric-tools/docs/SPEC-FEEDBACK-
 v0.6.0.md`) found the ordering claim (VER-1) was already false the moment any field needed two
 digits — not only at the eventual MAJOR=9/MINOR=9 wall D45 first hit. Fixing the ordering claim
 without also removing the fixed-width ceiling would just relocate the same defect one release later,
-so this pass retires the scheme outright: a dedicated `["v", "<MAJOR>.<MINOR>.<PATCH>"]` tag,
-unpadded decimal integers, no digit-count ceiling in any field, no dual-path acceptance of the old
-form.
+so this pass retires the fixed-width form outright: unpadded decimal integers, no digit-count ceiling
+in any field, no dual-path acceptance of the old form.
+
+**Rejected alternative: a dedicated `v` tag.** The amendment initially shipped as a new single-letter
+`["v", "<MAJOR>.<MINOR>.<PATCH>"]` tag, on the premise that this followed the same precedent as `i`/`k`
+(§3.1). Caught in review before merge: the precedent doesn't hold. `i`/`k` reuse letters an *existing*
+NIP (NIP-73) already claims; a new `v` tag would be SCRUTINY unilaterally minting a claim on a
+previously-unclaimed letter, backed by no NIP. Checked against the actual registry, not just
+recollection: NIP-01 itself reserves only `e`/`p`/`a`; every other single-letter tag in the ecosystem
+(`d`, `g`, `i`, `k`, `l`/`L`, `r`, `t`, `u`, `x`, `m`, …) was claimed by precedent, not by a central
+reservation process, and a grep of all 99 files in `nostr-protocol/nips` for a literal `["v", ...]` tag
+found zero hits — `v` is unclaimed today, but nothing stops another kind:1-based application from
+claiming it later, and there is no registry to check against to find out. Worse, the new tag bought
+nothing: the stated motivation was `#v` relay-side filtering, but `{"#t": ["scrutiny-v0.7.0"]}`
+already gives identical exact-match filtering on the existing `t`-tag value. Reworked to widen the
+existing `scrutiny-` `t`-tag's value instead — the fix stays inside a namespace SCRUTINY already owns
+by prefix, so no new standardization exposure at all, at the same implementation cost.
 
 **One release or two.** F13 (PT-10/PT-11 — two new V rules, additive, no downstream sweep) landed
 alone as v0.6.2. F14 (the breaking wire-format rewrite, whole-document sweep, Appendix G vector
@@ -112,8 +126,8 @@ standard pre-1.0 semver carve-out ("anything MAY change" under major-zero). D45'
 ceiling; F14's is a deliberate breaking rewrite, but the same MINOR-not-MAJOR logic applies to both.
 
 **Appendix G vectors regenerated here; `scrutiny-fabric-tools`'s vendored copies are not.** Both
-`vectors/application.json` and `vectors/validity.json` carried the old `t`-tag scheme in every
-fixture event (100 occurrences total) and were swept to the `v` tag in this release, with fresh
+`vectors/application.json` and `vectors/validity.json` carried the old fixed-width form in every
+fixture event (100 occurrences total) and were swept to the unpadded form in this release, with fresh
 SHA-256 digests recorded in Appendix G. This was safe without any signing infrastructure: every
 fixture in both files already carries an all-zero placeholder `id`/`sig` (G.3 states this for
 `application.json`; it holds for `validity.json` too, on inspection) — retagging changed no
