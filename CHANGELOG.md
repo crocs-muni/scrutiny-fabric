@@ -5,6 +5,37 @@ are terse and cite the affected rule IDs (Appendix F); the rationale for why a *
 as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
 — licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+## v0.7.0
+
+- **Why 0.7.0 and not 0.6.3.** F14 retires the fixed-width `scrutiny-vMMP` version-tag form outright —
+  every event's wire format changes, no dual-path acceptance. Pre-1.0 semver treats a breaking change
+  as the MINOR slot (MAJOR stays 0), the same convention D45 applied when the ceiling first forced
+  v0.5.9→v0.6.0. See DECISIONS.md S7.
+- **TAG-2 and VER-1 rewritten.** The version tag stays a `t` tag — `["t", "scrutiny-v<MAJOR>.<MINOR>.
+  <PATCH>"]` — but its value is now unpadded decimal integers with no digit-count ceiling in any field,
+  instead of the old fixed 3-digit form. Ordering is now an explicit per-field numeric tuple
+  comparison, never lexicographic — the old "zero-padded" claim held only under the one-digit-per-field
+  ceiling this removes. See TAG-2, VER-1, §3.
+- **No new tag introduced.** An earlier draft of this amendment proposed a dedicated single-letter `v`
+  tag; reworked before release to widen the existing `t`-tag value instead, since the new-tag design
+  claimed a NIP-unbacked letter for no corresponding benefit (`{"#t": [...]}` already gives the same
+  relay-side filtering). See DECISIONS.md S7.
+- **Downstream sweep.** Every mini-example in §4.1–§4.4 and Appendix D's worked example moved from
+  `["t", "scrutiny-v0NN"]` to `["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"]`. Appendix G's own vectors
+  (`vectors/application.json`, `vectors/validity.json`) regenerated under the new form; digests in the
+  Appendix G table updated accordingly. `scrutiny-fabric-tools`'s checksum-pinned vendored copies are
+  stale as of this release — see DECISIONS.md S7.
+
+## v0.6.2
+
+- **New PT-10, PT-11.** §4.4's `e root` reference had a typing rule only for the pending case (§7.6
+  UR-2); no rule rejected an *observed* wrong-typed root — the identical gap BD-3/BD-5 close for
+  Binding endpoints. A Patch whose observed `e root` is not a `scrutiny-product` or
+  `scrutiny-metadata` event is now invalid and MUST NOT be admitted. UR-2/UR-3 needed no change; the
+  rejection partitions the same way BD-6/BD-7 already do. See PT-10, PT-11.
+- Version tag `scrutiny-v061` → `scrutiny-v062`. §3's forward-compatibility example moved from
+  `scrutiny-v062` to `scrutiny-v063`.
+
 ## v0.6.1
 
 - **Appendix G "Conformance vectors."** New `vectors/application.json` (46 cases) and

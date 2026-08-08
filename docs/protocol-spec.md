@@ -1,6 +1,6 @@
-# SCRUTINY Fabric — Protocol Specification v0.6.1
+# SCRUTINY Fabric — Protocol Specification v0.7.0
 
-**Version:** 0.6.1
+**Version:** 0.7.0
 **Status:** Draft
 
 ---
@@ -50,7 +50,7 @@ SCRUTINY Fabric is that graph layer. It does NOT redefine SBOM or vulnerability 
 All SCRUTINY events use `kind: 1` (Nostr short text note). They are identified by required `t` tags:
 
 - `["t", "scrutiny-fabric"]` — required on every SCRUTINY event.
-- `["t", "scrutiny-v061"]` — version tag. Exactly one version tag MUST be present.
+- `["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"]` — version tag, e.g. `["t", "scrutiny-v0.7.0"]`. Exactly one MUST be present.
 - Exactly one event-type tag:
   - `["t", "scrutiny-product"]`
   - `["t", "scrutiny-metadata"]`
@@ -59,11 +59,13 @@ All SCRUTINY events use `kind: 1` (Nostr short text note). They are identified b
 
 An event carrying `scrutiny-fabric` but missing the version tag, carrying more than one version tag, or carrying more than one `["t","scrutiny-fabric"]` tag, or containing zero or more than one event-type tag, is an invalid SCRUTINY event and MUST NOT be processed as a Product, Metadata, Binding, or Patch. Standard Nostr events (those without `scrutiny-fabric`) are not SCRUTINY events and are outside the scope of this specification.
 
-Tag-name convention: SCRUTINY uses kebab-case (`scrutiny-fabric`, `scrutiny-product`, etc.). Underscored variants from older drafts are not recognized.
+Tag-name convention: SCRUTINY uses kebab-case (`scrutiny-fabric`, `scrutiny-product`, etc.). Underscored variants from older drafts are not recognized. The version tag's value is the one exception: `MAJOR.MINOR.PATCH` uses dot separators, matching universal semantic-versioning notation, inside an otherwise kebab-case `t`-tag value.
 
-**Version-tag form.** Version tags match the regular expression `^scrutiny-v\d{3}$`. The three digits encode `MAJOR`, `MINOR`, `PATCH` respectively (`scrutiny-v061` ≡ v0.6.1). Comparisons between version tags are lexicographic on the three-digit suffix, which coincides with semantic ordering because the digits are zero-padded.
+**Version-tag form.** Version tags match the regular expression `^scrutiny-v\d+\.\d+\.\d+$`: `MAJOR`, `MINOR`, `PATCH` are unpadded decimal integers (`scrutiny-v0.7.0` ≡ v0.7.0), with no fixed width and no digit-count ceiling in any field — MAJOR included. This retires the three-digit `scrutiny-vMMP` form outright (`^scrutiny-v\d{3}$`, one digit per field): there is no dual-path acceptance of the old form anywhere in this specification, since no real corpus exists to preserve compatibility with. The fix stays inside the `t` tag namespace SCRUTINY already owns via the `scrutiny-` prefix, rather than minting a new single-letter tag with no NIP behind it (see DECISIONS.md S7).
 
-**Forward-compatibility.** Unknown tags MUST be ignored by parsers. An event carrying a higher version tag than the implementation's own (e.g., a v0.6.1 implementation encountering `scrutiny-v062`) MAY be admitted opaquely — i.e., admitted to local storage and discoverable — provided that the event still satisfies every Validity invariant of this specification (§6.0). An event carrying a higher version tag that violates a v0.6.1 Validity invariant (e.g., a new event-type `t` tag that this specification does not recognise, producing zero recognised event-type tags) MUST be treated as an unknown event type and MUST NOT be rendered as a Product, Metadata, Binding, or Patch. Implementations MUST NOT reject higher-version events *solely* because of the version tag.
+**Version-tag ordering.** Ordering between two version tags is a per-field numeric tuple comparison: parse `MAJOR`, `MINOR`, `PATCH` as separate decimal integers from the tag value and compare `(MAJOR, MINOR, PATCH)` field-by-field as numbers. This is never a wholesale string or lexicographic comparison of the tag value. The retired scheme's "lexicographic comparison coincides with semantic ordering" claim held only because every field was fixed at exactly one digit; the moment a field needs two digits, the claim stops holding — a two-character `"10"` sorts before a one-character `"9"` under a string `<` comparison, the opposite of numeric order — and it does not survive the ceiling's removal.
+
+**Forward-compatibility.** Unknown tags MUST be ignored by parsers. An event carrying a higher version tag than the implementation's own (e.g., a v0.7.0 implementation encountering `scrutiny-v0.7.1`) MAY be admitted opaquely — i.e., admitted to local storage and discoverable — provided that the event still satisfies every Validity invariant of this specification (§6.0). An event carrying a higher version tag that violates a v0.7.0 Validity invariant (e.g., a new event-type `t` tag that this specification does not recognise, producing zero recognised event-type tags) MUST be treated as an unknown event type and MUST NOT be rendered as a Product, Metadata, Binding, or Patch. Implementations MUST NOT reject higher-version events *solely* because of the version tag.
 
 **Signature and identifier verification.** Before processing any event, implementations MUST verify both that its `sig` is a valid Schnorr signature for its `pubkey` over its `id`, and that its `id` equals the SHA-256 of its NIP-01 canonical serialization. Verifying the signature alone is insufficient: the signature commits to the `id`, so an event whose `content` or `tags` were altered while retaining the original `id` and `sig` still passes a signature-only check.
 
@@ -72,11 +74,11 @@ This applies to **every event an implementation consumes**, including kind 5 del
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
 | TAG-1 | V | — | Every SCRUTINY event MUST carry exactly one `["t","scrutiny-fabric"]` tag. |
-| TAG-2 | V | — | Every SCRUTINY event MUST carry exactly one version `t` tag matching `^scrutiny-v\d{3}$`. |
+| TAG-2 | V | — | Every SCRUTINY event MUST carry exactly one version `t` tag matching `^scrutiny-v\d+\.\d+\.\d+$`. |
 | TAG-3 | V | — | Every SCRUTINY event MUST carry exactly one event-type `t` tag from `{scrutiny-product, scrutiny-metadata, scrutiny-binding, scrutiny-patch}`. |
 | TAG-4 | V | — | Tag names use kebab-case; underscored variants from older drafts are not recognised. |
 | TAG-5 | V | NIP-01 | Unknown tags MUST be ignored by parsers. |
-| VER-1 | V | — | The three digits in `scrutiny-vMMP` encode MAJOR/MINOR/PATCH. Lexicographic comparison coincides with semantic ordering. |
+| VER-1 | V | — | Ordering between two version tags is a per-field numeric tuple comparison of `(MAJOR, MINOR, PATCH)`; never a lexicographic string comparison. |
 | VER-2 | V | — | A higher-version event MAY be admitted opaquely if it satisfies every Validity invariant of this specification. |
 | VER-3 | V | — | A higher-version event that violates a Validity invariant of this specification MUST NOT be rendered as a Product, Metadata, Binding, or Patch. |
 | VER-4 | V | — | Implementations MUST NOT reject higher-version events *solely* because of the version tag. |
@@ -138,7 +140,7 @@ Where the base layer offers a normative choice (e.g., NIP-09 allows but does not
 
 ## 4. Event types
 
-All events in this section additionally carry the required `t` tags per §3 (`scrutiny-fabric`, `scrutiny-v061`, and exactly one event-type tag). The tables below show event-type-specific tags only.
+All events in this section additionally carry the required `t` tags per §3 (`scrutiny-fabric`, `scrutiny-v0.7.0`, and exactly one event-type tag). The tables below show event-type-specific tags only.
 
 ```mermaid
 graph RL
@@ -188,7 +190,7 @@ A Product event identifies a specific product, hardware model, software package,
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["i", "cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*"],
     ["k", "cpe"]
   ]
@@ -228,7 +230,7 @@ The shape is identical to Product. The distinction is purely semantic, expressed
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-metadata"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["i", "cve:CVE-2017-15361"],
     ["k", "cve"],
     ["i", "cwe:CWE-310"],
@@ -288,7 +290,7 @@ Bindings are immutable signed assertions. Third parties who believe a binding is
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-binding"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111...", "", "root", "vendor_pk..."],
     ["e", "bbb222...", "", "link", "researcher_pk..."]
   ]
@@ -335,12 +337,14 @@ A patch event MUST carry zero or one fenced `diff` / `patch` code block. If mult
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111...", "", "root", "vendor_pk..."],
     ["e", "aaa111...", "", "reply", "vendor_pk..."]
   ]
 }
 ```
+
+**Root typing.** The event referenced by `e root` MUST be a `scrutiny-product` or `scrutiny-metadata` event. A Patch whose observed `e root` violates this is an invalid SCRUTINY event and MUST NOT be admitted — the identical rejection shape §4.3 already gives a Binding's endpoints (BD-3/BD-5), applied to a Patch's own root reference. Unlike a Binding, no separate caching rule is needed: §7.6 UR-3 already forbids caching a Patch's authorship class while its root is unobserved, and once the root is observed this classification cannot change on further observation (the root's own type is immutable), so a cached rejection falls out of UR-3 as written. §7.6 UR-2 covers the pending case (root not yet observed); this rule is deliberately scoped to the observed case, so the two partition the same way BD-6/BD-7 already do for Bindings.
 
 **Authorship classification** (interpretive, not enforced by tags):
 
@@ -360,6 +364,8 @@ A patch event MUST carry zero or one fenced `diff` / `patch` code block. If mult
 | PT-7 | V | — | A foreign patch's `e reply` MUST point at the root event or a root-author patch. Overlay-to-overlay reply is invalid (§7.3). |
 | PT-8 | A | — | A no-op patch (no fenced block, or header-only fenced block per §5.2 N1/N2) participates in chain topology but contributes no content change. |
 | PT-9 | A | — | Patches are append-only. A patch cannot be inserted between two existing patches, and its parent pointer cannot be changed after publication. Removal is only via kind 5 deletion by the patch's own author (§10). |
+| PT-10 | V | — | The event referenced by `e root` MUST be a `scrutiny-product` or `scrutiny-metadata` event. |
+| PT-11 | V | — | A Patch whose OBSERVED `e root` violates PT-10 is invalid and MUST NOT be admitted. |
 
 ---
 
@@ -1144,7 +1150,7 @@ Event IDs use the convention `<letters><digits>` for clarity (real Nostr IDs are
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["i", "cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*"],
     ["k", "cpe"],
     ["i", "cc:BSI-DSZ-CC-0814-2012"],
@@ -1165,7 +1171,7 @@ Event IDs use the convention `<letters><digits>` for clarity (real Nostr IDs are
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-metadata"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["i", "cve:CVE-2017-15361"],
     ["k", "cve"],
     ["i", "cwe:CWE-310"],
@@ -1188,7 +1194,7 @@ The researcher publishes a Binding asserting the vulnerability connection.
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-binding"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "bbb222", "", "link", "researcher_pk"]
   ]
@@ -1211,7 +1217,7 @@ The vendor publishes a patch updating the Product's description with firmware re
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "aaa111", "", "reply", "vendor_pk"]
   ]
@@ -1234,7 +1240,7 @@ An auditor objects to the firmware-revision wording, asserting the chip was actu
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v061"],
+    ["t", "scrutiny-v0.7.0"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "ddd444", "", "reply", "vendor_pk"]
   ]
@@ -1310,11 +1316,11 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | ID | § | Layer | Inherits from | Summary |
 |---|---|---|---|---|
 | TAG-1 | 3 | V | — | Exactly one `["t","scrutiny-fabric"]` tag. |
-| TAG-2 | 3 | V | — | Exactly one version `t` tag matching `^scrutiny-v\d{3}$`. |
+| TAG-2 | 3 | V | — | Exactly one version `t` tag matching `^scrutiny-v\d+\.\d+\.\d+$`. |
 | TAG-3 | 3 | V | — | Exactly one event-type `t` tag from the recognised set. |
 | TAG-4 | 3 | V | — | Tag names use kebab-case. |
 | TAG-5 | 3 | V | NIP-01 | Unknown tags MUST be ignored. |
-| VER-1 | 3 | V | — | `scrutiny-vMMP` digits encode MAJOR/MINOR/PATCH; lexicographic ordering. |
+| VER-1 | 3 | V | — | Version-tag ordering is a per-field numeric `(MAJOR, MINOR, PATCH)` tuple comparison, never lexicographic. |
 | VER-2 | 3 | V | — | Higher-version events MAY be admitted opaquely if V-valid. |
 | VER-3 | 3 | V | — | Higher-version events violating Validity MUST NOT render. |
 | VER-4 | 3 | V | — | MUST NOT reject higher-version events *solely* for the version tag. |
@@ -1352,6 +1358,8 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | PT-7 | 4.4 | V | — | Foreign patch `e reply` MUST point at root or root-author patch; no overlay-to-overlay. |
 | PT-8 | 4.4 | A | — | No-op patch participates in chain topology but contributes no change. |
 | PT-9 | 4.4 | A | — | Patches append-only; removal only via author's own kind 5. |
+| PT-10 | 4.4 | V | — | `e root` MUST reference a `scrutiny-product` or `scrutiny-metadata` event. |
+| PT-11 | 4.4 | V | — | Patch with an observed `e root` violating PT-10 MUST NOT be admitted. |
 | IX-1 | 4.5 | D | — | Publishers SHOULD include canonical `i` tags for top-level indexers. |
 | IX-2 | 4.5 | D | — | Events SHOULD carry ≤64 `i` tags. |
 | IX-3 | 4.5 | A | — | `i` and `k` tags on root events are immutable. |
@@ -1463,8 +1471,8 @@ The vectors live in this repository under `vectors/`, one file per rule category
 
 | File | Category | Layer | Cases | SHA-256 |
 |---|---|---|---|---|
-| `vectors/application.json` | application | A | 46 | `e32652c69a508de319c82fd753740b770ab4ecad710fc2725d575f0dfb380cd9` |
-| `vectors/validity.json` | validity | V | 19 | `bf1af55a8687c6380acd597fd7dd1488f997736b7afdf9813f78c349e849f90f` |
+| `vectors/application.json` | application | A | 46 | `969e93e95a3b818daedda8a7b47d3cfcafcfc0d5b3848e1e13a5d4fcffaefdf9` |
+| `vectors/validity.json` | validity | V | 19 | `bff8eaca6c85e8676c15b63b87f836a59a45d4ea9117b0bce8807eb9d4b43f1e` |
 
 Two further categories are reserved and not yet published: `vectors/discovery.json` (D-layer) and `vectors/serialization.json` (§3 event-id serialization). Their absence is not a statement that the D layer is untestable.
 
