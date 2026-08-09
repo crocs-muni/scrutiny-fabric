@@ -5,6 +5,45 @@ are terse and cite the affected rule IDs (Appendix F); the rationale for why a *
 as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
 — licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+## v0.8.0
+
+- **Why 0.8.0 and not 0.7.2.** UR-4 changes normative chain semantics: a root-author patch whose
+  `e reply` parent is unobserved had no named disposition, and an optimistic consumer could count
+  it as a chain candidate (the reference implementation did, in an untested filter branch). It
+  MUST now be held out of the canonical chain and self-fork detection until the parent arrives,
+  so a currently-optimistic interim state becomes non-conformant — a breaking behavioral rule,
+  MINOR under the D45/S7 pre-1.0 convention. The two clarifications this session also landed
+  shipped separately as v0.7.1 rather than riding inside the breaking release. See DECISIONS.md S8.
+- **New UR-4 (§7.6).** The third dangling-reference shape: a Patch's own `e reply` target
+  unobserved while its root is observed. PT-6 is unevaluable on it (the parent's authorship class
+  is unknown); SF-1 cannot read a shared pending parent as a fork; CHN-1's walk has no position
+  for the patch; an overlay targeting a held patch is orphaned (OV-3). The patch is retained and
+  re-evaluated on the target's arrival — UR-2's shape one tag over. See UR-4, PT-6, CHN-1, SF-1,
+  OV-3, §5.3 step 1, §7.6.
+- **New vector** `chain/root-author-patches-sharing-an-unobserved-reply-parent-are-held`
+  (`vectors/application.json` 47 → 48), digest updated in Appendix G.
+- **`scrutiny-fabric-tools`'s vendored copies are stale.** The Appendix G corpus digest changed in
+  v0.7.1 and again in this release; the checksum-pinned vendored copies match neither — see
+  DECISIONS.md S8.
+- Version tag `scrutiny-v0.7.1` → `scrutiny-v0.8.0`. §3's forward-compatibility example moved from
+  `scrutiny-v0.7.2` to `scrutiny-v0.8.1`.
+
+## v0.7.1
+
+- **VER-1 amended (F15).** §3 defined the ordering "as numbers" two paragraphs after removing the
+  digit-count ceiling — unimplementable past 2^53 on an IEEE-754-double host (distinct fields
+  collapsed to equal, overflow produced `NaN` and broke the comparator entirely). Each field now
+  compares as a decimal digit string: leading zeros ignored, greater length, then lexicographic —
+  the same total order VER-1 already declared, host-independent. See VER-1, §3.
+- **T2 amended (F17).** An out-of-range pure-insertion `@@` coordinate had no defined disposition,
+  and C6's context-match remedy cannot reach a contextless hunk — clamp, clamp-elsewhere, or HALT
+  were all defensible. The implied position now clamps to the content's line range, and the line
+  count is the content's own lines: a final newline terminates the last line and is not one. See T2.
+- **New vector** `t2/out-of-range-insert-clamps-to-content-end` (`vectors/application.json` 46 → 47),
+  digest updated in Appendix G.
+- Version tag `scrutiny-v0.7.0` → `scrutiny-v0.7.1`. §3's forward-compatibility example moved from
+  `scrutiny-v0.7.1` to `scrutiny-v0.7.2`.
+
 ## v0.7.0
 
 - **Why 0.7.0 and not 0.6.3.** F14 retires the fixed-width `scrutiny-vMMP` version-tag form outright —

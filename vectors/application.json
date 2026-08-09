@@ -113,6 +113,18 @@
     },
     {
       "kind": "apply",
+      "name": "t2/out-of-range-insert-clamps-to-content-end",
+      "rule": "T2",
+      "why": "@@ -3,0 +3,1 @@ against a two-line content implies a position the content does not contain, and a pure-insertion hunk has no context lines for C6's remedy to relocate by. T2's clamp is the only defined disposition. \"a\\nb\\n\" has two lines — the final newline terminates the last line and does not add one — so the hunk appends after b. A line count that included the terminator as a line would yield \"a\\nb\\n\\nNEW\" and silently drop the trailing newline.",
+      "content": "a\nb\n",
+      "payload": "--- a/content\n+++ b/content\n@@ -3,0 +3,1 @@\n+NEW\n",
+      "expect": {
+        "outcome": "applied",
+        "content": "a\nb\nNEW\n"
+      }
+    },
+    {
+      "kind": "apply",
       "name": "c5/drop-trailing-newline",
       "rule": "C5",
       "why": "The new side ends the file without a newline, so the terminator must be consumed.",
@@ -3048,6 +3060,124 @@
         },
         "pending": [
           "00000dc110000000000000000000000000000000000000000000000000000000"
+        ]
+      }
+    },
+    {
+      "kind": "chain",
+      "name": "chain/root-author-patches-sharing-an-unobserved-reply-parent-are-held",
+      "rule": "UR-4",
+      "why": "Two root-author patches reply to the same event id nothing has delivered. Optimistic inclusion would read the shared dangling parent as an SF-1 fork or place both patches in the chain; UR-4 holds both pending instead, and the chain stays resolved at the root with no fork surfaced.",
+      "rootId": "003580e200000000000000000000000000000000000000000000000000000000",
+      "events": [
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "a\n",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "003580e200000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000010,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "00000dd000000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,1 +1,2 @@\n a\n+x\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "00000dd110000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000020,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "00000dd000000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,1 +1,2 @@\n a\n+y\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "00000dd220000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "chain": {
+          "status": "resolved",
+          "content": "a\n",
+          "tipId": "003580e200000000000000000000000000000000000000000000000000000000",
+          "applied": []
+        },
+        "pending": [
+          "00000dd110000000000000000000000000000000000000000000000000000000",
+          "00000dd220000000000000000000000000000000000000000000000000000000"
+        ],
+        "noAnnotations": [
+          "SF-3"
         ]
       }
     },
