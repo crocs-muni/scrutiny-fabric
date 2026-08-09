@@ -37,7 +37,7 @@ SCRUTINY Fabric is that graph layer: permissionless, censorship-resistant, and a
 
 ## The protocol in brief
 
-All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every event carries exactly one `["t","scrutiny-fabric"]` tag, exactly one version tag (`scrutiny-v059`), and exactly one event-type tag.
+All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every event carries exactly one `["t","scrutiny-fabric"]` tag, exactly one version tag (`scrutiny-v<MAJOR>.<MINOR>.<PATCH>`, e.g. `scrutiny-v0.8.0`), and exactly one event-type tag.
 
 | Event type | Role |
 |---|---|
@@ -50,13 +50,13 @@ Patches authored by the root event's own author form the **canonical chain** —
 
 Discovery is cheap for the common case: canonical identifiers in NIP-73 `i` tags (`cve:`, `cpe:`, `purl:`, `cc:`, `fips:`, …) make "all events about CVE-X" a single relay filter. Anything richer requires local processing — a deliberate trade-off.
 
-Trust is entirely the user's: each user maintains a set of trusted pubkeys, and untrusted events are filtered before any other processing. The trust mechanism itself is out of scope for the specification.
+Trust is entirely the user's: each user maintains a set of trusted pubkeys, and untrusted events are filtered at presentation time, after chain and overlay computation (TR-7). The trust mechanism itself is out of scope for the specification.
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
-| [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.5.9. Event types, diff format, trust admission, chain and overlay resolution, discovery patterns, indexer registry, and a flat registry of every normative rule (Appendix F) |
+| [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.8.0. Event types, diff format, trust admission, chain and overlay resolution, discovery patterns, indexer registry, and a flat registry of every normative rule (Appendix F) |
 | [docs/threat-model.md](docs/threat-model.md) | Threat model: adversary capabilities, per-threat risk ratings, and residual risk |
 
 The specification is the only normative source. Appendix F assigns every normative rule a stable mnemonic ID (`BD-3`, `T1`, `DEL-7`, …) so implementations and conformance tests can cite rules precisely.
@@ -64,11 +64,11 @@ The specification is the only normative source. Appendix F assigns every normati
 > [!WARNING]
 > **Work in progress — experimental.**
 >
-> The specification is a **draft at v0.5.9** and should not be relied on for production security decisions. Breaking changes are expected while the version remains below 1.0. Implementation feedback is actively shaping the specification, which is why the version number moves as often as it does.
+> The specification is a **draft at v0.8.0** and should not be relied on for production security decisions. Breaking changes are expected while the version remains below 1.0. Implementation feedback is actively shaping the specification, which is why the version number moves as often as it does.
 
 ## Status
 
-The specification is complete enough to implement against, and is being implemented — that work surfaces gaps, which feed back here as amendments. Conformance test vectors are planned (see §11, Future work).
+The specification is complete enough to implement against, and is being implemented — that work surfaces gaps, which feed back here as amendments. Conformance vectors are published and digest-pinned in Appendix G (`vectors/`); `node tools/verify-corpus.mjs` checks the pins.
 
 Known open items are tracked in the specification's own §11 rather than duplicated here.
 
