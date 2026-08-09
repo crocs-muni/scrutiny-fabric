@@ -144,17 +144,31 @@ All events in this section additionally carry the required `t` tags per §3 (`sc
 
 ```mermaid
 graph RL
-    P[<b>Product</b><br/>Infineon M7794A12]:::product
-    M1[<b>Metadata</b><br/>CVE-2017-15361]:::metadata
-    M2[<b>Metadata</b><br/>CycloneDX SBOM]:::metadata
+    P["`**Product**
 
-    B1([Binding]):::binding
-    B2([Binding]):::binding
+Infineon M7794A12 — BSI-DSZ-CC-0814-2012`"]:::product
+
+    B1(["`**Binding**`"]):::binding
+    B2(["`**Binding**`"]):::binding
+    B3(["`**Binding**`"]):::binding
+
+    M1["`**Metadata**
+
+CVE-2017-15361 (ROCA)`"]:::metadata
+    M2["`**Metadata**
+
+CycloneDX SBOM`"]:::metadata
+    M3["`**Metadata**
+
+CC certification report`"]:::metadata
 
     B1 -->|e root| P
     B2 -->|e root| P
+    B3 -->|e root| P
+
     M1 -->|e link| B1
     M2 -->|e link| B2
+    M3 -->|e link| B3
 
     classDef product fill:#fff,stroke:#1f77b4,stroke-width:3px,color:#000
     classDef binding fill:#fff,stroke:#8cc63f,stroke-width:3px,color:#000
