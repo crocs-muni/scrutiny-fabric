@@ -140,6 +140,82 @@ Re-vendoring at the new digest is that repo's own follow-up, not scheduled here.
 
 ---
 
+## S8 — F15–F17 landing (v0.7.1 + v0.8.0): digit-string version comparison, T2 out-of-range clamp, UR-4 hold-pending
+
+The third batched spec-feedback landing, from `scrutiny-fabric-tools/docs/SPEC-FEEDBACK-v0.7.0.md`
+(the F13/F14 batch landed as v0.6.2 + v0.7.0, see S7). All three findings were adversarially
+verified with live reproductions on the reference implementation side (the 2026-08-08 audit);
+this session's work was the normative text and the two behavior rulings below.
+
+**F16 ruling: hold-pending (new UR-4), not optimistic-include.** The gap was the third dangling-
+reference shape: a root-author patch whose `e reply` parent is unobserved while its root is
+observed — PT-6 covers an observed foreign parent, UR-2 an unobserved root, nothing covered this.
+The reference implementation had quietly picked optimistic-include in the `linkable` filter's
+`parent === undefined` disjunct, code no test, generator, or vector exercised; the audit showed
+the disjunct is behaviorally inert at fixpoint (a parent absent from the observed set can never
+become a walk position), so it was either dead code or untested load-bearing code and nobody could
+say which. Hold-pending was ratified in UR-2's exact shape for three reasons. (i) Chain membership
+asserts a contiguity the observed set cannot support while the parent is missing; every other
+pending lifecycle in the spec (BD-6, DEL-8, UR-2) reports *held*, never approximate-*resolved*.
+(ii) Optimistic inclusion is not interim-safe in general: two children of one dangling parent
+would fire SF-1 and freeze canonical bytes (SF-2) behind an error annotation (SF-3) for a fork
+that may evaporate when the parent arrives foreign, kind-5 deleted, or never. Hold-pending's
+interim state is already the normative state that set-confluence (UR-1) reaches at fixpoint.
+(iii) It is the least new machinery — UR-2's shape one tag over — and composes with CHN-1's
+forward walk unchanged (the walk simply has no position for the patch yet). The respected
+counterargument (surface the patch's content earlier) is a presentation concern serviceable
+without a canonical-chain claim (a §7.3-shaped provisional rendering); it does not justify letting
+canonical bytes turn on unobserved evidence.
+
+**F17 ruling: clamp to the content's line range, as one T2 sentence, with the bound named in
+content terms.** The alternatives allowed were clamp-to-a-different-bound (divergent canonical
+bytes) and HALT (a full chain freeze over a coordinate C6 declares advisory and C7 forbids
+rejecting the payload over — disproportionate, and a pure-insertion hunk asserts nothing about
+existing content that clamping could falsify). The decisive evidence that "clamp" alone was not an
+answer: the reference implementation itself clamped, and the audit found its bound was a
+sentinel-inclusive container length rather than the content's line count — producing `a\nb\n\nNEW`
+(dropped the trailing newline, added a phantom blank line) under a clean verdict. The sentence
+therefore defines the count as the content's own lines, a final newline terminating the last line
+rather than adding one — the exact ambiguity the implementation bug lived in.
+
+**F15 is a re-description of VER-1's existing order, not a new one.** The digit-string formulation
+(leading zeros ignored; greater length, then lexicographic — Go `x/mod/semver`'s `compareInt`,
+RPM's `rpmvercmp`, dpkg/glibc's `verrevcmp`, none of which converts a fixed-width integer) agrees
+with the numeric tuple order on every field the ecosystem can produce today, and is the settled
+mainstream solution, not an invention. It removes the representation choice that made §3's two
+paragraphs mutually unimplementable past 2^53 on an IEEE-754-double host — where the reference
+implementation's literal "parse as numbers" reading silently collapsed distinct tags, and past
+overflow returned `NaN` from the comparator while VER-4 still obliged it not to reject the
+higher-version event it could no longer order. node-semver is the standing counterexample:
+converting fields with `Number()` forced it to bolt a digit ceiling back on — the very ceiling F14
+removed from the grammar. This is the third recurrence of the defect class D45 and F14 record;
+landing the comparator fix as a clarification (implementation-validated, boundary-tested on the
+tools side before this session) closes it one level down, with headroom instead of forced-bump
+pressure.
+
+**Release split: v0.7.1 (F15+F17), then v0.8.0 (F16).** House convention (D45, reaffirmed in S7):
+pre-1.0, a breaking wire or behavioral change takes MINOR with MAJOR pinned at 0; clarifications
+and additive rule-registry growth take PATCH (v0.6.1's new rules, v0.6.2's PT-10/PT-11). F15 and
+F17 are clarifications — the same order on every tag that exists, and in-range pure insertions
+untouched — and the reference implementation already runs both amended behaviors, so any other
+reading was a latent bug, not a feature other implementations could have relied on. UR-4 instead
+makes a currently-optimistic consumer's interim chain state non-conformant: a normative behavioral
+change, its own MINOR. Two releases rather than one also keeps the small clarifications from
+waiting on the breaking change's review, the same shape as F13-alone (v0.6.2) then F14 (v0.7.0).
+
+**Vendored copies are stale — tools-repo consequence.** Appendix G changed twice in this landing:
+`vectors/application.json` gained `t2/out-of-range-insert-clamps-to-content-end` at v0.7.1
+(46 → 47) and `chain/root-author-patches-sharing-an-unobserved-reply-parent-are-held` at v0.8.0
+(47 → 48), with the G.1 digest re-pinned each time (the `specVersion` field stays at `0.6.1`, the
+corpus-introduction version, as it did through the v0.7.0 regeneration). `scrutiny-fabric-tools`
+`packages/core`'s checksum-pinned vendored copies (D33's gate) match neither post-release digest:
+re-vendoring at the new digests, `pnpm rules:gen` against the amended Appendix F (new UR-4 row),
+UR-4 enforcement in `resolve.ts` replacing the characterized `parent === undefined` disjunct, and
+the S3-21/S3-30 characterization-pin flips are that repo's follow-up session — tracked against the
+v0.8.0 number, not scheduled here.
+
+---
+
 ## Open questions
 
 - No BCP 14 boilerplate paragraph in the spec yet (S1).
