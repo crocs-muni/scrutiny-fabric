@@ -12,7 +12,7 @@ graph RL
     B2([Binding]):::binding
     B3([Binding]):::binding
 
-    M1[<b>Metadata</b><br/>CVE-2017-15361<br/>&lpar;ROCA&rpar;]:::metadata
+    M1["<b>Metadata</b><br/>CVE-2017-15361<br/>(ROCA)"]:::metadata
     M2[<b>Metadata</b><br/>CycloneDX SBOM]:::metadata
     M3[<b>Metadata</b><br/>CC certification report]:::metadata
 
