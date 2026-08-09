@@ -5,6 +5,22 @@ are terse and cite the affected rule IDs (Appendix F); the rationale for why a *
 as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
 — licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+## v0.7.1
+
+- **VER-1 amended (F15).** §3 defined the ordering "as numbers" two paragraphs after removing the
+  digit-count ceiling — unimplementable past 2^53 on an IEEE-754-double host (distinct fields
+  collapsed to equal, overflow produced `NaN` and broke the comparator entirely). Each field now
+  compares as a decimal digit string: leading zeros ignored, greater length, then lexicographic —
+  the same total order VER-1 already declared, host-independent. See VER-1, §3.
+- **T2 amended (F17).** An out-of-range pure-insertion `@@` coordinate had no defined disposition,
+  and C6's context-match remedy cannot reach a contextless hunk — clamp, clamp-elsewhere, or HALT
+  were all defensible. The implied position now clamps to the content's line range, and the line
+  count is the content's own lines: a final newline terminates the last line and is not one. See T2.
+- **New vector** `t2/out-of-range-insert-clamps-to-content-end` (`vectors/application.json` 46 → 47),
+  digest updated in Appendix G.
+- Version tag `scrutiny-v0.7.0` → `scrutiny-v0.7.1`. §3's forward-compatibility example moved from
+  `scrutiny-v0.7.1` to `scrutiny-v0.7.2`.
+
 ## v0.7.0
 
 - **Why 0.7.0 and not 0.6.3.** F14 retires the fixed-width `scrutiny-vMMP` version-tag form outright —
