@@ -6,15 +6,23 @@ The protocol does **not** redefine SBOM or vulnerability formats. It points at t
 
 ```mermaid
 graph RL
-    P[<b>Product</b><br/>Infineon M7794A12<br/>BSI-DSZ-CC-0814-2012]:::product
+    P["`**Product**
 
-    B1([Binding]):::binding
-    B2([Binding]):::binding
-    B3([Binding]):::binding
+Infineon M7794A12 — BSI-DSZ-CC-0814-2012`"]:::product
 
-    M1["<b>Metadata</b><br/>CVE-2017-15361<br/>(ROCA)"]:::metadata
-    M2[<b>Metadata</b><br/>CycloneDX SBOM]:::metadata
-    M3[<b>Metadata</b><br/>CC certification report]:::metadata
+    B1(["`**Binding**`"]):::binding
+    B2(["`**Binding**`"]):::binding
+    B3(["`**Binding**`"]):::binding
+
+    M1["`**Metadata**
+
+CVE-2017-15361 (ROCA)`"]:::metadata
+    M2["`**Metadata**
+
+CycloneDX SBOM`"]:::metadata
+    M3["`**Metadata**
+
+CC certification report`"]:::metadata
 
     B1 -->|e root| P
     B2 -->|e root| P
