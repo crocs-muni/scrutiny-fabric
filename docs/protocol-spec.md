@@ -446,14 +446,14 @@ This pattern is RECOMMENDED for: SBOMs (CycloneDX, SPDX), CSAF advisories, in-to
 
 A patch's diff acts on the `content` field of the target event. The `content` field is consumed verbatim as a UTF-8 byte sequence; no normalization (line-ending, trailing-newline, BOM-stripping, whitespace trimming) is performed before diffing or applying.
 
-**Patch payload boundary.** When a patch event carries an inline diff (§5.2), the **patch payload** is the byte sequence of the lines strictly between the opening and closing fence lines of a CommonMark §4.5 fenced code block, each line terminated by `\n` (LF). The fence lines themselves and any prose surrounding them are not part of the payload. Consumers MUST NOT normalize the payload byte sequence before feeding it to a unified-diff applier.
+**Patch payload boundary.** When a patch event carries an inline diff (§5.2), the **patch payload** is the byte sequence of the lines strictly between the opening and closing fence lines of a CommonMark §4.5 fenced code block, each line terminated by `\n` (LF). When the block has no closing fence line (an unclosed block, E3), the payload is every line after the opening fence line to the end of `content`. The fence lines themselves and any prose surrounding them are not part of the payload. Consumers MUST NOT normalize the payload byte sequence before feeding it to a unified-diff applier.
 
 The patch payload is signature-protected by the Nostr event signature — both the surrounding `content` field and the fenced bytes within it are part of the signed event.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
 | PB-1 | A | — | The `content` field is consumed verbatim as a UTF-8 byte sequence; no normalization (line-ending, trailing-newline, BOM-stripping, whitespace trimming) is performed before diffing or applying. |
-| PB-2 | A | — | Consumers MUST NOT normalize the patch-payload byte sequence (the bytes strictly between fence lines, each terminated by `\n`) before feeding it to a unified-diff applier. |
+| PB-2 | A | — | Consumers MUST NOT normalize the patch-payload byte sequence (the bytes strictly between the fence lines — or, for an unclosed block, after the opening fence line to the end of `content` — each terminated by `\n`) before feeding it to a unified-diff applier. |
 
 ### 5.2 Patch payload format
 
@@ -467,11 +467,13 @@ The envelope rules are inherited from CommonMark §4.5; this subsection states t
 |---|---|---|---|
 | E1 | V | CommonMark §4.5 | The patch payload MUST be wrapped in a CommonMark §4.5 fenced code block using backtick (`` ` ``) fences. Tilde (`~`) fences are not recognized as SCRUTINY patch payloads. |
 | E2 | V | CommonMark §4.5 | The opening fence MUST consist of three or more consecutive backticks, followed by an info string whose first whitespace-delimited token, lowercased, is `diff` or `patch`. Any additional info-string tokens after the first are ignored. |
-| E3 | V | CommonMark §4.5 | The closing fence MUST consist of at least as many backticks as the opening fence, on a line of its own (CommonMark §4.5 closing-fence rule). An unclosed fenced block — one that runs to the end of `content` with no closing fence — is a valid code block per CommonMark §4.5; E3 constrains the closing fence's length when one exists, not its existence, and the payload under E5 then runs to the end of `content`. |
+| E3 | V | CommonMark §4.5 | The closing fence MUST consist of at least as many backticks as the opening fence, on a line of its own (CommonMark §4.5 closing-fence rule). |
 | E4 | A | — | **Variable-length fences.** Producers MUST choose an opening-fence length of `max(3, N + 1)`, where `N` is the longest run of consecutive backticks anywhere inside the payload bytes. This guarantees that any payload — including patches whose hunks operate on content that itself contains backtick fences (e.g., a Metadata event embedding a code-block PoC) — can be embedded unambiguously. This is a producer obligation, enforced when building an event: a consumer cannot observe a violation, because a payload whose backtick run reached the fence length would have closed the block early (E3) and the bytes after it are not part of the payload at all (E5). There is nothing left for a consumer to check. |
 | E5 | V | CommonMark §4.5 | The payload bytes are the concatenation of all lines strictly between the opening and closing fence lines, each line terminated by `\n` (LF). The opening and closing fence lines themselves are NOT part of the payload. When no closing fence exists (E3), the payload is every line after the opening fence line to the end of `content`. |
 | E6 | V | — | A patch event's `content` MAY contain multiple fenced blocks. The **first** block (in document order) whose info string matches E2 is the patch payload; all subsequent matching blocks are prose and MUST be ignored as patch payloads. |
 | E7 | A | — | If no fenced block matching E2 is present in `content`, the patch is a no-op (see §4.4, Prose-only and no-op patches). |
+
+**Unclosed blocks.** An unclosed fenced block — one that runs to the end of `content` with no closing fence — is a valid code block per CommonMark §4.5: E3 constrains the closing fence's length when one exists, not its existence, and the payload under E5 then runs to the end of `content`.
 
 **Lookup.** To locate a patch event's payload, scan `content` for fenced code blocks per E1–E2 in CommonMark document order; the first match is the payload. Otherwise the patch is a no-op (E7).
 
@@ -595,7 +597,7 @@ Producers SHOULD respect the following bounds, which reflect limits deployed rel
 | Hunks per patch payload | ≤ 64 | T1 cost |
 | Patches per canonical chain | ≤ 1000 | Chain-resolution cost |
 
-Consumers SHOULD enforce configurable ceilings. Because an adversary optimises against whichever unit is counted, consumers SHOULD additionally bound the *total work* of patch application, measured in bytes compared with a per-line floor — each line of a hunk's match pattern charges at least one unit whatever its byte length — rather than relying on hunk or patch counts alone. The floor closes the unit's own hole: T1's uniqueness scan costs `|content| × |pattern|` element comparisons regardless of the bytes those elements carry, so a pattern of empty lines would otherwise run a full-length scan at a billed cost of zero.
+Consumers SHOULD enforce configurable ceilings. Because an adversary optimises against whichever unit is counted, consumers SHOULD additionally bound the *total work* of patch application, measured in bytes compared, rather than relying on hunk or patch counts alone. Whatever unit is chosen, charge a per-line floor: each line of a hunk's match pattern (T1) costs at least one unit even when the line is empty, because T1's uniqueness scan costs `|content| × |pattern|` element comparisons regardless of the bytes those elements carry — without the floor, a pattern of empty lines runs a full-length scan at a billed cost of zero.
 
 An event exceeding a consumer's ceiling remains valid (§6.0) and MUST NOT be treated as invalid. Exceeding a ceiling aborts *application* and MUST be surfaced as a distinct **resource-limit exceeded** annotation — never as HALT (§5.3 H1), which denotes a patch that genuinely failed to apply. Because ceilings are local, content whose computation was abandoned for resource reasons MUST NOT be served or cached as canonical bytes (§7.1 RC-3).
 
@@ -611,7 +613,7 @@ Neither disposition is a statement about the event or its author. A ceiling is a
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
 | RL-1 | D | — | Producers SHOULD respect the recommended bounds of §5.4. |
-| RL-2 | A | — | Consumers SHOULD enforce configurable ceilings and SHOULD bound total patch-application work (bytes compared, charged at no less than one unit per line of a hunk's match pattern so an empty-line pattern cannot scan uncharged), not only hunk or patch counts. |
+| RL-2 | A | — | Consumers SHOULD enforce configurable ceilings and SHOULD bound total patch-application work (bytes compared, charged at no less than one unit per line of the hunk's match pattern (T1)), not only hunk or patch counts. |
 | RL-3 | A | — | Exceeding a ceiling aborts application and MUST be surfaced as a distinct resource-limit-exceeded annotation, never as HALT. The event remains V-valid. |
 | RL-4 | A | — | Content abandoned for resource reasons MUST NOT be served or cached as canonical bytes. |
 | RL-5 | A | — | **Chain disposition under a ceiling.** A chain whose application was stopped by a ceiling is reported as **aborted under a ceiling**, distinct from both `resolved` and HALT. Reporting it as `resolved` would name the last applied patch as the tip and claim a completeness the implementation does not have — which RC-3 then obliges non-UI consumers to serve downstream. Reporting it as HALT is forbidden by RL-3. The report MUST identify the patch at which application stopped and the ceiling that was reached, and MUST NOT cite H1. |
@@ -1419,7 +1421,7 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | CHN-2 | 5.3 | A | — | Kind 5 cascade applied during chain build. |
 | CHN-3 | 5.3 | A | — | Foreign patches never enter the canonical chain; same T/H rules apply to overlays. |
 | RL-1 | 5.4 | D | — | Producers SHOULD respect the recommended resource bounds of §5.4. |
-| RL-2 | 5.4 | A | — | Consumers SHOULD enforce configurable ceilings and bound total patch-application work in bytes compared, with a per-line floor on the pattern's lines. |
+| RL-2 | 5.4 | A | — | Consumers SHOULD enforce configurable ceilings and bound total patch-application work in bytes compared, with a per-line floor on the match pattern. |
 | RL-3 | 5.4 | A | — | Ceiling exceeded → resource-limit-exceeded annotation, never HALT; event remains V-valid. |
 | RL-4 | 5.4 | A | — | Content abandoned for resource reasons MUST NOT be served or cached as canonical bytes. |
 | RL-5 | 5.4 | A | — | A chain stopped by a ceiling is *aborted under a ceiling* — distinct from both resolved and HALT. |

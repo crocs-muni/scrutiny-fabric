@@ -232,10 +232,11 @@ noted would need its own V rule. The clarification picks the first. Requiring cl
 tenable: §3.2 delegates fenced-block parsing to CommonMark unchanged ("lookup, fence-length
 matching, and payload byte boundary are CommonMark's responsibility"), and the reference
 implementation had always treated unclosed blocks as payloads — its only defect was a doc
-comment naming E3 as the reason for tracking `closed`, now corrected. E5 gained the boundary
-consequence in words (with no closing fence, the payload is every line after the opening fence
-to the end of `content`). No corpus change: behavior is unamended, the corpus grows
-evidence-driven, and no vector cites E3.
+comment naming E3 as the reason for tracking `closed`, now corrected. E5, §5.1's boundary
+sentence, and PB-2 state the consequence in words (with no closing fence, the payload is every
+line after the opening fence to the end of `content`); the clarification itself sits as §5.2
+prose beside the E-table rather than inside E3's cell. No corpus change: behavior is unamended,
+the corpus grows evidence-driven, and no vector cites E3.
 
 **F12 ruling: a per-line floor inside the byte unit — not a unit rename, not a MUST.**
 §5.4 asked consumers to bound total work "measured in bytes compared", but T1's uniqueness
