@@ -216,6 +216,49 @@ v0.8.0 number, not scheduled here.
 
 ---
 
+## S9 — F12 + F18 landing (v0.8.1): RL-2's per-line floor, E3's closing-fence existence
+
+The fourth batched spec-feedback landing, from GitHub issues #30 (F12) and #37 (F18). Both
+findings were verified on the `scrutiny-fabric-tools` side before filing: F12 has a landed
+reference fix (the per-line floor in `patch.ts`, `83d2393`), F18 a landed comment correction
+(the `FencedBlock.closed` doc comment, PR #66 there). This session's work was the normative
+text only.
+
+**F18 ruling: clarify, don't add a rule.** E3's "closing fence ≥ opening-fence length" admits
+two readings: a constraint on the fence's length when one exists (CommonMark §4.5's model, in
+which an unclosed block runs to the end of the document and is still a code block), or a
+requirement that a closing fence exist — stricter than CommonMark, which the issue correctly
+noted would need its own V rule. The clarification picks the first. Requiring closure was never
+tenable: §3.2 delegates fenced-block parsing to CommonMark unchanged ("lookup, fence-length
+matching, and payload byte boundary are CommonMark's responsibility"), and the reference
+implementation had always treated unclosed blocks as payloads — its only defect was a doc
+comment naming E3 as the reason for tracking `closed`, now corrected. E5 gained the boundary
+consequence in words (with no closing fence, the payload is every line after the opening fence
+to the end of `content`). No corpus change: behavior is unamended, the corpus grows
+evidence-driven, and no vector cites E3.
+
+**F12 ruling: a per-line floor inside the byte unit — not a unit rename, not a MUST.**
+§5.4 asked consumers to bound total work "measured in bytes compared", but T1's uniqueness
+scan costs `|content| × |pattern|` element comparisons regardless of the bytes those elements
+carry, so a pattern of empty lines ran a full-length scan while billing zero bytes — exactly
+the adversary-optimisation the unit exists to prevent. The issue offered two amendments: name
+the unit "comparisons, charged at no less than one per line", or require a per-element floor in
+whatever unit is chosen. The landing composes them at SHOULD-strength: keep "bytes compared"
+(the unit implementations can cheaply sum, and the one the §5.4 prose and Appendix F digest
+already name) and state the floor explicitly — no less than one unit per line of the hunk's
+match pattern, which is exactly the reference implementation's `Σ(len(line) + 1)` charge. A
+MUST was rejected: RL-2 is a ceiling policy at the A layer, local and configurable by design,
+and OV-4's permitted divergence leans on that locality — hardening the unit would pretend
+ceilings are consensus when they are not.
+
+**Release: one patch, v0.8.1.** Neither finding changes conformant behavior — F18 restates what
+the §3.2 CommonMark inheritance already implied, F12 refines a consumer-SHOULD whose exact
+charged unit was always local — so both ship together as a PATCH under the D45/S7 convention,
+no MINOR split. Appendix G is untouched: no vector cites E3 or RL-2 (verified against both JSON
+corpora), and the `specVersion` field stays at `0.6.1`.
+
+---
+
 ## Open questions
 
 - No BCP 14 boilerplate paragraph in the spec yet (S1).
