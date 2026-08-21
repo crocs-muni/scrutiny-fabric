@@ -5,6 +5,24 @@ are terse and cite the affected rule IDs (Appendix F); the rationale for why a *
 as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
 — licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+## v0.8.1
+
+- **E3 clarified (F18, issue #37).** "Closing fence ≥ opening-fence length" could be read as
+  requiring a closing fence to exist — stricter than the CommonMark §4.5 model, where an unclosed
+  block runs to end of document and is still a code block. E3 constrains the closing fence's
+  length only when one exists; an unclosed block's payload runs to the end of `content`. See E3,
+  E5, PB-2, §5.2.
+- **RL-2 amended (F12, issue #30).** "Bytes compared" was itself a unit an adversary optimises
+  against: T1's uniqueness scan costs `|content| × |pattern|` element comparisons regardless of
+  the bytes those elements carry, so a hunk whose match pattern is empty lines ran a full-length
+  scan at zero billed bytes. The total-work ceiling now charges a per-line floor — no less than
+  one unit per line of the hunk's match pattern (T1). See RL-2, §5.4, DECISIONS.md S9.
+- Version tag `scrutiny-v0.8.0` → `scrutiny-v0.8.1`. §3's forward-compatibility example moved
+  from `scrutiny-v0.8.1` to `scrutiny-v0.8.2`. The §4 mini-examples and Appendix D worked events
+  now carry the template form `scrutiny-v<MAJOR>.<MINOR>.<PATCH>` — the concrete literal survives
+  only in the title, **Version:** field, §3's examples, and the §4 preamble, and
+  `tools/verify-corpus.mjs` now asserts those agree (DECISIONS.md S9).
+
 ## v0.8.0
 
 - **Why 0.8.0 and not 0.7.2.** UR-4 changes normative chain semantics: a root-author patch whose

@@ -1,6 +1,6 @@
-# SCRUTINY Fabric — Protocol Specification v0.8.0
+# SCRUTINY Fabric — Protocol Specification v0.8.1
 
-**Version:** 0.8.0
+**Version:** 0.8.1
 **Status:** Draft
 
 ---
@@ -50,7 +50,7 @@ SCRUTINY Fabric is that graph layer. It does NOT redefine SBOM or vulnerability 
 All SCRUTINY events use `kind: 1` (Nostr short text note). They are identified by required `t` tags:
 
 - `["t", "scrutiny-fabric"]` — required on every SCRUTINY event.
-- `["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"]` — version tag, e.g. `["t", "scrutiny-v0.8.0"]`. Exactly one MUST be present.
+- `["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"]` — version tag, e.g. `["t", "scrutiny-v0.8.1"]`. Exactly one MUST be present.
 - Exactly one event-type tag:
   - `["t", "scrutiny-product"]`
   - `["t", "scrutiny-metadata"]`
@@ -61,11 +61,11 @@ An event carrying `scrutiny-fabric` but missing the version tag, carrying more t
 
 Tag-name convention: SCRUTINY uses kebab-case (`scrutiny-fabric`, `scrutiny-product`, etc.). Underscored variants from older drafts are not recognized. The version tag's value is the one exception: `MAJOR.MINOR.PATCH` uses dot separators, matching universal semantic-versioning notation, inside an otherwise kebab-case `t`-tag value.
 
-**Version-tag form.** Version tags match the regular expression `^scrutiny-v\d+\.\d+\.\d+$`: `MAJOR`, `MINOR`, `PATCH` are unpadded decimal integers (`scrutiny-v0.8.0` ≡ v0.8.0), with no fixed width and no digit-count ceiling in any field — MAJOR included. This retires the three-digit `scrutiny-vMMP` form outright (`^scrutiny-v\d{3}$`, one digit per field): there is no dual-path acceptance of the old form anywhere in this specification, since no real corpus exists to preserve compatibility with. The fix stays inside the `t` tag namespace SCRUTINY already owns via the `scrutiny-` prefix, rather than minting a new single-letter tag with no NIP behind it (see DECISIONS.md S7).
+**Version-tag form.** Version tags match the regular expression `^scrutiny-v\d+\.\d+\.\d+$`: `MAJOR`, `MINOR`, `PATCH` are unpadded decimal integers (`scrutiny-v0.8.1` ≡ v0.8.1), with no fixed width and no digit-count ceiling in any field — MAJOR included. This retires the three-digit `scrutiny-vMMP` form outright (`^scrutiny-v\d{3}$`, one digit per field): there is no dual-path acceptance of the old form anywhere in this specification, since no real corpus exists to preserve compatibility with. The fix stays inside the `t` tag namespace SCRUTINY already owns via the `scrutiny-` prefix, rather than minting a new single-letter tag with no NIP behind it (see DECISIONS.md S7).
 
 **Version-tag ordering.** Ordering between two version tags is a per-field numeric tuple comparison: parse `MAJOR`, `MINOR`, `PATCH` as separate decimal integers from the tag value and compare `(MAJOR, MINOR, PATCH)` field-by-field. Each field is compared as a decimal digit string, never through a host number type: ignoring any leading zeros, the longer digit string names the greater number, and two strings of equal length compare lexicographically. This is never a wholesale string or lexicographic comparison of the tag value, and never a conversion of a field to a host integer. The form above places no digit-count ceiling on any field, but the widest native number type on much of this protocol's host ecosystem is an IEEE-754 double, exact only up to 2^53 − 1 (~16 decimal digits): "parse as numbers" on such a host silently collapses two distinct, grammar-permitted fields beyond that bound, and past a further width overflows to `Infinity`, where `Infinity − Infinity` is `NaN` and the comparator stops returning a usable sign at all — while VER-4 continues to oblige the consumer not to reject the higher-version event it can no longer order. Digit-string comparison (the algorithm of Go `x/mod/semver`'s `compareInt`, RPM's `rpmvercmp`, and `dpkg`/`glibc`'s `verrevcmp` — none of which converts the field to a fixed-width integer) carries no such ceiling and agrees with the numeric order on every field, padded or not. The retired scheme's "lexicographic comparison coincides with semantic ordering" claim held only because every field was fixed at exactly one digit; the moment a field needs two digits, the claim stops holding — a two-character `"10"` sorts before a one-character `"9"` under a string `<` comparison, the opposite of numeric order — and it does not survive the ceiling's removal.
 
-**Forward-compatibility.** Unknown tags MUST be ignored by parsers. An event carrying a higher version tag than the implementation's own (e.g., a v0.8.0 implementation encountering `scrutiny-v0.8.1`) MAY be admitted opaquely — i.e., admitted to local storage and discoverable — provided that the event still satisfies every Validity invariant of this specification (§6.0). An event carrying a higher version tag that violates a v0.8.0 Validity invariant (e.g., a new event-type `t` tag that this specification does not recognise, producing zero recognised event-type tags) MUST be treated as an unknown event type and MUST NOT be rendered as a Product, Metadata, Binding, or Patch. Implementations MUST NOT reject higher-version events *solely* because of the version tag.
+**Forward-compatibility.** Unknown tags MUST be ignored by parsers. An event carrying a higher version tag than the implementation's own (e.g., a v0.8.1 implementation encountering `scrutiny-v0.8.2`) MAY be admitted opaquely — i.e., admitted to local storage and discoverable — provided that the event still satisfies every Validity invariant of this specification (§6.0). An event carrying a higher version tag that violates a v0.8.1 Validity invariant (e.g., a new event-type `t` tag that this specification does not recognise, producing zero recognised event-type tags) MUST be treated as an unknown event type and MUST NOT be rendered as a Product, Metadata, Binding, or Patch. Implementations MUST NOT reject higher-version events *solely* because of the version tag.
 
 **Signature and identifier verification.** Before processing any event, implementations MUST verify both that its `sig` is a valid Schnorr signature for its `pubkey` over its `id`, and that its `id` equals the SHA-256 of its NIP-01 canonical serialization. Verifying the signature alone is insufficient: the signature commits to the `id`, so an event whose `content` or `tags` were altered while retaining the original `id` and `sig` still passes a signature-only check.
 
@@ -140,7 +140,7 @@ Where the base layer offers a normative choice (e.g., NIP-09 allows but does not
 
 ## 4. Event types
 
-All events in this section additionally carry the required `t` tags per §3 (`scrutiny-fabric`, `scrutiny-v0.8.0`, and exactly one event-type tag). The tables below show event-type-specific tags only.
+All events in this section additionally carry the required `t` tags per §3 (`scrutiny-fabric`, `scrutiny-v0.8.1`, and exactly one event-type tag). The tables below show event-type-specific tags only.
 
 ```mermaid
 graph RL
@@ -204,7 +204,7 @@ A Product event identifies a specific product, hardware model, software package,
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["i", "cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*"],
     ["k", "cpe"]
   ]
@@ -244,7 +244,7 @@ The shape is identical to Product. The distinction is purely semantic, expressed
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-metadata"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["i", "cve:CVE-2017-15361"],
     ["k", "cve"],
     ["i", "cwe:CWE-310"],
@@ -304,7 +304,7 @@ Bindings are immutable signed assertions. Third parties who believe a binding is
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-binding"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111...", "", "root", "vendor_pk..."],
     ["e", "bbb222...", "", "link", "researcher_pk..."]
   ]
@@ -351,7 +351,7 @@ A patch event MUST carry zero or one fenced `diff` / `patch` code block. If mult
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111...", "", "root", "vendor_pk..."],
     ["e", "aaa111...", "", "reply", "vendor_pk..."]
   ]
@@ -446,14 +446,14 @@ This pattern is RECOMMENDED for: SBOMs (CycloneDX, SPDX), CSAF advisories, in-to
 
 A patch's diff acts on the `content` field of the target event. The `content` field is consumed verbatim as a UTF-8 byte sequence; no normalization (line-ending, trailing-newline, BOM-stripping, whitespace trimming) is performed before diffing or applying.
 
-**Patch payload boundary.** When a patch event carries an inline diff (§5.2), the **patch payload** is the byte sequence of the lines strictly between the opening and closing fence lines of a CommonMark §4.5 fenced code block, each line terminated by `\n` (LF). The fence lines themselves and any prose surrounding them are not part of the payload. Consumers MUST NOT normalize the payload byte sequence before feeding it to a unified-diff applier.
+**Patch payload boundary.** When a patch event carries an inline diff (§5.2), the **patch payload** is the byte sequence of the lines strictly between the opening and closing fence lines of a CommonMark §4.5 fenced code block, each line terminated by `\n` (LF). When the block has no closing fence line (an unclosed block, E3), the payload is every line after the opening fence line to the end of `content`. The fence lines themselves and any prose surrounding them are not part of the payload. Consumers MUST NOT normalize the payload byte sequence before feeding it to a unified-diff applier.
 
 The patch payload is signature-protected by the Nostr event signature — both the surrounding `content` field and the fenced bytes within it are part of the signed event.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
 | PB-1 | A | — | The `content` field is consumed verbatim as a UTF-8 byte sequence; no normalization (line-ending, trailing-newline, BOM-stripping, whitespace trimming) is performed before diffing or applying. |
-| PB-2 | A | — | Consumers MUST NOT normalize the patch-payload byte sequence (the bytes strictly between fence lines, each terminated by `\n`) before feeding it to a unified-diff applier. |
+| PB-2 | A | — | Consumers MUST NOT normalize the patch-payload byte sequence (the bytes strictly between the fence lines — or, for an unclosed block, after the opening fence line to the end of `content` — each terminated by `\n`) before feeding it to a unified-diff applier. |
 
 ### 5.2 Patch payload format
 
@@ -469,9 +469,11 @@ The envelope rules are inherited from CommonMark §4.5; this subsection states t
 | E2 | V | CommonMark §4.5 | The opening fence MUST consist of three or more consecutive backticks, followed by an info string whose first whitespace-delimited token, lowercased, is `diff` or `patch`. Any additional info-string tokens after the first are ignored. |
 | E3 | V | CommonMark §4.5 | The closing fence MUST consist of at least as many backticks as the opening fence, on a line of its own (CommonMark §4.5 closing-fence rule). |
 | E4 | A | — | **Variable-length fences.** Producers MUST choose an opening-fence length of `max(3, N + 1)`, where `N` is the longest run of consecutive backticks anywhere inside the payload bytes. This guarantees that any payload — including patches whose hunks operate on content that itself contains backtick fences (e.g., a Metadata event embedding a code-block PoC) — can be embedded unambiguously. This is a producer obligation, enforced when building an event: a consumer cannot observe a violation, because a payload whose backtick run reached the fence length would have closed the block early (E3) and the bytes after it are not part of the payload at all (E5). There is nothing left for a consumer to check. |
-| E5 | V | CommonMark §4.5 | The payload bytes are the concatenation of all lines strictly between the opening and closing fence lines, each line terminated by `\n` (LF). The opening and closing fence lines themselves are NOT part of the payload. |
+| E5 | V | CommonMark §4.5 | The payload bytes are the concatenation of all lines strictly between the opening and closing fence lines, each line terminated by `\n` (LF). The opening and closing fence lines themselves are NOT part of the payload. When no closing fence exists (E3), the payload is every line after the opening fence line to the end of `content`. |
 | E6 | V | — | A patch event's `content` MAY contain multiple fenced blocks. The **first** block (in document order) whose info string matches E2 is the patch payload; all subsequent matching blocks are prose and MUST be ignored as patch payloads. |
 | E7 | A | — | If no fenced block matching E2 is present in `content`, the patch is a no-op (see §4.4, Prose-only and no-op patches). |
+
+**Unclosed blocks.** An unclosed fenced block — one that runs to the end of `content` with no closing fence — is a valid code block per CommonMark §4.5: E3 constrains the closing fence's length when one exists, not its existence, and the payload under E5 then runs to the end of `content`.
 
 **Lookup.** To locate a patch event's payload, scan `content` for fenced code blocks per E1–E2 in CommonMark document order; the first match is the payload. Otherwise the patch is a no-op (E7).
 
@@ -595,7 +597,7 @@ Producers SHOULD respect the following bounds, which reflect limits deployed rel
 | Hunks per patch payload | ≤ 64 | T1 cost |
 | Patches per canonical chain | ≤ 1000 | Chain-resolution cost |
 
-Consumers SHOULD enforce configurable ceilings. Because an adversary optimises against whichever unit is counted, consumers SHOULD additionally bound the *total work* of patch application, measured in bytes compared, rather than relying on hunk or patch counts alone.
+Consumers SHOULD enforce configurable ceilings. Because an adversary optimises against whichever unit is counted, consumers SHOULD additionally bound the *total work* of patch application, measured in bytes compared, rather than relying on hunk or patch counts alone. Whatever unit is chosen, charge a per-line floor: each line of a hunk's match pattern (T1) costs at least one unit even when the line is empty, because T1's uniqueness scan costs `|content| × |pattern|` element comparisons regardless of the bytes those elements carry — without the floor, a pattern of empty lines runs a full-length scan at a billed cost of zero.
 
 An event exceeding a consumer's ceiling remains valid (§6.0) and MUST NOT be treated as invalid. Exceeding a ceiling aborts *application* and MUST be surfaced as a distinct **resource-limit exceeded** annotation — never as HALT (§5.3 H1), which denotes a patch that genuinely failed to apply. Because ceilings are local, content whose computation was abandoned for resource reasons MUST NOT be served or cached as canonical bytes (§7.1 RC-3).
 
@@ -611,7 +613,7 @@ Neither disposition is a statement about the event or its author. A ceiling is a
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
 | RL-1 | D | — | Producers SHOULD respect the recommended bounds of §5.4. |
-| RL-2 | A | — | Consumers SHOULD enforce configurable ceilings and SHOULD bound total patch-application work (bytes compared), not only hunk or patch counts. |
+| RL-2 | A | — | Consumers SHOULD enforce configurable ceilings and SHOULD bound total patch-application work (bytes compared, charged at no less than one unit per line of the hunk's match pattern (T1)), not only hunk or patch counts. |
 | RL-3 | A | — | Exceeding a ceiling aborts application and MUST be surfaced as a distinct resource-limit-exceeded annotation, never as HALT. The event remains V-valid. |
 | RL-4 | A | — | Content abandoned for resource reasons MUST NOT be served or cached as canonical bytes. |
 | RL-5 | A | — | **Chain disposition under a ceiling.** A chain whose application was stopped by a ceiling is reported as **aborted under a ceiling**, distinct from both `resolved` and HALT. Reporting it as `resolved` would name the last applied patch as the tip and claim a completeness the implementation does not have — which RC-3 then obliges non-UI consumers to serve downstream. Reporting it as HALT is forbidden by RL-3. The report MUST identify the patch at which application stopped and the ceiling that was reached, and MUST NOT cite H1. |
@@ -1167,7 +1169,7 @@ Event IDs use the convention `<letters><digits>` for clarity (real Nostr IDs are
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["i", "cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*"],
     ["k", "cpe"],
     ["i", "cc:BSI-DSZ-CC-0814-2012"],
@@ -1188,7 +1190,7 @@ Event IDs use the convention `<letters><digits>` for clarity (real Nostr IDs are
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-metadata"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["i", "cve:CVE-2017-15361"],
     ["k", "cve"],
     ["i", "cwe:CWE-310"],
@@ -1211,7 +1213,7 @@ The researcher publishes a Binding asserting the vulnerability connection.
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-binding"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "bbb222", "", "link", "researcher_pk"]
   ]
@@ -1234,7 +1236,7 @@ The vendor publishes a patch updating the Product's description with firmware re
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "aaa111", "", "reply", "vendor_pk"]
   ]
@@ -1257,7 +1259,7 @@ An auditor objects to the firmware-revision wording, asserting the chip was actu
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v0.8.0"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "ddd444", "", "reply", "vendor_pk"]
   ]
@@ -1390,7 +1392,7 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | PB-2 | 5.1 | A | — | Consumers MUST NOT normalize patch payload bytes before applying. |
 | E1 | 5.2 | V | CommonMark §4.5 | Backtick-fenced code block; tilde fences not recognised. |
 | E2 | 5.2 | V | CommonMark §4.5 | Opening fence ≥3 backticks; info string first token `diff` or `patch`. |
-| E3 | 5.2 | V | CommonMark §4.5 | Closing fence ≥ opening-fence length. |
+| E3 | 5.2 | V | CommonMark §4.5 | Closing fence ≥ opening-fence length, when one exists; an unclosed block is a valid code block running to the end of `content`. |
 | E4 | 5.2 | A | — | Variable-length fences: `max(3, N+1)`; a producer obligation, unobservable to a consumer. |
 | E5 | 5.2 | V | CommonMark §4.5 | Payload = bytes between fence lines, each terminated by `\n`. |
 | E6 | 5.2 | V | — | Multiple matching fenced blocks: first is payload, rest ignored. |
@@ -1419,7 +1421,7 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | CHN-2 | 5.3 | A | — | Kind 5 cascade applied during chain build. |
 | CHN-3 | 5.3 | A | — | Foreign patches never enter the canonical chain; same T/H rules apply to overlays. |
 | RL-1 | 5.4 | D | — | Producers SHOULD respect the recommended resource bounds of §5.4. |
-| RL-2 | 5.4 | A | — | Consumers SHOULD enforce configurable ceilings and bound total patch-application work in bytes compared. |
+| RL-2 | 5.4 | A | — | Consumers SHOULD enforce configurable ceilings and bound total patch-application work in bytes compared, with a per-line floor on the match pattern. |
 | RL-3 | 5.4 | A | — | Ceiling exceeded → resource-limit-exceeded annotation, never HALT; event remains V-valid. |
 | RL-4 | 5.4 | A | — | Content abandoned for resource reasons MUST NOT be served or cached as canonical bytes. |
 | RL-5 | 5.4 | A | — | A chain stopped by a ceiling is *aborted under a ceiling* — distinct from both resolved and HALT. |
