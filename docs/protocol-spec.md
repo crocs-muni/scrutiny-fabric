@@ -204,7 +204,7 @@ A Product event identifies a specific product, hardware model, software package,
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["i", "cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*"],
     ["k", "cpe"]
   ]
@@ -244,7 +244,7 @@ The shape is identical to Product. The distinction is purely semantic, expressed
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-metadata"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["i", "cve:CVE-2017-15361"],
     ["k", "cve"],
     ["i", "cwe:CWE-310"],
@@ -304,7 +304,7 @@ Bindings are immutable signed assertions. Third parties who believe a binding is
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-binding"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111...", "", "root", "vendor_pk..."],
     ["e", "bbb222...", "", "link", "researcher_pk..."]
   ]
@@ -351,7 +351,7 @@ A patch event MUST carry zero or one fenced `diff` / `patch` code block. If mult
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111...", "", "root", "vendor_pk..."],
     ["e", "aaa111...", "", "reply", "vendor_pk..."]
   ]
@@ -1169,7 +1169,7 @@ Event IDs use the convention `<letters><digits>` for clarity (real Nostr IDs are
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["i", "cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*"],
     ["k", "cpe"],
     ["i", "cc:BSI-DSZ-CC-0814-2012"],
@@ -1190,7 +1190,7 @@ Event IDs use the convention `<letters><digits>` for clarity (real Nostr IDs are
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-metadata"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["i", "cve:CVE-2017-15361"],
     ["k", "cve"],
     ["i", "cwe:CWE-310"],
@@ -1213,7 +1213,7 @@ The researcher publishes a Binding asserting the vulnerability connection.
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-binding"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "bbb222", "", "link", "researcher_pk"]
   ]
@@ -1236,7 +1236,7 @@ The vendor publishes a patch updating the Product's description with firmware re
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "aaa111", "", "reply", "vendor_pk"]
   ]
@@ -1259,7 +1259,7 @@ An auditor objects to the firmware-revision wording, asserting the chip was actu
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-patch"],
-    ["t", "scrutiny-v0.8.1"],
+    ["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"],
     ["e", "aaa111", "", "root", "vendor_pk"],
     ["e", "ddd444", "", "reply", "vendor_pk"]
   ]

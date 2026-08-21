@@ -18,7 +18,10 @@ as it does lives inline in the spec, next to that rule. Cross-cutting rationale 
   scan at zero billed bytes. The total-work ceiling now charges a per-line floor — no less than
   one unit per line of the hunk's match pattern (T1). See RL-2, §5.4, DECISIONS.md S9.
 - Version tag `scrutiny-v0.8.0` → `scrutiny-v0.8.1`. §3's forward-compatibility example moved
-  from `scrutiny-v0.8.1` to `scrutiny-v0.8.2`.
+  from `scrutiny-v0.8.1` to `scrutiny-v0.8.2`. The §4 mini-examples and Appendix D worked events
+  now carry the template form `scrutiny-v<MAJOR>.<MINOR>.<PATCH>` — the concrete literal survives
+  only in the title, **Version:** field, §3's examples, and the §4 preamble, and
+  `tools/verify-corpus.mjs` now asserts those agree (DECISIONS.md S9).
 
 ## v0.8.0
 

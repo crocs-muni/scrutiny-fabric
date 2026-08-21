@@ -258,6 +258,15 @@ charged unit was always local — so both ship together as a PATCH under the D45
 no MINOR split. Appendix G is untouched: no vector cites E3 or RL-2 (verified against both JSON
 corpora), and the `specVersion` field stays at `0.6.1`.
 
+**Example version tags genericized; the sweep is now guarded.** Every release until now rewrote
+~16 concrete version literals by hand — title, **Version:** field, §3's examples, §4 preamble,
+nine cooked example events across §4 and Appendix D — with nothing checking a miss. The nine
+example events now carry the template form `scrutiny-v<MAJOR>.<MINOR>.<PATCH>` (already
+placeholder documents: their IDs are `aaa111...`), so the concrete literal survives only in the
+canonical spots, and `verify-corpus.mjs` asserts the title, **Version:** field, §3 examples, and
+§4 preamble agree. A future missed literal fails the documented check instead of silently
+desyncing; §3 keeps one concrete instance, so no "what a real event looks like" is lost.
+
 ---
 
 ## Open questions

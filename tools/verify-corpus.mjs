@@ -61,6 +61,18 @@ for (const [file, parsed] of Object.entries(corpus)) {
   }
 }
 
+// --- Version markers: the canonical literals stay in sync -------------------
+
+const titleV = spec.match(/^# SCRUTINY Fabric — Protocol Specification v(\d+\.\d+\.\d+)$/m)?.[1];
+const fieldV = spec.match(/^\*\*Version:\*\* (\d+\.\d+\.\d+)$/m)?.[1];
+const tagExampleV = spec.match(/e\.g\. `\["t", "scrutiny-v(\d+\.\d+\.\d+)"\]`/)?.[1];
+const equivMatch = spec.match(/\(`scrutiny-v(\d+\.\d+\.\d+)` ≡ v(\d+\.\d+\.\d+)\)/);
+const preambleV = spec.match(/\(`scrutiny-fabric`, `scrutiny-v(\d+\.\d+\.\d+)`, and exactly one event-type tag\)/)?.[1];
+check(titleV != null, "title line does not carry a concrete vMAJOR.MINOR.PATCH version");
+check(fieldV != null, "**Version:** field does not carry a concrete version");
+for (const [where, v] of [["**Version:** field", fieldV], ["§3 tag example", tagExampleV], ["§3 form equivalence (tag side)", equivMatch?.[1]], ["§3 form equivalence (version side)", equivMatch?.[2]], ["§4 preamble", preambleV]])
+  check(v === titleV, `${where} carries ${v ?? "no"} version, title says ${titleV}`);
+
 // --- Rule registry: section rule tables and Appendix F stay in sync --------
 
 const body = spec.split("## Appendix F")[0];
@@ -77,3 +89,4 @@ if (failures.length > 0) {
 const totalCases = Object.values(corpus).reduce((n, p) => n + p.cases.length, 0);
 console.log(`OK ${g1.length} vector files, ${totalCases} cases, digests and counts match G.1`);
 console.log(`OK ${sectionIds.size} rules consistent between section tables and Appendix F`);
+console.log(`OK version markers consistent (title, Version field, §3, §4 preamble: ${titleV})`);
