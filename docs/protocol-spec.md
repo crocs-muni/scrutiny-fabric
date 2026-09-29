@@ -592,13 +592,13 @@ flowchart TD
     WALK -->|e reply unobserved| HOLD
     HOLD -.->|target arrives| WALK
     WALK -->|observed e root mis-typed| REJ
-    WALK -->|self-fork (SF-1)| FP
+    WALK -->|self-fork, SF-1| FP
     WALK -->|no fork; next patch| PRE
     FP -->|patches before shared parent still apply| PRE
-    PRE -->|work ceiling reached (RL-2)| CEIL
+    PRE -->|work ceiling reached, RL-2| CEIL
     PRE -->|pre-validation fails| HALT
     PRE -->|applies; next patch| PRE
-    PRE -->|next patch forked; stop (SF-1, SF-2)| FORK
+    PRE -->|next patch forked; stop, SF-1 SF-2| FORK
     PRE -->|chain exhausted| RES
 
     classDef proc fill:#fff,stroke:#333,stroke-width:1.5px,color:#000
