@@ -1334,148 +1334,148 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 
 | ID | § | Layer | Inherits from | Summary |
 |---|---|---|---|---|
-| TAG-1 | 3 | V | — | Exactly one `["t","scrutiny-fabric"]` tag. |
-| TAG-2 | 3 | V | — | Exactly one version `t` tag matching `^scrutiny-v\d+\.\d+\.\d+$`. |
-| TAG-3 | 3 | V | — | Exactly one event-type `t` tag from the recognised set. |
-| TAG-4 | 3 | V | — | Tag names use kebab-case. |
-| TAG-5 | 3 | V | NIP-01 | Unknown tags MUST be ignored. |
-| VER-1 | 3 | V | — | Version tags order per-field by digit string (leading zeros ignored; greater length, then lexicographic); never host-number conversion, never whole-tag lexicographic. |
-| VER-2 | 3 | V | — | Higher-version events MAY be admitted opaquely if V-valid. |
-| VER-3 | 3 | V | — | Higher-version events violating Validity MUST NOT render. |
-| VER-4 | 3 | V | — | MUST NOT reject higher-version events *solely* for the version tag. |
-| OTS-1 | 3 | A | NIP-03 | OTS is audit signal only; not used for chain construction or tip selection. |
-| SIG-1 | 3 | V | NIP-01 | Every consumed event MUST have both its signature and its `id` verified before processing. |
-| CA-1 | 4 | D | — | `created_at` SHOULD NOT be backdated to a historical date; historical dates belong in `content`. |
-| PR-1 | 4.1 | V | — | Product `content` field is required. |
-| PR-2 | 4.1 | D | — | Product SHOULD carry ≤64 `i` tags. |
-| PR-3 | 4.1 | D | — | Product SHOULD carry ≤64 `k` tags. |
-| PR-4 | 4.1 | D | NIP-73 | `k` SHOULD contain ≥1 entry per distinct `i` prefix; absence does not invalidate; treat as set. |
-| PR-5 | 4.1 | V | NIP-92 | `imeta` attachments OPTIONAL. |
-| MD-1 | 4.2 | V | — | Metadata `content` field is required. |
-| MD-2 | 4.2 | D | — | Metadata SHOULD carry ≤64 `i` tags. |
-| MD-3 | 4.2 | D | — | Metadata SHOULD carry ≤64 `k` tags. |
-| MD-4 | 4.2 | D | NIP-73 | `k` SHOULD contain ≥1 entry per distinct `i` prefix; absence does not invalidate; treat as set. |
-| MD-5 | 4.2 | V | NIP-92 | `imeta` attachments OPTIONAL. |
-| BD-1 | 4.3 | V | — | Exactly one `e root` tag. |
-| BD-2 | 4.3 | V | — | Exactly one `e link` tag. |
-| BD-3 | 4.3 | V | — | `e root` endpoint MUST be a `scrutiny-product`. |
-| BD-4 | 4.3 | V | — | `e link` endpoint MUST be a `scrutiny-metadata`. |
-| BD-5 | 4.3 | V | — | Binding with invalid endpoint typing MUST NOT be admitted. |
-| BD-6 | 4.3 | D | — | Binding with unobserved endpoints is pending; admitted but not rendered. |
-| BD-7 | 4.3 | V | — | Endpoint contradiction → permanently invalid; SHOULD cache rejection. |
-| BD-8 | 4.3 | D | NIP-10 | Relay-hint advisory; MUST fall back to full relay set if not found on hint. |
-| BD-9 | 4.3 | A | — | No patch-based Binding update; correct via kind 5 + replacement. |
-| BD-10 | 4.3 | V | — | Binding MUST NOT contain more than one `e root` or `e link`. |
-| BD-11 | 4.3 | D | — | Duplicate Binding collapse is a presentation concern. |
-| BD-12 | 4.3 | V | NIP-10 | Author-hint mismatch does NOT invalidate the referencing Binding. |
-| PT-1 | 4.4 | V | NIP-10 | Exactly one `e root` tag. |
-| PT-2 | 4.4 | V | NIP-10 | Exactly one `e reply` tag. |
-| PT-3 | 4.4 | V | — | Zero or one fenced `diff` / `patch` block. |
-| PT-4 | 4.4 | V | — | Multiple fenced blocks → only the first is the payload. |
-| PT-5 | 4.4 | A | — | Root-author vs foreign classification by `pubkey`. |
-| PT-6 | 4.4 | A | — | Root-author patch `e reply` MUST point at root or root-author patch (otherwise ignored for chain); unevaluable while the target is unobserved — held per UR-4. |
-| PT-7 | 4.4 | V | — | Foreign patch `e reply` MUST point at root or root-author patch; no overlay-to-overlay. |
-| PT-8 | 4.4 | A | — | No-op patch participates in chain topology but contributes no change. |
-| PT-9 | 4.4 | A | — | Patches append-only; removal only via author's own kind 5. |
-| PT-10 | 4.4 | V | — | `e root` MUST reference a `scrutiny-product` or `scrutiny-metadata` event. |
-| PT-11 | 4.4 | V | — | Patch with an observed `e root` violating PT-10 MUST NOT be admitted. |
-| IX-1 | 4.5 | D | — | Publishers SHOULD include canonical `i` tags for top-level indexers. |
-| IX-2 | 4.5 | D | — | Events SHOULD carry ≤64 `i` tags. |
-| IX-3 | 4.5 | A | — | `i` and `k` tags on root events are immutable. |
-| IX-4 | 4.5 | D | — | Deeply nested indexers SHOULD NOT be duplicated as `i` tags. |
-| IM-1 | 4.6 | A | NIP-92 | SHOULD verify `x` hash by streaming and comparing SHA-256. |
-| IM-2 | 4.6 | A | — | `size` mismatch is a verification failure equal to hash mismatch. |
-| IM-3 | 4.6 | A | NIP-92 | Multi-URL `imeta`: first hash-matching mirror is accepted; mirror choice MUST NOT influence validity. |
-| IM-4 | 4.6 | A | — | MUST warn before displaying unverified artifacts. |
-| IM-5 | 4.6 | V | — | `imeta` attachments not required to be referenced in `content`. |
-| PB-1 | 5.1 | A | — | `content` consumed verbatim; no normalization before diff/apply. |
-| PB-2 | 5.1 | A | — | Consumers MUST NOT normalize patch payload bytes before applying. |
-| E1 | 5.2 | V | CommonMark §4.5 | Backtick-fenced code block; tilde fences not recognised. |
-| E2 | 5.2 | V | CommonMark §4.5 | Opening fence ≥3 backticks; info string first token `diff` or `patch`. |
-| E3 | 5.2 | V | CommonMark §4.5 | Closing fence ≥ opening-fence length, when one exists; an unclosed block is a valid code block running to the end of `content`. |
-| E4 | 5.2 | A | — | Variable-length fences: `max(3, N+1)`; a producer obligation, unobservable to a consumer. |
-| E5 | 5.2 | V | CommonMark §4.5 | Payload = bytes between fence lines, each terminated by `\n`. |
-| E6 | 5.2 | V | — | Multiple matching fenced blocks: first is payload, rest ignored. |
-| E7 | 5.2 | A | — | No matching fenced block → no-op (§4.4). |
-| N1 | 5.2 | A | — | Prose-only patch is a valid no-op. |
-| N2 | 5.2 | A | — | Header-only fenced block (valid headers, zero hunks) is a valid no-op. |
-| N3 | 5.2 | A | — | Both no-op shapes MUST be treated as successful no-op application. |
-| C1 | 5.2 | V | — | `---`/`+++` path tokens MUST be exactly `a/content` and `b/content`. |
-| C2 | 5.2 | V | unified-diff | Trailing data on header/`@@` lines leaves a payload valid; tolerate and ignore it. |
-| C3 | 5.2 | V | unified-diff | An `Index:` preamble leaves a payload valid; it MAY appear and MUST be tolerated. |
-| C4 | 5.2 | V | unified-diff | A `diff --git` line leaves a payload valid; it MAY appear and MUST be tolerated. |
-| C5 | 5.2 | A | unified-diff | A hunk line beginning with `\` is a no-newline marker; key on the prefix, not the (localised) text. |
-| C6 | 5.2 | A | — | `@@` line numbers advisory; consumers locate hunks by context match. |
-| C7 | 5.2 | V | — | Floor on acceptance: any payload matching the §5.2 grammar is valid, zero-hunk included; no stricter reading. |
-| C8 | 5.2 | A | unified-diff | Multiple file sections permitted; a `---` at hunk-line position starts a section, not a removal. |
-| P1 | 5.2 | A | unified-diff | Producers SHOULD emit `min(3, available)` context lines; not a validity criterion for consumers. |
-| P2 | 5.2 | V | — | No `index <sha>..<sha>`, `mode`, `similarity index`, or rename metadata; `--no-index` does not suppress them. |
-| P3 | 5.2 | A | — | Producers MUST emit UTF-8 with LF line endings in the payload; not a consumer rejection criterion. |
-| P4 | 5.2 | A | — | Producers SHOULD verify their patch applies cleanly before publishing. |
-| T1 | 5.3 | A | — | Determinism: context+`-` lines MUST occur exactly once in current content. |
-| T2 | 5.3 | A | — | Insertion carve-out: pure-insertion hunks apply at the `@@` `-`-line position, clamped to the content's line range. |
-| T3 | 5.3 | A | — | Multi-hunk sequencing: each hunk checked against post-prior-hunks content. |
-| H1 | 5.3 | A | — | HALT: pre-validation failure freezes chain at last successful patch. |
-| H2 | 5.3 | A | — | Invalid patches MUST be surfaced as protocol error annotations. |
-| CHN-1 | 5.3 | A | NIP-10 | Canonical chain walks root-author patches via NIP-10 `e reply`. |
-| CHN-2 | 5.3 | A | — | Kind 5 cascade applied during chain build. |
-| CHN-3 | 5.3 | A | — | Foreign patches never enter the canonical chain; same T/H rules apply to overlays. |
-| RL-1 | 5.4 | D | — | Producers SHOULD respect the recommended resource bounds of §5.4. |
-| RL-2 | 5.4 | A | — | Consumers SHOULD enforce configurable ceilings and bound total patch-application work in bytes compared, with a per-line floor on the match pattern. |
-| RL-3 | 5.4 | A | — | Ceiling exceeded → resource-limit-exceeded annotation, never HALT; event remains V-valid. |
-| RL-4 | 5.4 | A | — | Content abandoned for resource reasons MUST NOT be served or cached as canonical bytes. |
-| RL-5 | 5.4 | A | — | A chain stopped by a ceiling is *aborted under a ceiling* — distinct from both resolved and HALT. |
-| TR-1 | 6 | V | — | V-invalid events MUST NOT enter SCRUTINY processing; V-valid events MUST NOT be rejected by an A or D rule. |
-| TR-2 | 6 | D | — | Event admitted if `pubkey` trusted OR reachable via a trusted Binding. |
-| TR-3 | 6 | D | — | Binding admitted only if its `pubkey` is trusted; no transitive endpoint trust. |
-| TR-4 | 6 | D | — | A trusted Binding admits its `e root` and `e link` endpoints, until the Binding is retracted. |
-| TR-5 | 6 | D | — | Root admission admits the root's canonical chain, for as long as the root's admission survives. |
-| TR-6 | 6 | D | — | Foreign patches are NOT transitively admitted; require independent trust. |
-| TR-7 | 6 | D | — | Trust filtering is presentation-time; MUST NOT precede chain construction, self-fork detection, or overlay classification. |
-| RC-1 | 7.1 | A | NIP-10 | Canonical chain = linear root-author patch sequence by `e reply`. |
-| RC-2 | 7.1 | A | — | Canonical bytes computed from root + canonical chain; overlays excluded. |
-| RC-3 | 7.1 | A | — | Non-UI consumers MUST recompute on observed-set change. |
-| RC-4 | 7.1 | A | — | UI consumers SHOULD recompute on observed-set change. |
-| RC-5 | 7.1 | A | — | The tip is the last chain event — the root itself where the chain carries no patches. |
-| SF-1 | 7.2 | A | — | Root self-fork: two root-author patches at same parent → chain undefined; a shared pending parent holds both (UR-4), no fork yet. |
-| SF-2 | 7.2 | A | — | Freeze patched content at shared parent while unresolved. |
-| SF-3 | 7.2 | A | — | Surface self-fork as an explicit error condition. |
-| SF-4 | 7.2 | A | — | MUST NOT pick branch by `created_at`, event ID, or any heuristic. |
-| SF-5 | 7.2 | A | NIP-09 | Resolution: root author kind 5 deletion on one branch. |
-| SF-6 | 7.2 | A | — | Multiple forks resolved independently; freeze at earliest unresolved. |
-| SF-7 | 7.2 | A | — | Self-fork vs HALT: freeze at whichever is earlier in chain order; never apply past a HALT. |
-| OV-1 | 7.3 | — | — | *Reserved.* See **PT-7** (§4.4). |
-| OV-2 | 7.3 | A | — | Target-state snapshot: overlay evaluated against target's resolved content. |
-| OV-3 | 7.3 | A | — | Undefined target content → overlay is orphaned, not clean/conflict/stale. |
-| OV-4 | 7.3 | A | — | Classification is a pure deterministic function of (payload, target content). |
-| OV-5 | 7.3 | D | — | Clients SHOULD expose classification through their API/data layer. |
-| OV-6 | 7.3 | A | — | Overlay rendered against original target; "rebase preview" is non-normative. |
-| OV-7 | 7.3 | D | — | Foreign overlay visible only if its `pubkey` is in the user's trusted set. |
-| OV-8 | 7.3 | A | — | Root-author patch replying to foreign patch ignored for chain construction. |
-| OV-9 | 7.3 | A | — | Ceiling reached before classification → `unclassified`; never conflict, orphaned, clean or stale. |
-| UR-1 | 7.6 | A | — | Ingestion MUST be confluent: state depends on the observed set, never on arrival order. |
-| UR-2 | 7.6 | A | — | Patch with unobserved `e root` is retained and re-evaluated on the root's arrival. |
-| UR-3 | 7.6 | D | — | Classification cached as permanent only when no further observation could change it. |
-| UR-4 | 7.6 | A | — | Root-author patch with unobserved `e reply` target is retained and re-evaluated on arrival; no chain or fork participation until then. |
-| DQ-1 | 8 | D | NIP-01 | Discovery queries assume NIP-01 `#t`/`#e`/`#i` filters; include `#t:["scrutiny-fabric"]`. |
-| DQ-2 | 8 | D | NIP-09 | SHOULD issue `{kinds:[5], #e:[<id>]}` per cached root, patch, and Binding, periodically. |
-| DQ-3 | 8 | D | NIP-50 | NIP-50 search results MUST be verified for valid `scrutiny-fabric` tags and intent match. |
-| DQ-4 | 8 | D | NIP-10 | `{"#e":[id]}` traversal results MUST be filtered for the expected `scrutiny-*` `t` tag and `e` markers inspected for role. |
-| IR-1 | 9 | V | — | `i` prefix is lowercase ASCII matching `[a-z0-9-]+`. |
-| IR-2 | 9 | V | — | `i` value is the source authority's canonical form, preserved verbatim. |
-| IR-3 | 9 | V | NIP-73 | Parsers split on the first `:` only. |
-| IR-4 | 9 | V | — | Unknown prefixes valid; pass through as opaque indexers. |
-| DEL-1 | 10 | A | NIP-09 | Kind 5 honored only when `pubkey` matches target event's `pubkey`. |
-| DEL-2 | 10 | A | — | Root-author patch deletion → topology cascade in canonical chain. |
-| DEL-3 | 10 | A | — | Foreign overlay deletion → hidden from default; canonical bytes unaffected. |
-| DEL-4 | 10 | D | — | Root deletion → default-view retraction; annotations preserved for audit. |
-| DEL-5 | 10 | D | — | Binding deletion → edge retraction and revocation of the admission it conferred; endpoints stay V-valid. |
-| DEL-6 | 10 | A | NIP-09 | Kind 5 events cannot themselves be kind-5-deleted. |
-| DEL-7 | 10 | A | — | α/β degradation for orphaned overlays; not re-anchored. |
-| DEL-8 | 10 | A | — | Late-arriving deletion target → retroactive application; recompute content. |
-| DEL-9 | 10 | A | — | MUST cache received kind 5 events and apply during chain construction. |
-| DEL-10 | 10 | D | — | Clients SHOULD offer a "show deleted events" toggle exposing deleted events + descendants. |
-| DEL-11 | 10 | D | NIP-09 | SCRUTINY-aware relays SHOULD store kind 5 deletions targeting scrutiny-fabric events alongside originals. |
+| <a id="rule-TAG-1"></a>TAG-1 | 3 | V | — | Exactly one `["t","scrutiny-fabric"]` tag. |
+| <a id="rule-TAG-2"></a>TAG-2 | 3 | V | — | Exactly one version `t` tag matching `^scrutiny-v\d+\.\d+\.\d+$`. |
+| <a id="rule-TAG-3"></a>TAG-3 | 3 | V | — | Exactly one event-type `t` tag from the recognised set. |
+| <a id="rule-TAG-4"></a>TAG-4 | 3 | V | — | Tag names use kebab-case. |
+| <a id="rule-TAG-5"></a>TAG-5 | 3 | V | NIP-01 | Unknown tags MUST be ignored. |
+| <a id="rule-VER-1"></a>VER-1 | 3 | V | — | Version tags order per-field by digit string (leading zeros ignored; greater length, then lexicographic); never host-number conversion, never whole-tag lexicographic. |
+| <a id="rule-VER-2"></a>VER-2 | 3 | V | — | Higher-version events MAY be admitted opaquely if V-valid. |
+| <a id="rule-VER-3"></a>VER-3 | 3 | V | — | Higher-version events violating Validity MUST NOT render. |
+| <a id="rule-VER-4"></a>VER-4 | 3 | V | — | MUST NOT reject higher-version events *solely* for the version tag. |
+| <a id="rule-OTS-1"></a>OTS-1 | 3 | A | NIP-03 | OTS is audit signal only; not used for chain construction or tip selection. |
+| <a id="rule-SIG-1"></a>SIG-1 | 3 | V | NIP-01 | Every consumed event MUST have both its signature and its `id` verified before processing. |
+| <a id="rule-CA-1"></a>CA-1 | 4 | D | — | `created_at` SHOULD NOT be backdated to a historical date; historical dates belong in `content`. |
+| <a id="rule-PR-1"></a>PR-1 | 4.1 | V | — | Product `content` field is required. |
+| <a id="rule-PR-2"></a>PR-2 | 4.1 | D | — | Product SHOULD carry ≤64 `i` tags. |
+| <a id="rule-PR-3"></a>PR-3 | 4.1 | D | — | Product SHOULD carry ≤64 `k` tags. |
+| <a id="rule-PR-4"></a>PR-4 | 4.1 | D | NIP-73 | `k` SHOULD contain ≥1 entry per distinct `i` prefix; absence does not invalidate; treat as set. |
+| <a id="rule-PR-5"></a>PR-5 | 4.1 | V | NIP-92 | `imeta` attachments OPTIONAL. |
+| <a id="rule-MD-1"></a>MD-1 | 4.2 | V | — | Metadata `content` field is required. |
+| <a id="rule-MD-2"></a>MD-2 | 4.2 | D | — | Metadata SHOULD carry ≤64 `i` tags. |
+| <a id="rule-MD-3"></a>MD-3 | 4.2 | D | — | Metadata SHOULD carry ≤64 `k` tags. |
+| <a id="rule-MD-4"></a>MD-4 | 4.2 | D | NIP-73 | `k` SHOULD contain ≥1 entry per distinct `i` prefix; absence does not invalidate; treat as set. |
+| <a id="rule-MD-5"></a>MD-5 | 4.2 | V | NIP-92 | `imeta` attachments OPTIONAL. |
+| <a id="rule-BD-1"></a>BD-1 | 4.3 | V | — | Exactly one `e root` tag. |
+| <a id="rule-BD-2"></a>BD-2 | 4.3 | V | — | Exactly one `e link` tag. |
+| <a id="rule-BD-3"></a>BD-3 | 4.3 | V | — | `e root` endpoint MUST be a `scrutiny-product`. |
+| <a id="rule-BD-4"></a>BD-4 | 4.3 | V | — | `e link` endpoint MUST be a `scrutiny-metadata`. |
+| <a id="rule-BD-5"></a>BD-5 | 4.3 | V | — | Binding with invalid endpoint typing MUST NOT be admitted. |
+| <a id="rule-BD-6"></a>BD-6 | 4.3 | D | — | Binding with unobserved endpoints is pending; admitted but not rendered. |
+| <a id="rule-BD-7"></a>BD-7 | 4.3 | V | — | Endpoint contradiction → permanently invalid; SHOULD cache rejection. |
+| <a id="rule-BD-8"></a>BD-8 | 4.3 | D | NIP-10 | Relay-hint advisory; MUST fall back to full relay set if not found on hint. |
+| <a id="rule-BD-9"></a>BD-9 | 4.3 | A | — | No patch-based Binding update; correct via kind 5 + replacement. |
+| <a id="rule-BD-10"></a>BD-10 | 4.3 | V | — | Binding MUST NOT contain more than one `e root` or `e link`. |
+| <a id="rule-BD-11"></a>BD-11 | 4.3 | D | — | Duplicate Binding collapse is a presentation concern. |
+| <a id="rule-BD-12"></a>BD-12 | 4.3 | V | NIP-10 | Author-hint mismatch does NOT invalidate the referencing Binding. |
+| <a id="rule-PT-1"></a>PT-1 | 4.4 | V | NIP-10 | Exactly one `e root` tag. |
+| <a id="rule-PT-2"></a>PT-2 | 4.4 | V | NIP-10 | Exactly one `e reply` tag. |
+| <a id="rule-PT-3"></a>PT-3 | 4.4 | V | — | Zero or one fenced `diff` / `patch` block. |
+| <a id="rule-PT-4"></a>PT-4 | 4.4 | V | — | Multiple fenced blocks → only the first is the payload. |
+| <a id="rule-PT-5"></a>PT-5 | 4.4 | A | — | Root-author vs foreign classification by `pubkey`. |
+| <a id="rule-PT-6"></a>PT-6 | 4.4 | A | — | Root-author patch `e reply` MUST point at root or root-author patch (otherwise ignored for chain); unevaluable while the target is unobserved — held per UR-4. |
+| <a id="rule-PT-7"></a>PT-7 | 4.4 | V | — | Foreign patch `e reply` MUST point at root or root-author patch; no overlay-to-overlay. |
+| <a id="rule-PT-8"></a>PT-8 | 4.4 | A | — | No-op patch participates in chain topology but contributes no change. |
+| <a id="rule-PT-9"></a>PT-9 | 4.4 | A | — | Patches append-only; removal only via author's own kind 5. |
+| <a id="rule-PT-10"></a>PT-10 | 4.4 | V | — | `e root` MUST reference a `scrutiny-product` or `scrutiny-metadata` event. |
+| <a id="rule-PT-11"></a>PT-11 | 4.4 | V | — | Patch with an observed `e root` violating PT-10 MUST NOT be admitted. |
+| <a id="rule-IX-1"></a>IX-1 | 4.5 | D | — | Publishers SHOULD include canonical `i` tags for top-level indexers. |
+| <a id="rule-IX-2"></a>IX-2 | 4.5 | D | — | Events SHOULD carry ≤64 `i` tags. |
+| <a id="rule-IX-3"></a>IX-3 | 4.5 | A | — | `i` and `k` tags on root events are immutable. |
+| <a id="rule-IX-4"></a>IX-4 | 4.5 | D | — | Deeply nested indexers SHOULD NOT be duplicated as `i` tags. |
+| <a id="rule-IM-1"></a>IM-1 | 4.6 | A | NIP-92 | SHOULD verify `x` hash by streaming and comparing SHA-256. |
+| <a id="rule-IM-2"></a>IM-2 | 4.6 | A | — | `size` mismatch is a verification failure equal to hash mismatch. |
+| <a id="rule-IM-3"></a>IM-3 | 4.6 | A | NIP-92 | Multi-URL `imeta`: first hash-matching mirror is accepted; mirror choice MUST NOT influence validity. |
+| <a id="rule-IM-4"></a>IM-4 | 4.6 | A | — | MUST warn before displaying unverified artifacts. |
+| <a id="rule-IM-5"></a>IM-5 | 4.6 | V | — | `imeta` attachments not required to be referenced in `content`. |
+| <a id="rule-PB-1"></a>PB-1 | 5.1 | A | — | `content` consumed verbatim; no normalization before diff/apply. |
+| <a id="rule-PB-2"></a>PB-2 | 5.1 | A | — | Consumers MUST NOT normalize patch payload bytes before applying. |
+| <a id="rule-E1"></a>E1 | 5.2 | V | CommonMark §4.5 | Backtick-fenced code block; tilde fences not recognised. |
+| <a id="rule-E2"></a>E2 | 5.2 | V | CommonMark §4.5 | Opening fence ≥3 backticks; info string first token `diff` or `patch`. |
+| <a id="rule-E3"></a>E3 | 5.2 | V | CommonMark §4.5 | Closing fence ≥ opening-fence length, when one exists; an unclosed block is a valid code block running to the end of `content`. |
+| <a id="rule-E4"></a>E4 | 5.2 | A | — | Variable-length fences: `max(3, N+1)`; a producer obligation, unobservable to a consumer. |
+| <a id="rule-E5"></a>E5 | 5.2 | V | CommonMark §4.5 | Payload = bytes between fence lines, each terminated by `\n`. |
+| <a id="rule-E6"></a>E6 | 5.2 | V | — | Multiple matching fenced blocks: first is payload, rest ignored. |
+| <a id="rule-E7"></a>E7 | 5.2 | A | — | No matching fenced block → no-op (§4.4). |
+| <a id="rule-N1"></a>N1 | 5.2 | A | — | Prose-only patch is a valid no-op. |
+| <a id="rule-N2"></a>N2 | 5.2 | A | — | Header-only fenced block (valid headers, zero hunks) is a valid no-op. |
+| <a id="rule-N3"></a>N3 | 5.2 | A | — | Both no-op shapes MUST be treated as successful no-op application. |
+| <a id="rule-C1"></a>C1 | 5.2 | V | — | `---`/`+++` path tokens MUST be exactly `a/content` and `b/content`. |
+| <a id="rule-C2"></a>C2 | 5.2 | V | unified-diff | Trailing data on header/`@@` lines leaves a payload valid; tolerate and ignore it. |
+| <a id="rule-C3"></a>C3 | 5.2 | V | unified-diff | An `Index:` preamble leaves a payload valid; it MAY appear and MUST be tolerated. |
+| <a id="rule-C4"></a>C4 | 5.2 | V | unified-diff | A `diff --git` line leaves a payload valid; it MAY appear and MUST be tolerated. |
+| <a id="rule-C5"></a>C5 | 5.2 | A | unified-diff | A hunk line beginning with `\` is a no-newline marker; key on the prefix, not the (localised) text. |
+| <a id="rule-C6"></a>C6 | 5.2 | A | — | `@@` line numbers advisory; consumers locate hunks by context match. |
+| <a id="rule-C7"></a>C7 | 5.2 | V | — | Floor on acceptance: any payload matching the §5.2 grammar is valid, zero-hunk included; no stricter reading. |
+| <a id="rule-C8"></a>C8 | 5.2 | A | unified-diff | Multiple file sections permitted; a `---` at hunk-line position starts a section, not a removal. |
+| <a id="rule-P1"></a>P1 | 5.2 | A | unified-diff | Producers SHOULD emit `min(3, available)` context lines; not a validity criterion for consumers. |
+| <a id="rule-P2"></a>P2 | 5.2 | V | — | No `index <sha>..<sha>`, `mode`, `similarity index`, or rename metadata; `--no-index` does not suppress them. |
+| <a id="rule-P3"></a>P3 | 5.2 | A | — | Producers MUST emit UTF-8 with LF line endings in the payload; not a consumer rejection criterion. |
+| <a id="rule-P4"></a>P4 | 5.2 | A | — | Producers SHOULD verify their patch applies cleanly before publishing. |
+| <a id="rule-T1"></a>T1 | 5.3 | A | — | Determinism: context+`-` lines MUST occur exactly once in current content. |
+| <a id="rule-T2"></a>T2 | 5.3 | A | — | Insertion carve-out: pure-insertion hunks apply at the `@@` `-`-line position, clamped to the content's line range. |
+| <a id="rule-T3"></a>T3 | 5.3 | A | — | Multi-hunk sequencing: each hunk checked against post-prior-hunks content. |
+| <a id="rule-H1"></a>H1 | 5.3 | A | — | HALT: pre-validation failure freezes chain at last successful patch. |
+| <a id="rule-H2"></a>H2 | 5.3 | A | — | Invalid patches MUST be surfaced as protocol error annotations. |
+| <a id="rule-CHN-1"></a>CHN-1 | 5.3 | A | NIP-10 | Canonical chain walks root-author patches via NIP-10 `e reply`. |
+| <a id="rule-CHN-2"></a>CHN-2 | 5.3 | A | — | Kind 5 cascade applied during chain build. |
+| <a id="rule-CHN-3"></a>CHN-3 | 5.3 | A | — | Foreign patches never enter the canonical chain; same T/H rules apply to overlays. |
+| <a id="rule-RL-1"></a>RL-1 | 5.4 | D | — | Producers SHOULD respect the recommended resource bounds of §5.4. |
+| <a id="rule-RL-2"></a>RL-2 | 5.4 | A | — | Consumers SHOULD enforce configurable ceilings and bound total patch-application work in bytes compared, with a per-line floor on the match pattern. |
+| <a id="rule-RL-3"></a>RL-3 | 5.4 | A | — | Ceiling exceeded → resource-limit-exceeded annotation, never HALT; event remains V-valid. |
+| <a id="rule-RL-4"></a>RL-4 | 5.4 | A | — | Content abandoned for resource reasons MUST NOT be served or cached as canonical bytes. |
+| <a id="rule-RL-5"></a>RL-5 | 5.4 | A | — | A chain stopped by a ceiling is *aborted under a ceiling* — distinct from both resolved and HALT. |
+| <a id="rule-TR-1"></a>TR-1 | 6 | V | — | V-invalid events MUST NOT enter SCRUTINY processing; V-valid events MUST NOT be rejected by an A or D rule. |
+| <a id="rule-TR-2"></a>TR-2 | 6 | D | — | Event admitted if `pubkey` trusted OR reachable via a trusted Binding. |
+| <a id="rule-TR-3"></a>TR-3 | 6 | D | — | Binding admitted only if its `pubkey` is trusted; no transitive endpoint trust. |
+| <a id="rule-TR-4"></a>TR-4 | 6 | D | — | A trusted Binding admits its `e root` and `e link` endpoints, until the Binding is retracted. |
+| <a id="rule-TR-5"></a>TR-5 | 6 | D | — | Root admission admits the root's canonical chain, for as long as the root's admission survives. |
+| <a id="rule-TR-6"></a>TR-6 | 6 | D | — | Foreign patches are NOT transitively admitted; require independent trust. |
+| <a id="rule-TR-7"></a>TR-7 | 6 | D | — | Trust filtering is presentation-time; MUST NOT precede chain construction, self-fork detection, or overlay classification. |
+| <a id="rule-RC-1"></a>RC-1 | 7.1 | A | NIP-10 | Canonical chain = linear root-author patch sequence by `e reply`. |
+| <a id="rule-RC-2"></a>RC-2 | 7.1 | A | — | Canonical bytes computed from root + canonical chain; overlays excluded. |
+| <a id="rule-RC-3"></a>RC-3 | 7.1 | A | — | Non-UI consumers MUST recompute on observed-set change. |
+| <a id="rule-RC-4"></a>RC-4 | 7.1 | A | — | UI consumers SHOULD recompute on observed-set change. |
+| <a id="rule-RC-5"></a>RC-5 | 7.1 | A | — | The tip is the last chain event — the root itself where the chain carries no patches. |
+| <a id="rule-SF-1"></a>SF-1 | 7.2 | A | — | Root self-fork: two root-author patches at same parent → chain undefined; a shared pending parent holds both (UR-4), no fork yet. |
+| <a id="rule-SF-2"></a>SF-2 | 7.2 | A | — | Freeze patched content at shared parent while unresolved. |
+| <a id="rule-SF-3"></a>SF-3 | 7.2 | A | — | Surface self-fork as an explicit error condition. |
+| <a id="rule-SF-4"></a>SF-4 | 7.2 | A | — | MUST NOT pick branch by `created_at`, event ID, or any heuristic. |
+| <a id="rule-SF-5"></a>SF-5 | 7.2 | A | NIP-09 | Resolution: root author kind 5 deletion on one branch. |
+| <a id="rule-SF-6"></a>SF-6 | 7.2 | A | — | Multiple forks resolved independently; freeze at earliest unresolved. |
+| <a id="rule-SF-7"></a>SF-7 | 7.2 | A | — | Self-fork vs HALT: freeze at whichever is earlier in chain order; never apply past a HALT. |
+| <a id="rule-OV-1"></a>OV-1 | 7.3 | — | — | *Reserved.* See **PT-7** (§4.4). |
+| <a id="rule-OV-2"></a>OV-2 | 7.3 | A | — | Target-state snapshot: overlay evaluated against target's resolved content. |
+| <a id="rule-OV-3"></a>OV-3 | 7.3 | A | — | Undefined target content → overlay is orphaned, not clean/conflict/stale. |
+| <a id="rule-OV-4"></a>OV-4 | 7.3 | A | — | Classification is a pure deterministic function of (payload, target content). |
+| <a id="rule-OV-5"></a>OV-5 | 7.3 | D | — | Clients SHOULD expose classification through their API/data layer. |
+| <a id="rule-OV-6"></a>OV-6 | 7.3 | A | — | Overlay rendered against original target; "rebase preview" is non-normative. |
+| <a id="rule-OV-7"></a>OV-7 | 7.3 | D | — | Foreign overlay visible only if its `pubkey` is in the user's trusted set. |
+| <a id="rule-OV-8"></a>OV-8 | 7.3 | A | — | Root-author patch replying to foreign patch ignored for chain construction. |
+| <a id="rule-OV-9"></a>OV-9 | 7.3 | A | — | Ceiling reached before classification → `unclassified`; never conflict, orphaned, clean or stale. |
+| <a id="rule-UR-1"></a>UR-1 | 7.6 | A | — | Ingestion MUST be confluent: state depends on the observed set, never on arrival order. |
+| <a id="rule-UR-2"></a>UR-2 | 7.6 | A | — | Patch with unobserved `e root` is retained and re-evaluated on the root's arrival. |
+| <a id="rule-UR-3"></a>UR-3 | 7.6 | D | — | Classification cached as permanent only when no further observation could change it. |
+| <a id="rule-UR-4"></a>UR-4 | 7.6 | A | — | Root-author patch with unobserved `e reply` target is retained and re-evaluated on arrival; no chain or fork participation until then. |
+| <a id="rule-DQ-1"></a>DQ-1 | 8 | D | NIP-01 | Discovery queries assume NIP-01 `#t`/`#e`/`#i` filters; include `#t:["scrutiny-fabric"]`. |
+| <a id="rule-DQ-2"></a>DQ-2 | 8 | D | NIP-09 | SHOULD issue `{kinds:[5], #e:[<id>]}` per cached root, patch, and Binding, periodically. |
+| <a id="rule-DQ-3"></a>DQ-3 | 8 | D | NIP-50 | NIP-50 search results MUST be verified for valid `scrutiny-fabric` tags and intent match. |
+| <a id="rule-DQ-4"></a>DQ-4 | 8 | D | NIP-10 | `{"#e":[id]}` traversal results MUST be filtered for the expected `scrutiny-*` `t` tag and `e` markers inspected for role. |
+| <a id="rule-IR-1"></a>IR-1 | 9 | V | — | `i` prefix is lowercase ASCII matching `[a-z0-9-]+`. |
+| <a id="rule-IR-2"></a>IR-2 | 9 | V | — | `i` value is the source authority's canonical form, preserved verbatim. |
+| <a id="rule-IR-3"></a>IR-3 | 9 | V | NIP-73 | Parsers split on the first `:` only. |
+| <a id="rule-IR-4"></a>IR-4 | 9 | V | — | Unknown prefixes valid; pass through as opaque indexers. |
+| <a id="rule-DEL-1"></a>DEL-1 | 10 | A | NIP-09 | Kind 5 honored only when `pubkey` matches target event's `pubkey`. |
+| <a id="rule-DEL-2"></a>DEL-2 | 10 | A | — | Root-author patch deletion → topology cascade in canonical chain. |
+| <a id="rule-DEL-3"></a>DEL-3 | 10 | A | — | Foreign overlay deletion → hidden from default; canonical bytes unaffected. |
+| <a id="rule-DEL-4"></a>DEL-4 | 10 | D | — | Root deletion → default-view retraction; annotations preserved for audit. |
+| <a id="rule-DEL-5"></a>DEL-5 | 10 | D | — | Binding deletion → edge retraction and revocation of the admission it conferred; endpoints stay V-valid. |
+| <a id="rule-DEL-6"></a>DEL-6 | 10 | A | NIP-09 | Kind 5 events cannot themselves be kind-5-deleted. |
+| <a id="rule-DEL-7"></a>DEL-7 | 10 | A | — | α/β degradation for orphaned overlays; not re-anchored. |
+| <a id="rule-DEL-8"></a>DEL-8 | 10 | A | — | Late-arriving deletion target → retroactive application; recompute content. |
+| <a id="rule-DEL-9"></a>DEL-9 | 10 | A | — | MUST cache received kind 5 events and apply during chain construction. |
+| <a id="rule-DEL-10"></a>DEL-10 | 10 | D | — | Clients SHOULD offer a "show deleted events" toggle exposing deleted events + descendants. |
+| <a id="rule-DEL-11"></a>DEL-11 | 10 | D | NIP-09 | SCRUTINY-aware relays SHOULD store kind 5 deletions targeting scrutiny-fabric events alongside originals. |
 
 ---
 

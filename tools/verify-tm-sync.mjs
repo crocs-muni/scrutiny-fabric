@@ -43,7 +43,7 @@ const ok = (m) => console.log(`OK   ${m}`);
 const appF = spec.split(/^## Appendix F/m)[1]?.split(/^## Appendix G/m)[0];
 if (!appF) { fail('Appendix F not found in spec'); process.exit(1); }
 // Dashed families (SF-4, DEL-11) and undashed families (E1, N3, C8, P4, T2, H1).
-const ruleIds = [...new Set([...appF.matchAll(/^\| ([A-Z][A-Z0-9]*-\d+|[A-Z]{1,2}\d{1,2}) \|/gm)].map((m) => m[1]))].sort();
+const ruleIds = [...new Set([...appF.matchAll(/^\| (?:<a id="rule-[A-Z0-9-]+"><\/a>)?([A-Z][A-Z0-9]*-\d+|[A-Z]{1,2}\d{1,2}) \|/gm)].map((m) => m[1]))].sort();
 ok(`Appendix F: ${ruleIds.length} rule IDs`);
 const ruleSet = new Set(ruleIds);
 

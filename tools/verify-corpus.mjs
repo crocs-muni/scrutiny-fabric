@@ -49,7 +49,7 @@ for (const [, file, count, digest] of g1) {
 // --- Case sanity: unique permanent names; rules cited exist ----------------
 
 const appendixF = spec.split("## Appendix F")[1]?.split("## Appendix G")[0] ?? "";
-const fIds = new Set([...appendixF.matchAll(/^\| ([A-Z][A-Z0-9-]*) \| /gm)].map((m) => m[1]));
+const fIds = new Set([...appendixF.matchAll(/^\| (?:<a id="rule-[A-Z0-9-]+"><\/a>)?([A-Z][A-Z0-9-]*) \| /gm)].map((m) => m[1]));
 fIds.delete("ID");
 
 for (const [file, parsed] of Object.entries(corpus)) {
