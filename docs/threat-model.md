@@ -77,7 +77,7 @@ flowchart LR
         UI["Rendered view"]
     end
     subgraph Hosts["Artifact hosts"]
-        B1["Blossom host"]
+        B1["Blossom host<br/>(HTTP blob server)"]
     end
     RA --> Mesh; FA --> Mesh; BA --> Mesh
     Mesh --> V --> C --> G --> UI
@@ -466,8 +466,11 @@ graph TD
     K3["Induce self-fork (freeze, T-DI-08)"]
     K4["Kind 5 delete legitimate history (T-PI-02)"]
     K5["Rely on a client that skips id+sig verification (T-DI-09)"]
+    K6["Pair a captured signature with a substituted body (T-DI-09)"]
+    K7["Honor a forged kind 5 against the victim's chain (T-DI-09)"]
     K0 --> K1; K0 --> K5
     K1 --> K2; K1 --> K3; K1 --> K4
+    K5 --> K6; K5 --> K7
 ```
 
 ```mermaid
