@@ -2,11 +2,11 @@
 
 **Protocol version:** 0.8.1  
 **Document status:** Draft for security review  
-**Methodology:** Adversary-model-based, in the Dolev–Yao tradition of numbered capability classes. Adversary grading adapts ETSI TS 102 165-1 V5.3.1 capability bands and the motivation axis (Appendix A, explicitly scoped). Risk ratings are ordinal-with-rationale (§5). No ordinal arithmetic is applied. Validated against protocol-spec v0.8.1. Every mechanism claim cite-checks against rule IDs in spec Appendix F.
+**Methodology:** Adversary-model-based, in the Dolev–Yao tradition of numbered capability classes. Adversary grading adapts ETSI TS 102 165-1 V5.3.1 capability bands and the motivation axis (Appendix A, explicitly scoped). Risk ratings are ordinal-with-rationale (§5). Ratings use no ordinal arithmetic. Validation targets protocol-spec v0.8.1. Every mechanism claim cite-checks against rule IDs in spec Appendix F.
 
 **Keyword declaration.** The key words MUST, SHOULD, and MAY and their negations appear in this document in uppercase ONLY inside verbatim quotations. The permitted quotations are protocol-spec rules anchored by rule ID, protocol-spec prose anchored by section, and the previous revision quoted as evidence in Appendix B. All analysis and guidance in this document uses lowercase modal verbs. When an uppercase keyword appears, it belongs to the quoted source, not to this document. This declaration follows the RFC 2119 and RFC 8174 convention of reserving capitals for formal obligation.
 
-**Marker legend.** `†` marks TM-side guidance or implementation-behavior observations that no spec rule requires. Everything not marked `†` is anchored to a protocol-spec rule ID or to common-knowledge infrastructure behavior.
+**Marker legend.** `†` marks TM-side guidance or implementation-behavior observations that no spec rule requires. Everything not marked `†` anchors to a protocol-spec rule ID or to common-knowledge infrastructure behavior.
 
 ---
 
@@ -29,7 +29,7 @@ This document threat-models the SCRUTINY Fabric protocol v0.8.1: a security-meta
 
 ### 1.2 Out of scope
 
-- Client implementation internals: rendering hygiene, storage layout, UI design. Where the protocol leaves a decision to clients, the exposure is named and the client layer owns the fix (§9).
+- Client implementation internals: rendering hygiene, storage layout, UI design. Where the protocol leaves a decision to clients, this document names the exposure and the client layer owns the fix (§9).
 - Relay software internals beyond behavior observable at the protocol interface (spec §8.0).
 - Key generation, storage, and operational key hygiene.
 - Transport-layer security: TLS downgrade, certificate validation, DNS poisoning. These are platform concerns (§8 excluded-concerns list).
@@ -40,19 +40,19 @@ This document threat-models the SCRUTINY Fabric protocol v0.8.1: a security-meta
 ### 1.3 Method
 
 1. Derive security goals from the spec's design principles and rule set (§2). Record non-goals explicitly.
-2. Fix the trust model and assumptions from spec §7.5 (§3). Assumptions that empirical evidence contradicts are downgraded and flagged.
-3. Define adversary archetypes as capability classes with explicit can/cannot tables, each graded by Appendix A's band and motivation criteria with the crossing axis named (§4).
+2. Fix the trust model and assumptions from spec §7.5 (§3). Downgrade and flag assumptions that empirical evidence contradicts.
+3. Define adversary archetypes as capability classes with explicit can/cannot tables (§4). Grade each by Appendix A's band and motivation criteria, naming the crossing axis.
 4. Enumerate threats per entry point and per rule family (§6). Write adversarial entries when a named archetype can act. Write structural-weakness entries when the exposure follows from a design decision alone (§5).
 5. Rate each entry: Impact names the degraded goal, the affected parties, and the scope. Likelihood argues motivation, capability, preconditions, and defense class (Absence of a control is itself a named class). Residual states what remains after the spec's own mitigations.
 6. Record what the protocol cannot fix at its own layer as residual risks (§8) and as boundary assignments (§9).
 
 ### 1.4 Verification
 
-Every catalog entry cites bracketed rule IDs from spec Appendix F, and every cited rule exists in the registry (Appendix F). Every rule family is either cited by at least one catalog entry or dispositioned with a rationale in §6.3. A mechanical gate (`tools/verify-tm-sync.mjs`) enforces version pinning, catalog/summary parity, citation admissibility, ledger bidirectionality, and the absence of retired terminology. Suspected spec defects halt the citing entry and are escalated rather than worked around. None was found necessary for v0.8.1: no surviving entry depends on an internally contradicted rule.
+Every catalog entry cites bracketed rule IDs from spec Appendix F, and every cited rule exists in the registry (Appendix F). Catalog entries cite every rule family, or §6.3 dispositions the family with a rationale. A mechanical gate (`tools/verify-tm-sync.mjs`) enforces version pinning, catalog/summary parity, citation admissibility, ledger bidirectionality, and the absence of retired terminology. A suspected spec defect halts the citing entry and triggers escalation, not a workaround. No such escalation proved necessary for v0.8.1: no surviving entry depends on an internally contradicted rule.
 
 ### 1.5 Completeness claim
 
-Two cross-checks bound the catalog (§6). Every entry point in §1b is crossed with every archetype in §4. Every rule family in spec Appendix F is either cited by a catalog entry or dispositioned with a rationale. Uncited rules that carry no surviving adversarial premise are named explicitly in §6.3, not silently skipped.
+Two cross-checks bound the catalog (§6). One cross-check pairs every entry point in §1b with every archetype in §4. The other covers every rule family in spec Appendix F, by citation in the catalog or by a dispositioned rationale. §6.3 names the uncited rules that carry no surviving adversarial premise, rather than skipping them silently.
 
 ---
 
@@ -87,10 +87,10 @@ flowchart LR
 
 Four trust boundaries, each anchored to one rule family:
 
-1. **Signature boundary** — every event crosses it once: `sig` over `id` over canonical serialization ([SIG-1](protocol-spec.md#rule-SIG-1)). Beyond it, events may be forged or replayed. Inside, a failing event is never processed.
+1. **Signature boundary** — every event crosses it once: `sig` over `id` over canonical serialization ([SIG-1](protocol-spec.md#rule-SIG-1)). Beyond it, an attacker may forge or replay events. Inside, a failing event never reaches processing.
 2. **Transport boundary** — TLS between client and relay and between client and artifact host. Confidentiality and integrity of transit end here. Content beyond it is public by design.
 3. **Artifact boundary** — the `x` SHA-256 hash in `imeta` tags ([IM-1](protocol-spec.md#rule-IM-1), [IM-4](protocol-spec.md#rule-IM-4)). Inside it, fetched bytes are trustworthy. Outside it, a host serves attacker-chosen bytes.
-4. **Trust boundary** — the user's trusted-pubkey set applied at the presentation edge, after chain and overlay computation ([TR-7](protocol-spec.md#rule-TR-7)). Nothing is pre-filtered at ingress.
+4. **Trust boundary** — the user's trusted-pubkey set applied at the presentation edge, after chain and overlay computation ([TR-7](protocol-spec.md#rule-TR-7)). No pre-filtering happens at ingress.
 
 ### 1b.1 Entry points
 
@@ -113,7 +113,7 @@ Every interface where attacker-shaped input crosses a trust boundary or changes 
 
 ## §2: Security Goals
 
-Protocol-relative goals. **Scope note:** goals are protocol-relative. Visibility of published events is public by design. Network-layer attacks (traffic analysis, endpoint compromise, TLS interception) operate below the protocol layer and are §9 boundary assignments, not goal violations. A goal is degraded when an adversary defeats a property the protocol itself claims to protect.
+Protocol-relative goals. **Scope note:** goals are protocol-relative. Visibility of published events is public by design. Network-layer attacks (traffic analysis, endpoint compromise, TLS interception) operate below the protocol layer. They are §9 boundary assignments, not goal violations. A goal is degraded when an adversary defeats a property the protocol itself claims to protect.
 
 | # | Goal | Definition |
 |---|---|---|
@@ -144,7 +144,7 @@ Fixes the actor model from spec §7.5 and states the assumptions the rest of thi
 
 ### 3.1 Actors
 
-**Publishers** sign every event with their Nostr key: nobody else produces a valid signature for the key. Nobody modifies a signed event without invalidating the signature. Nobody deletes another publisher's event. Publishers may still set an arbitrary `created_at` — signing proves identity, not time (CA-1 is a non-enforced directive). Root authors are sovereign over their chains: they extend them with patches and resolve self-forks by kind 5 deletion. Foreign annotators never mutate canonical content. Their events render as overlays (spec §7.3). Any key may author a Binding — trust controls visibility, not existence.
+**Publishers** sign every event with their Nostr key: nobody else produces a valid signature for the key. Nobody modifies a signed event without invalidating the signature. Nobody deletes another publisher's event. Publishers may still set an arbitrary `created_at`. Signing proves identity, not time (CA-1 is a non-enforced directive). Root authors are sovereign over their chains. They extend them with patches and resolve self-forks by kind 5 deletion. Foreign annotators never mutate canonical content. Their events render as overlays (spec §7.3). Any key may author a Binding. Trust controls visibility, not existence.
 
 **Relays** store and serve events, apply `#t`/`#e`/`#i` filters, and propagate publications. The baseline is honest-but-curious. Relays may also omit results, serve stale data, drop filter support, or stop answering. The defense is multiplicity: query multiple relays, cache locally, cross-reference (spec §7.5). No relay is trusted with completeness.
 
@@ -171,7 +171,7 @@ Fixes the actor model from spec §7.5 and states the assumptions the rest of thi
 
 ## §3b: Asset Inventory
 
-Assets the catalog reasons about, with the security properties each needs. **C**onfidentiality, **I**ntegrity, **A**vailability, and **Au**thenticity (attribution to the signing key) are tracked per asset. **NR** is key-level non-repudiation: the signing key cannot plausibly deny events it signed. That claim binds the key, not the real-world operator behind it.
+Assets the catalog reasons about, with the security properties each needs. This inventory tracks **C**onfidentiality, **I**ntegrity, **A**vailability, and **Au**thenticity (attribution to the signing key) per asset. **NR** is key-level non-repudiation: the signing key cannot plausibly deny events it signed. That claim binds the key, not the real-world operator behind it.
 
 | # | Asset | Description | C | I | A | Au | NR |
 |---|---|---|---|---|---|---|---|
@@ -320,7 +320,7 @@ Drives T-EC-02.
 | Binds fabricated findings to target products | Forge the targeted vendor's signature |
 | Exploits the asymmetric cost of investigating each false claim | Prove a negative cryptographically |
 
-Drives no current catalog entry. The defamation mechanism is covered by T-ID-04’s identity-claim surface and T-EC-04’s fabrication-scale entry. Defaming Consumer is retained because its can/cannot table bounds that class.
+Drives no current catalog entry. T-ID-04’s identity-claim surface and T-EC-04’s fabrication-scale entry cover the defamation mechanism. The catalog retains Defaming Consumer because its can/cannot table bounds that class.
 
 ### A11: Artifact-Targeting Attacker
 
@@ -360,13 +360,13 @@ Impact = which goal breaks, for whom, at what scope. One sentence per entry.
 | Likely | Recurring in the wild or near-costless to attempt. |
 | Very likely | Present by default; only active defense stands between the adversary and the outcome. |
 
-The labels are borrowed from ETSI TS 102 165-1 V5.3.1, Table 4 "Summary of likelihood metric" and Table 14 "Occurrence likelihood". Labels only: the numeric values TVRA attaches to them are rejected (Appendix A.3).
+The labels come from ETSI TS 102 165-1 V5.3.1, Table 4 "Summary of likelihood metric" and Table 14 "Occurrence likelihood". Labels only: Appendix A.3 rejects the numeric values TVRA attaches to them.
 
-Likelihood = driving archetype motivation × capability band × preconditions × defense class. Defense class names the cited mitigation's own keyword level: must, should, may, or absent (no rule). An assumption declared in §7.5 with no normative rule behind it counts as absent. Structural-weakness entries take no adversary: Likelihood argues condition probability (how often the design's preconditions arise in the wild) × absence of controls.
+Likelihood = driving archetype motivation × capability band × preconditions × defense class. Defense class names the cited mitigation's own keyword level: must, should, may, or absent (no rule). An assumption that §7.5 declares and that no normative rule supports counts as absent. Structural-weakness entries take no adversary. For these entries, Likelihood argues condition probability (how often the design's preconditions arise in the wild) × absence of controls.
 
 ### 5.3 Residual
 
-What remains after counting the spec's own mitigations, stated with the same vocabulary. A ranged residual (e.g., Low–Medium) is allowed only where implementation-quality variance genuinely shifts the outcome. Both bounds are narrated. Ranges are not a hedge. The entry names which configuration yields which bound.
+What remains after counting the spec's own mitigations, stated with the same vocabulary. We allow a ranged residual (e.g., Low–Medium) only where implementation-quality variance genuinely shifts the outcome. The entry narrates both bounds. Ranges are not a hedge. The entry names which configuration yields which bound.
 
 ### 5.4 Structural weaknesses
 
@@ -374,7 +374,7 @@ Entries of Type `structural-weakness` name the design decision or assumption res
 
 ### 5.5 Marker
 
-`†` = TM-side guidance, not a spec requirement. Attached to any statement about what implementations do or should do that no rule ID backs.
+`†` = TM-side guidance, not a spec requirement. Attach it to any statement about what implementations do or should do that no rule ID backs.
 
 ---
 
@@ -397,7 +397,7 @@ Total: 37 entries.
 
 ### 6.2 Entry point × archetype
 
-Every §1b.1 entry point was crossed against every §4 archetype. Cells that produce a threat land as entries. Each row lists that cell's primary entries. §4's Drives lines carry the full per-archetype mapping.
+This matrix crosses every §1b.1 entry point against every §4 archetype. Cells that produce a threat land as entries. Each row lists that cell's primary entries. §4's Drives lines carry the full per-archetype mapping.
 
 | Entry point | Reaching archetypes | Entries |
 |---|---|---|
@@ -412,11 +412,11 @@ Every §1b.1 entry point was crossed against every §4 archetype. Cells that pro
 | E9 NIP-02 import | A6 | T-ID-02 |
 | E10 NIP-50 responses | A1, A4 | T-DC-01, T-DC-03 |
 
-Archetypes with no entry-point reach left (A3 drives T-CE-02 through network-layer eclipse, below the protocol layer, assigned per §4 rather than through these entry points).
+A3 has no entry-point reach. A3 drives T-CE-02 through network-layer eclipse, below the protocol layer. It is assigned per §4 rather than through these entry points.
 
 ### 6.3 Rule-family coverage matrix
 
-Each spec Appendix F rule family: cited by entries, or dispositioned with a rationale. Uncited members of cited families are format-internal rules (schema, grammar, procedural sequencing) unless named below.
+Each spec Appendix F rule family is cited by entries or dispositioned with a rationale. Uncited members of cited families are format-internal rules (schema, grammar, procedural sequencing) unless named below.
 
 | Family | Cited | Entries / disposition |
 |---|---|---|
@@ -504,15 +504,15 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **1. Problem.** Publishers set `created_at` themselves and signing proves identity, not time ([CA-1](protocol-spec.md#rule-CA-1); §7.5). Chain construction ignores timestamps, confining forgery to the audit channel ([RC-1](protocol-spec.md#rule-RC-1), [SF-4](protocol-spec.md#rule-SF-4)). An in-window event stores with no error and no plausibility check ([CA-1](protocol-spec.md#rule-CA-1); §4). Publication times stay indistinguishable in-band, and G6 Auditability degrades.
 
-**2. Mitigation.** OpenTimestamps attestations give tamper-resistant proof of existence at or before a Bitcoin block, for disputes over timestamp authenticity ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1). Relays commonly reject events outside a bounded window ([CA-1](protocol-spec.md#rule-CA-1); §4), bounding a usable backdate to roughly one to three years. CA-1 directs publishers not to backdate, but nothing enforces it cryptographically ([CA-1](protocol-spec.md#rule-CA-1); §7.5).
+**2. Mitigation.** OpenTimestamps attestations give tamper-resistant proof of existence at or before a Bitcoin block, for disputes over timestamp authenticity ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1). Relays commonly reject events outside a bounded window ([CA-1](protocol-spec.md#rule-CA-1); §4). This bounds a usable backdate to roughly one to three years. CA-1 directs publishers not to backdate, but nothing enforces it cryptographically ([CA-1](protocol-spec.md#rule-CA-1); §7.5).
 
-**3. Gap.** CA-1 is a should with no enforcement, so any timestamp inside the window is accepted as published. OpenTimestamps is a may with low adoption, so most events lack tamper-resistant evidence ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1). The window is ecosystem practice, not a rule: absent as a protocol control, and no client must flag an implausible timestamp.†
+**3. Gap.** CA-1 is a should with no enforcement, so any timestamp inside the window is accepted as published. OpenTimestamps is a may with low adoption, so most events lack tamper-resistant evidence ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1). The window is ecosystem practice, not a rule. It is absent as a protocol control, and no client must flag an implausible timestamp.†
 
-**4. Impact: Low** — the forgery falsifies one evidentiary field, degrading G6 for adjudicators trusting self-reported times, while canonical chains are unaffected.
+**4. Impact: Low** — the forgery falsifies one evidentiary field, degrading G6 for adjudicators trusting self-reported times. Canonical chains are unaffected.
 
 **5. Likelihood: Unlikely** — a Compromised Publisher [B1, M3] needs a contested audit and an OTS-free event, against an unenforced should ([CA-1](protocol-spec.md#rule-CA-1)) and a may-class OTS.
 
-**6. Residual risk: Low** — the forgery is cheap and persistent, but it deceives only adjudicators trusting self-reported times, and OTS evidence remains available on demand.
+**6. Residual risk: Low** — the forgery is cheap and persistent. It deceives only adjudicators trusting self-reported times. OTS evidence remains available on demand.
 
 #### T-DI-02: Relay-Subset Divergence in Canonical Bytes
 
@@ -524,15 +524,15 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 | Goals | G1 Integrity, G6 Auditability |
 | Spec | no single rule: family RC; see §7.1 |
 
-**1. Problem.** Chain and overlay state follow the event set a client currently observes (§7.1). Relays are honest but curious, and no relay is trusted with completeness (§7.5). Heterogeneous subsets are the mesh's steady state, so clients can disagree on canonical bytes. A root self-fork typically arises from two-device publishing (§7.2). Its kind 5 resolution [SF-5](protocol-spec.md#rule-SF-5) can arrive late, so the same root may show frozen content [SF-2](protocol-spec.md#rule-SF-2) where a peer already shows a resolved chain. G1 integrity holds per observed set, not per root.
+**1. Problem.** Chain and overlay state follow the event set a client currently observes (§7.1). Relays are honest but curious. No relay is trusted with completeness (§7.5). Heterogeneous subsets are the mesh's steady state, so clients can disagree on canonical bytes. A root self-fork typically arises from two-device publishing (§7.2). Its kind 5 resolution [SF-5](protocol-spec.md#rule-SF-5) can arrive late. The same root may then show frozen content [SF-2](protocol-spec.md#rule-SF-2) where a peer already shows a resolved chain. G1 integrity holds per observed set, not per root.
 
 **2. Mitigation.** Non-UI consumers must recompute canonical bytes and overlay states when their observed event set changes in a way that affects events they serve ([RC-3](protocol-spec.md#rule-RC-3)). UI consumers should do the same ([RC-4](protocol-spec.md#rule-RC-4)). Multi-relay querying and local caching defend against relay incompleteness (§7.5).
 
-**3. Gap.** The recompute duties bind each client to its own observed set, and nothing requires the sets to agree ([RC-3](protocol-spec.md#rule-RC-3), [RC-4](protocol-spec.md#rule-RC-4)). Set agreement is absent, multi-relay querying is should-class (§7.5), and UI recompute is should-class ([RC-4](protocol-spec.md#rule-RC-4)). Divergence persists until the missing event arrives.
+**3. Gap.** The recompute duties bind each client to its own observed set ([RC-3](protocol-spec.md#rule-RC-3), [RC-4](protocol-spec.md#rule-RC-4)). Nothing requires the sets to agree. Set agreement is absent. Multi-relay querying is should-class (§7.5). UI recompute is should-class ([RC-4](protocol-spec.md#rule-RC-4)). Divergence persists until the missing event arrives.
 
 **4. Impact: Medium** — While sets differ, users of different clients disagree on a root's current state (G1), and audit claims (G6) contradict.
 
-**5. Likelihood: Likely** — condition probability is high, since out-of-order, late, or absent arrivals are the inherited Nostr model (§3.2), and no set-agreement control exists.
+**5. Likelihood: Likely** — condition probability is high. Out-of-order, late, or absent arrivals are the inherited Nostr model (§3.2). No set-agreement control exists.
 
 **6. Residual risk: Medium overall, Low for non-UI** — Non-UI consumers converge on arrival under a must-class recompute duty [RC-3](protocol-spec.md#rule-RC-3). Interactive clients that defer [RC-4](protocol-spec.md#rule-RC-4) can show stale or frozen content until refresh.
 
@@ -546,17 +546,17 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 | Goals | G1 Integrity, G6 Auditability |
 | Spec | [DEL-2](protocol-spec.md#rule-DEL-2), [DEL-8](protocol-spec.md#rule-DEL-8), [DEL-9](protocol-spec.md#rule-DEL-9), [DEL-11](protocol-spec.md#rule-DEL-11), [DQ-2](protocol-spec.md#rule-DQ-2); §7.4, §8, §10 |
 
-**1. Problem.** Deleting a root-author patch cascades to every canonical descendant ([DEL-2](protocol-spec.md#rule-DEL-2)). The cascade runs only against deletions a client has observed ([DEL-9](protocol-spec.md#rule-DEL-9)). A relay withholding a kind 5 leaves its clients computing stale canonical bytes. A relay storing the kind 5 without its target surfaces a context-free retraction, and a single-relay client sees no split.
+**1. Problem.** Deleting a root-author patch cascades to every canonical descendant ([DEL-2](protocol-spec.md#rule-DEL-2)). The cascade runs only against deletions a client has observed ([DEL-9](protocol-spec.md#rule-DEL-9)). A relay withholding a kind 5 leaves its clients computing stale canonical bytes. A relay storing the kind 5 without its target surfaces a context-free retraction. A single-relay client sees no split.
 
-**2. Mitigation.** Implementations cache locally received kind 5s and apply them even when the queried relay omits them ([DEL-9](protocol-spec.md#rule-DEL-9)). A late-target deletion is recorded and applied retroactively on arrival ([DEL-8](protocol-spec.md#rule-DEL-8)). SCRUTINY-aware relays store a kind 5 alongside its target and surface it to SCRUTINY-aware queriers ([DEL-11](protocol-spec.md#rule-DEL-11)). Periodic `{kinds:[5], #e:[<id>]}` polls per cached root, patch, and Binding, plus multi-relay querying, guard against default-result omissions ([DQ-2](protocol-spec.md#rule-DQ-2); §7.5).
+**2. Mitigation.** Implementations cache locally received kind 5s and apply them even when the queried relay omits them ([DEL-9](protocol-spec.md#rule-DEL-9)). Implementations record a late-target deletion and apply it retroactively on arrival ([DEL-8](protocol-spec.md#rule-DEL-8)). SCRUTINY-aware relays store a kind 5 alongside its target and surface it to SCRUTINY-aware queriers ([DEL-11](protocol-spec.md#rule-DEL-11)). Periodic `{kinds:[5], #e:[<id>]}` polls per cached root, patch, and Binding, plus multi-relay querying, guard against default-result omissions ([DQ-2](protocol-spec.md#rule-DQ-2); §7.5).
 
-**3. Gap.** No rule requires a complete result set or user-side verification, so completeness is absent. [DEL-9](protocol-spec.md#rule-DEL-9) and [DEL-8](protocol-spec.md#rule-DEL-8) caching are must-class but cover only deletions already received. [DEL-11](protocol-spec.md#rule-DEL-11) co-serving and [DQ-2](protocol-spec.md#rule-DQ-2) polling are should-level, letting a withholding relay leave stale bytes.
+**3. Gap.** No rule requires a complete result set or user-side verification, so completeness is absent. [DEL-9](protocol-spec.md#rule-DEL-9) and [DEL-8](protocol-spec.md#rule-DEL-8) caching are must-class but cover only deletions already received. [DEL-11](protocol-spec.md#rule-DEL-11) co-serving and [DQ-2](protocol-spec.md#rule-DQ-2) polling are should-level. A withholding relay can therefore leave stale bytes.
 
 **4. Impact: Medium** — Clients of a withholding relay compute stale canonical bytes, degrading G1 and G6 at relay scope.
 
 **5. Likelihood: Possible** — a Malicious Relay Operator [B3, M3] recurs by position and interest, needing single-relay reliance against should-class checks.
 
-**6. Residual risk: Medium** — must-class caching cannot deliver a deletion never received, and completeness stays absent, so stale bytes persist until a should-level check runs.
+**6. Residual risk: Medium** — must-class caching cannot deliver a deletion never received. Completeness stays absent, so stale bytes persist until a should-level check runs.
 
 #### T-DI-04: Binding Relationship Ambiguity
 
@@ -570,15 +570,15 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **1. Problem.** Binding relationship semantics live in free-form `content`, with structured labels deliberately dropped for canonical indexer discipline (§8.3). No closed vocabulary exists, so the protocol never classifies a claimed relationship as true, false, or complete. Validation covers shape only, at most one `e root` and one `e link` per Binding ([BD-10](protocol-spec.md#rule-BD-10)). A machine consumer parsing relationship claims cannot tell false from honest.
 
-**2. Mitigation.** Trust follows the verified pubkey, never a hint, keeping attribution pinned ([BD-12](protocol-spec.md#rule-BD-12)). A false Binding is corrected by kind 5 deletion and a fresh replacement, with competing Bindings carrying corrected prose (§4.3, [BD-9](protocol-spec.md#rule-BD-9)). Renderers may collapse visually identical duplicates at presentation ([BD-11](protocol-spec.md#rule-BD-11)).
+**2. Mitigation.** Trust follows the verified pubkey, never a hint, keeping attribution pinned ([BD-12](protocol-spec.md#rule-BD-12)). Kind 5 deletion and a fresh replacement correct a false Binding. Competing Bindings carry corrected prose (§4.3, [BD-9](protocol-spec.md#rule-BD-9)). Renderers may collapse visually identical duplicates at presentation ([BD-11](protocol-spec.md#rule-BD-11)).
 
-**3. Gap.** [BD-12](protocol-spec.md#rule-BD-12) verification is must-class but pins identity only, so no rule checks what the claim says. Correction is author-driven and non-atomic, so a false Binding stands until the author retracts or a competitor outranks it ([BD-9](protocol-spec.md#rule-BD-9)). Truth verification of relationship claims is absent, and mislabeling is traceable but never prevented.
+**3. Gap.** [BD-12](protocol-spec.md#rule-BD-12) verification is must-class but pins identity only. No rule checks what the claim says. Correction is author-driven and non-atomic. A false Binding stands until the author retracts or a competitor outranks it ([BD-9](protocol-spec.md#rule-BD-9)). Truth verification of relationship claims is absent. Mislabeling stays traceable, yet no rule prevents it.
 
 **4. Impact: Medium** — A trusted key's false relationship claim renders as fact until corrected or out-competed, degrading G1 for readers and G5 for automated classification.
 
-**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] recurs and needs only a key and a trusting consumer, against must-class identity checks that never touch claim truth.
+**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] recurs and needs only a key and a trusting consumer. The must-class identity checks never touch claim truth.
 
-**6. Residual risk: Low–Medium** — human readers and audits bound the false claim at Low, while automated consumers that trust rendered edges meet it at Medium.
+**6. Residual risk: Low–Medium** — human readers and audits bound the false claim at Low. Automated consumers that trust rendered edges meet it at Medium.
 
 #### T-DI-06: Attached Payload Integrity in Transit
 
@@ -590,17 +590,17 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 | Goals | G1 Integrity, G2 Authenticity |
 | Spec | [IM-1](protocol-spec.md#rule-IM-1), [IM-2](protocol-spec.md#rule-IM-2), [IM-3](protocol-spec.md#rule-IM-3), [IM-4](protocol-spec.md#rule-IM-4); §4.6 |
 
-**1. Problem.** Payload claims attach out-of-band via `imeta` tags, and the signature attests the declared hash, not the fetched bytes. Verification is should-level [IM-1](protocol-spec.md#rule-IM-1), so a client may skip it and only warn before display or processing [IM-4](protocol-spec.md#rule-IM-4). An Artifact-Targeting Attacker with serving-path control feeds substituted bytes to any client that skips the check. No two distinct byte streams pass one declared SHA-256, so divergence among clients signals a skipped check, not a hash break.
+**1. Problem.** Payload claims attach out-of-band via `imeta` tags. The signature attests the declared hash, not the fetched bytes. Verification is should-level [IM-1](protocol-spec.md#rule-IM-1). A client may skip it and only warn before display or processing [IM-4](protocol-spec.md#rule-IM-4). An Artifact-Targeting Attacker with serving-path control feeds substituted bytes to any client that skips the check. No two distinct byte streams pass one declared SHA-256. Divergence among clients signals a skipped check, not a hash break.
 
-**2. Mitigation.** [IM-1](protocol-spec.md#rule-IM-1) directs streamed verification of the `x` hash, and a declared `size` mismatch fails the fetch the same way [IM-2](protocol-spec.md#rule-IM-2). [IM-3](protocol-spec.md#rule-IM-3) allows multiple `url` entries, settling on the first whose bytes match, so mirror choice cannot sway validity.
+**2. Mitigation.** [IM-1](protocol-spec.md#rule-IM-1) directs streamed verification of the `x` hash. A declared `size` mismatch fails the fetch the same way [IM-2](protocol-spec.md#rule-IM-2). [IM-3](protocol-spec.md#rule-IM-3) allows multiple `url` entries, settling on the first whose bytes match. Mirror choice cannot sway validity.
 
-**3. Gap.** Verification stays should-level [IM-1](protocol-spec.md#rule-IM-1), the size check is conditional should [IM-2](protocol-spec.md#rule-IM-2), mirror neutrality is must-class [IM-3](protocol-spec.md#rule-IM-3), and the [IM-4](protocol-spec.md#rule-IM-4) warning is must-class with no block. The warning is presentational, so headless or routine ingestion satisfies it with no human decision and erodes the only guard†. Host rot, takedown, and compromise removal are T-AV-04's scope, while this entry covers bytes accepted without the [IM-1](protocol-spec.md#rule-IM-1) check.
+**3. Gap.** Verification stays should-level [IM-1](protocol-spec.md#rule-IM-1). The size check is conditional should [IM-2](protocol-spec.md#rule-IM-2). Mirror neutrality is must-class [IM-3](protocol-spec.md#rule-IM-3). The [IM-4](protocol-spec.md#rule-IM-4) warning is must-class with no block. The warning is presentational. Headless or routine ingestion satisfies it with no human decision and erodes the only guard†. Host rot, takedown, and compromise removal are T-AV-04's scope. This entry covers bytes accepted without the [IM-1](protocol-spec.md#rule-IM-1) check.
 
 **4. Impact: Medium** — A consumer acting on unverified payload bytes may ingest content unrelated to the signed declaration, breaking G1 and G2 for that application.
 
-**5. Likelihood: Possible** — Artifact-Targeting Attacker [B3, M3] holds the serving position, and success needs only a skip-verification or headless client against a should-level check.
+**5. Likelihood: Possible** — Artifact-Targeting Attacker [B3, M3] holds the serving position. Success needs only a skip-verification or headless client against a should-level check.
 
-**6. Residual risk: Medium** — Verifying clients stay sound, but nothing compels the cautious path, so unverified ingestion persists.
+**6. Residual risk: Medium** — Verifying clients stay sound. Nothing compels the cautious path, so unverified ingestion persists.
 
 #### T-DI-07: Publish-Then-Delete Admission Revocation Lag
 
@@ -612,17 +612,17 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 | Goals | G4 Trust Separation |
 | Spec | [DEL-5](protocol-spec.md#rule-DEL-5), [DEL-8](protocol-spec.md#rule-DEL-8), [DEL-9](protocol-spec.md#rule-DEL-9), [DEL-11](protocol-spec.md#rule-DEL-11), [DQ-2](protocol-spec.md#rule-DQ-2), [TR-3](protocol-spec.md#rule-TR-3), [TR-4](protocol-spec.md#rule-TR-4); §6.3, §6.4, §8, §10 |
 
-**1. Problem.** A trusted author's Binding admits both endpoints, even ones by untrusted authors ([TR-3](protocol-spec.md#rule-TR-3), [TR-4](protocol-spec.md#rule-TR-4); §6.4). An attacker on a compromised trusted key publishes such a Binding to hostile endpoints, harvests the borrowed trust, then deletes it. Deletion revokes it only where the kind 5 is observed ([DEL-5](protocol-spec.md#rule-DEL-5)), and relay honoring is optional ([DEL-11](protocol-spec.md#rule-DEL-11); §10). It then persists silently in withheld views, degrading G4 Trust Separation (compounds T-DI-03).
+**1. Problem.** A trusted author's Binding admits both endpoints, even ones by untrusted authors ([TR-3](protocol-spec.md#rule-TR-3), [TR-4](protocol-spec.md#rule-TR-4); §6.4). An attacker on a compromised trusted key publishes such a Binding to hostile endpoints, harvests the borrowed trust, then deletes it. Deletion revokes it only where clients observe the kind 5 ([DEL-5](protocol-spec.md#rule-DEL-5)). Relay honoring is optional ([DEL-11](protocol-spec.md#rule-DEL-11); §10). It then persists silently in withheld views, degrading G4 Trust Separation (compounds T-DI-03).
 
-**2. Mitigation.** DEL-5 revokes the conferred admission when the Binding is deleted ([DEL-5](protocol-spec.md#rule-DEL-5)). The same revocation serves lawful retractions, where removing honest endpoints is the author's choice, not a defect. Clients cache received kind 5s despite relay omission ([DEL-9](protocol-spec.md#rule-DEL-9)), reapply them to late targets ([DEL-8](protocol-spec.md#rule-DEL-8)), and poll per cached Binding ([DQ-2](protocol-spec.md#rule-DQ-2); §8).
+**2. Mitigation.** DEL-5 revokes the conferred admission when the author deletes the Binding ([DEL-5](protocol-spec.md#rule-DEL-5)). The same revocation serves lawful retractions, where removing honest endpoints is the author's choice, not a defect. Clients cache received kind 5s despite relay omission ([DEL-9](protocol-spec.md#rule-DEL-9)), reapply them to late targets ([DEL-8](protocol-spec.md#rule-DEL-8)), and poll per cached Binding ([DQ-2](protocol-spec.md#rule-DQ-2); §8).
 
-**3. Gap.** DEL-5 sits at the D layer, so revocation reshapes views without invalidating endpoints ([DEL-5](protocol-spec.md#rule-DEL-5); §10). Relay cooperation and polls are should-class ([DEL-11](protocol-spec.md#rule-DEL-11), [DQ-2](protocol-spec.md#rule-DQ-2)), while must-class caching reaches only received deletions ([DEL-9](protocol-spec.md#rule-DEL-9)). No protocol control bounds the deletion-to-observation lag.
+**3. Gap.** DEL-5 sits at the D layer, so revocation reshapes views without invalidating endpoints ([DEL-5](protocol-spec.md#rule-DEL-5); §10). Relay cooperation and polls are should-class ([DEL-11](protocol-spec.md#rule-DEL-11), [DQ-2](protocol-spec.md#rule-DQ-2)). Must-class caching reaches only received deletions ([DEL-9](protocol-spec.md#rule-DEL-9)). No protocol control bounds the deletion-to-observation lag.
 
 **4. Impact: Medium** — hostile endpoints keep rendering under borrowed trust in withheld views until the deletion arrives, degrading G4 Trust Separation for that client.
 
 **5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs a key moment plus withheld views, against should-class polls ([DQ-2](protocol-spec.md#rule-DQ-2)) and must-class caching ([DEL-9](protocol-spec.md#rule-DEL-9)).
 
-**6. Residual risk: Medium** — revocation holds wherever the kind 5 is observed, but lag is unbounded, so exposure persists per client until arrival.
+**6. Residual risk: Medium** — revocation holds wherever clients observe the kind 5. Lag is unbounded, so exposure persists per client until arrival.
 
 #### T-DI-08: Indefinite Self-Fork Freeze (Trusted Root Key)
 
@@ -634,17 +634,17 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 | Goals | G8 Availability, G6 Auditability |
 | Spec | [SF-1](protocol-spec.md#rule-SF-1), [SF-2](protocol-spec.md#rule-SF-2), [SF-3](protocol-spec.md#rule-SF-3), [SF-4](protocol-spec.md#rule-SF-4), [SF-5](protocol-spec.md#rule-SF-5), [RC-5](protocol-spec.md#rule-RC-5), [DEL-1](protocol-spec.md#rule-DEL-1); §7.2, §7.5, §10 |
 
-**1. Problem.** A Compromised Publisher with a trusted root key publishes a competing patch at any chain point, a root self-fork ([SF-1](protocol-spec.md#rule-SF-1)). The canonical chain and the tip stay undefined while unresolved ([RC-5](protocol-spec.md#rule-RC-5)). Clients freeze the content at the shared parent ([SF-2](protocol-spec.md#rule-SF-2)), surface the fork explicitly ([SF-3](protocol-spec.md#rule-SF-3)), and must not pick a branch ([SF-4](protocol-spec.md#rule-SF-4)). Resolution belongs to the root key alone: a kind 5 deletion on one branch ([SF-5](protocol-spec.md#rule-SF-5); §10), and no revocation exists (§7.5).
+**1. Problem.** A Compromised Publisher with a trusted root key publishes a competing patch at any chain point, a root self-fork ([SF-1](protocol-spec.md#rule-SF-1)). The canonical chain and the tip stay undefined while unresolved ([RC-5](protocol-spec.md#rule-RC-5)). Clients freeze the content at the shared parent ([SF-2](protocol-spec.md#rule-SF-2)), surface the fork explicitly ([SF-3](protocol-spec.md#rule-SF-3)), and must not pick a branch ([SF-4](protocol-spec.md#rule-SF-4)). Resolution belongs to the root key alone: a kind 5 deletion on one branch ([SF-5](protocol-spec.md#rule-SF-5); §10). No revocation exists (§7.5).
 
-**2. Mitigation.** Clients must freeze at the shared parent ([SF-2](protocol-spec.md#rule-SF-2)) and must not pick a branch by any heuristic ([SF-4](protocol-spec.md#rule-SF-4)). The fork surfaces explicitly with both branch IDs and timestamps, so an honest root author can resolve via kind 5 ([SF-3](protocol-spec.md#rule-SF-3), [SF-5](protocol-spec.md#rule-SF-5)).
+**2. Mitigation.** Clients must freeze at the shared parent ([SF-2](protocol-spec.md#rule-SF-2)) and must not pick a branch by any heuristic ([SF-4](protocol-spec.md#rule-SF-4)). The fork surfaces explicitly with both branch IDs and timestamps ([SF-3](protocol-spec.md#rule-SF-3)). An honest root author can resolve via kind 5 ([SF-5](protocol-spec.md#rule-SF-5)).
 
-**3. Gap.** No timeout bounds an unresolved self-fork: the frozen state may persist forever (absent). No alternative resolver exists: only the root key's kind 5 is honored ([DEL-1](protocol-spec.md#rule-DEL-1)), so the key holder alone unlocks the freeze. Against a malicious holder, that must-class resolution is attacker-operated, and re-freezing costs one broadcast patch per cycle (†).
+**3. Gap.** No timeout bounds an unresolved self-fork: the frozen state may persist forever (absent). No alternative resolver exists: clients honor only the root key's kind 5 ([DEL-1](protocol-spec.md#rule-DEL-1)). The key holder alone unlocks the freeze. Against a malicious holder, the attacker operates that must-class resolution. Re-freezing costs one broadcast patch per cycle (†).
 
 **4. Impact: High** — Users trusting the root key see frozen canonical bytes and a surfaced error for an unbounded period, degrading G8 and G6.
 
-**5. Likelihood: Possible** — [B1, M3] (no infrastructure position, recurring under signature attribution) × trusted-key compromise or vendor malice (T-ID-01) × must-class freezes only the key holder can lift.
+**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs no infrastructure position and recurs under signature attribution. The driver is trusted-key compromise or vendor malice (T-ID-01). The freeze is must-class, and only the key holder can lift it.
 
-**6. Residual risk: High** — No revocation means a re-fork restores the freeze at one patch's cost (†), and social migration is the only remedy (§7.5).
+**6. Residual risk: High** — No revocation means a re-fork restores the freeze at one patch's cost (†). Social migration is the only remedy (§7.5).
 
 #### T-DI-09: Unverified Kind 5 Honoring Cascades Canonical Chains
 
@@ -656,7 +656,7 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 | Goals | G1 Integrity, G5 Discoverability |
 | Spec | [DEL-1](protocol-spec.md#rule-DEL-1), [DEL-2](protocol-spec.md#rule-DEL-2), [DEL-8](protocol-spec.md#rule-DEL-8), [DEL-11](protocol-spec.md#rule-DEL-11), [SIG-1](protocol-spec.md#rule-SIG-1); §3, §10 |
 
-**1. Problem.** A kind 5 is honored only when its `pubkey` matches the target's ([DEL-1](protocol-spec.md#rule-DEL-1); §10). An attacker's own kind 5 against a victim's patches still verifies, so honoring it skips the DEL-1 match. Skipping id-recomputation lets a relay pair a captured signature with a substituted body: "A signature-only check is insufficient" ([SIG-1](protocol-spec.md#rule-SIG-1); §3). Clients honoring either forgery cascade the victim's chain ([DEL-2](protocol-spec.md#rule-DEL-2)) and late targets retroactively ([DEL-8](protocol-spec.md#rule-DEL-8)).
+**1. Problem.** Clients honor a kind 5 only when its `pubkey` matches the target's ([DEL-1](protocol-spec.md#rule-DEL-1); §10). An attacker's own kind 5 against a victim's patches still verifies, so honoring it skips the DEL-1 match. Skipping id-recomputation lets a relay pair a captured signature with a substituted body: "A signature-only check is insufficient" ([SIG-1](protocol-spec.md#rule-SIG-1); §3). Clients honoring either forgery cascade the victim's chain ([DEL-2](protocol-spec.md#rule-DEL-2)) and late targets retroactively ([DEL-8](protocol-spec.md#rule-DEL-8)).
 
 **2. Mitigation.** SIG-1 requires verifying the signature and that `id` hashes the canonical serialization, before processing any event including kind 5 ([SIG-1](protocol-spec.md#rule-SIG-1); §3). DEL-1 gates honoring on the author match, made mandatory by §10's validation prose ([DEL-1](protocol-spec.md#rule-DEL-1); §10).
 
@@ -664,9 +664,9 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **4. Impact: Medium** — the victim's chain reverts to its last surviving ancestor for affected clients, degrading G1 Integrity and G5 Discoverability.
 
-**5. Likelihood: Possible** — a Malicious Relay Operator [B3, M4] needs one served client skipping either must-class check, and must-rule client conformance is empirically unreliable†.
+**5. Likelihood: Possible** — a Malicious Relay Operator [B3, M4] needs one served client skipping either must-class check. Must-rule client conformance is empirically unreliable†.
 
-**6. Residual risk: Low–Medium** — conformant clients are immune and the forgery stays auditable (lower bound), while non-conformant ones serve that chain as current (upper bound)†.
+**6. Residual risk: Low–Medium** — conformant clients are immune and the forgery stays auditable (lower bound). Non-conformant ones serve that chain as current (upper bound)†.
 
 ### §7.2: Identity
 
@@ -684,13 +684,13 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **1. Problem.** A leaked root author's nsec hands the attacker sovereignty over all chains that key originates (§7.5). The attacker extends chains with false patches, kind 5-deletes legitimate history, induces root self-forks, and writes genuine-looking bindings ([SF-2](protocol-spec.md#rule-SF-2), [SF-5](protocol-spec.md#rule-SF-5); §7.5). Post-compromise events pass signature and id checks identically to genuine ones ([SIG-1](protocol-spec.md#rule-SIG-1); §7.5). Canonical bytes change under the leaked key ([RC-2](protocol-spec.md#rule-RC-2); §7.5).
 
-**2. Mitigation.** Pre-compromise events remain signed by the legitimate author and are forensically distinguishable. OpenTimestamps strengthen that boundary as an audit signal ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1, §7.5). The remedy is social: "announce compromise out-of-band, rotate to a new key, encourage the community to migrate trust" (§7.5).
+**2. Mitigation.** The legitimate author signed pre-compromise events, which stay forensically distinguishable. OpenTimestamps strengthen that boundary as an audit signal ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1, §7.5). The remedy is social: "announce compromise out-of-band, rotate to a new key, encourage the community to migrate trust" (§7.5).
 
 **3. Gap.** "There is no key-revocation mechanism in this protocol version" (§7.5). The forensic boundary is may-class: OpenTimestamps proofs are optional, and ecosystem adoption is currently low ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1). The social remedy is absent as a protocol control, so completeness depends on reaching every trusting party.
 
 **4. Impact: Critical** — G1, G2, and G4 break for every party trusting the leaked key, with no in-protocol recovery path (§7.5).
 
-**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs only stock tooling, custody failures are routine, and no defense class exists (absent).
+**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs only stock tooling. Custody failures are routine. No defense class exists (absent).
 
 **6. Residual risk: Critical** — carried from v0.5.3. §7.5 states the sovereignty inheritance, forensic asymmetry, and absent revocation, keeping this the model's most severe threat.
 
@@ -704,15 +704,15 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 | Goals | G4 Trust Separation, G5 Discoverability |
 | Spec | [TR-2](protocol-spec.md#rule-TR-2), [TR-3](protocol-spec.md#rule-TR-3); §6.1, §7.5 |
 
-**1. Problem.** Sybil resistance is delegated to the user's web-of-trust (§7.5). A curated allowlist admits only explicitly trusted pubkeys. An N-hop expansion via NIP-02 follow lists admits any key a trusted key follows. An attacker generating keys at scale then needs one placement inside the radius — bought follows, follow-back exchanges, or one compromised minor account. Each admitted key may publish valid events of every type ([TR-2](protocol-spec.md#rule-TR-2) admits all-or-nothing). The flood erodes trust separation (G4) and discovery value (G5).
+**1. Problem.** The protocol delegates sybil resistance to the user's web-of-trust (§7.5). A curated allowlist admits only explicitly trusted pubkeys. An N-hop expansion via NIP-02 follow lists admits any key a trusted key follows. An attacker generating keys at scale then needs one placement inside the radius — bought follows, follow-back exchanges, or one compromised minor account. Each admitted key may publish valid events of every type ([TR-2](protocol-spec.md#rule-TR-2) admits all-or-nothing). The flood erodes trust separation (G4) and discovery value (G5).
 
-**2. Mitigation.** Binding admission does not widen: a Binding is admitted only when its own author is trusted, and trust does not flow through endpoints ([TR-3](protocol-spec.md#rule-TR-3)). §7.5 sets a should defense: "Implementations SHOULD warn when trust-radius expansion would admit a large number of previously unseen pubkeys."
+**2. Mitigation.** Binding admission does not widen: users admit a Binding only when they trust its own author. Trust does not flow through endpoints ([TR-3](protocol-spec.md#rule-TR-3)). §7.5 sets a should defense: "Implementations SHOULD warn when trust-radius expansion would admit a large number of previously unseen pubkeys."
 
 **3. Gap.** No protocol-level sybil-cost rule exists. §6.1 leaves expansion depth, scoring, and curation out of scope (control absent). The expansion warning is a should clients may omit. Unweighted expansion flattens trust distance: a key three hops out counts the same as a direct follow.
 
 **4. Impact: Medium** — sybil admission pollutes every event surface (A1–A4), eroding G4 per-user and diluting G5, proportional to expansion depth.
 
-**5. Likelihood: Likely** — the Sybil Amplifier [B2, M3] runs sybil key generation at scale for days to weeks, needs no position, and faces a should-level, possibly absent, warning.
+**5. Likelihood: Likely** — the Sybil Amplifier [B2, M3] runs sybil key generation at scale for days to weeks. It needs no position and faces a should-level, possibly absent, warning.
 
 **6. Residual risk: Medium** — bounded by trusted-set discipline and warning uptake. Irreducible while the trust model stays permissionless.
 
@@ -726,7 +726,7 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 | Goals | G5 Discoverability |
 | Spec | [IX-1](protocol-spec.md#rule-IX-1), [IR-2](protocol-spec.md#rule-IR-2), [IX-3](protocol-spec.md#rule-IX-3); §9 |
 
-**1. Problem.** `i` tag values are self-asserted. Nothing validates a claimed `cve:` or `cpe:` indexer against MITRE or the NIST dictionary. §9 records only a format convention: "Value is the source authority's canonical form, preserved verbatim" ([IR-2](protocol-spec.md#rule-IR-2)). IX-1's inclusion guidance is a should, not a registry check. A squatter claims a known indexer early. Its standing rests on real publication time. No surface rewards a backdate: chains ignore `created_at` ([RC-1](protocol-spec.md#rule-RC-1), [SF-4](protocol-spec.md#rule-SF-4)), indexer queries fix no result ordering (§8.1), NIP-50 ranks by relevance, and NIP-01 paginates newest-first. Root indexers are immutable ([IX-3](protocol-spec.md#rule-IX-3)), so the claim persists. The attack degrades discovery within the user's trust perimeter (G5).
+**1. Problem.** `i` tag values are self-asserted. Nothing validates a claimed `cve:` or `cpe:` indexer against MITRE or the NIST dictionary. §9 records only a format convention: "Value is the source authority's canonical form, preserved verbatim" ([IR-2](protocol-spec.md#rule-IR-2)). IX-1's inclusion guidance is a should, not a registry check. A squatter claims a known indexer early. Its standing rests on real publication time. No surface rewards a backdate. Chains ignore `created_at` ([RC-1](protocol-spec.md#rule-RC-1), [SF-4](protocol-spec.md#rule-SF-4)). Indexer queries fix no result ordering (§8.1). NIP-50 ranks by relevance, and NIP-01 paginates newest-first. Root indexers are immutable ([IX-3](protocol-spec.md#rule-IX-3)), so the claim persists. The attack degrades discovery within the user's trust perimeter (G5).
 
 **2. Mitigation.** Squatter events reach a curated view only through trusted or Binding-reachable keys. Competing claims render side by side inside the user's trusted set ([OV-7](protocol-spec.md#rule-OV-7); §7.5). Authoritative keys outrank squatters by curation alone.
 
@@ -734,7 +734,7 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **4. Impact: Medium** — diluted `#i` discovery (G5) and side-by-side noise with legitimate metadata, per-user, worst during bootstrap.
 
-**5. Likelihood: Possible** — the Identifier Squatter [B1, M2] needs only stock tooling, but trusted-set admission gates damage and attribution risk deters a curious-motivation actor.
+**5. Likelihood: Possible** — the Identifier Squatter [B1, M2] needs only stock tooling. Trusted-set admission gates damage. Attribution risk deters a curious-motivation actor.
 
 **6. Residual risk: Medium** — bounded by trusted-set curation. Declines as authoritative keys gain wide trust.
 
@@ -752,7 +752,7 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **2. Mitigation.** Permissionless identity is a stated design assumption with no central identity authority (§7.5). Signature plus id verification anchors every claim to the signing key (must, [SIG-1](protocol-spec.md#rule-SIG-1)). Curated trusted-pubkey sets from organization-published keys shield disciplined users ([TR-2](protocol-spec.md#rule-TR-2), [OV-7](protocol-spec.md#rule-OV-7); §7.5). Binding admission gates on the Binding's own `pubkey`, never transitive through endpoints ([TR-3](protocol-spec.md#rule-TR-3)).
 
-**3. Gap.** Pubkey-to-entity binding is absent as a protocol control: the trust mechanism itself is out of scope (§7.5), and curation is practice-only†. Users on unverified defaults have no in-protocol basis for discriminating keys (compounds T-EC-02). Squatting is free while authorities must defend every claim†.
+**3. Gap.** Pubkey-to-entity binding is absent as a protocol control. The trust mechanism itself is out of scope (§7.5). Curation is practice-only†. Users on unverified defaults have no in-protocol basis for discriminating keys (compounds T-EC-02). Squatting is free while authorities must defend every claim†.
 
 **4. Impact: Medium** — an admitted impostor degrades G2 Authenticity and G4 Trust Separation for every user admitting the key.
 
@@ -770,17 +770,17 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 | Goals | G2 Authenticity |
 | Spec | [BD-12](protocol-spec.md#rule-BD-12), [BD-6](protocol-spec.md#rule-BD-6), [TR-3](protocol-spec.md#rule-TR-3), [SIG-1](protocol-spec.md#rule-SIG-1); §3.2, §4.3 |
 
-**1. Problem.** An `e` tag's author-hint suffix is advisory, consulted for outbox-model discovery when the relay hint does not resolve (§3.2, §4.3). The hint never affects a Binding's validity ([BD-12](protocol-spec.md#rule-BD-12)), so a Compromised Publisher can pair a trusted hint pubkey with an attacker-keyed referenced event. Any consumer trusting or rendering the hint misattributes the referenced event's author.
+**1. Problem.** An `e` tag's author-hint suffix is advisory. Consumers consult it for outbox-model discovery when the relay hint does not resolve (§3.2, §4.3). The hint never affects a Binding's validity ([BD-12](protocol-spec.md#rule-BD-12)). A Compromised Publisher can therefore pair a trusted hint pubkey with an attacker-keyed referenced event. Any consumer trusting or rendering the hint misattributes the referenced event's author.
 
 **2. Mitigation.** Trust decisions rest on the verified event `pubkey`, never the hint ([BD-12](protocol-spec.md#rule-BD-12)). Signature plus id verification binds the fetched event to its key (must, [SIG-1](protocol-spec.md#rule-SIG-1)). Pending Bindings stay stored but unrendered until both endpoints are observed ([BD-6](protocol-spec.md#rule-BD-6)). Admission requires the Binding's own author be trusted ([TR-3](protocol-spec.md#rule-TR-3)).
 
-**3. Gap.** No rule flags a hint mismatch as a user-facing warning (defense class absent). The hint is structurally unverifiable until the endpoint arrives, and BD-6 plus BD-12 protect only compliant consumers†. Hint-faithful renderers propagate the misattribution†.
+**3. Gap.** No rule flags a hint mismatch as a user-facing warning (defense class absent). The hint is structurally unverifiable until the endpoint arrives. BD-6 plus BD-12 protect only compliant consumers†. Hint-faithful renderers propagate the misattribution†.
 
 **4. Impact: Low** — G2 Authenticity degrades only where a consumer violates BD-12 or renders pending content. Compliant consumers see true authorship.
 
-**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs only a crafted tag, and deception lands where a client trusts hints against a must-class rule†.
+**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs only a crafted tag. Deception lands where a client trusts hints against a must-class rule†.
 
-**6. Residual risk: Low** — Compliant consumers are immune, and the residual surface is non-compliant renderer behavior with must-class anchors†.
+**6. Residual risk: Low** — Compliant consumers are immune. The residual surface is non-compliant renderer behavior with must-class anchors†.
 
 #### T-ID-06: Hostile Markup in Rendered Content
 
@@ -792,15 +792,15 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 | Goals | G4 Trust Separation |
 | Spec | [PR-1](protocol-spec.md#rule-PR-1), [MD-1](protocol-spec.md#rule-MD-1), [PB-1](protocol-spec.md#rule-PB-1), [PB-2](protocol-spec.md#rule-PB-2), [OV-6](protocol-spec.md#rule-OV-6), [OV-7](protocol-spec.md#rule-OV-7), [IM-4](protocol-spec.md#rule-IM-4); §3.2 |
 
-**1. Problem.** Product and Metadata `content` is free-form with no grammar ([PR-1](protocol-spec.md#rule-PR-1), [MD-1](protocol-spec.md#rule-MD-1)). PB-1 and PB-2 keep payload bytes verbatim end-to-end ([PB-1](protocol-spec.md#rule-PB-1), [PB-2](protocol-spec.md#rule-PB-2)). A Compromised Publisher embeds hostile markup or links in admitted prose, which a client may render as rich text† or present as overlays ([OV-6](protocol-spec.md#rule-OV-6); §7.3). Nothing constrains characters or structure inside `content`, so the renderer presents attacker-shaped UI as trusted data.
+**1. Problem.** Product and Metadata `content` is free-form with no grammar ([PR-1](protocol-spec.md#rule-PR-1), [MD-1](protocol-spec.md#rule-MD-1)). PB-1 and PB-2 keep payload bytes verbatim end-to-end ([PB-1](protocol-spec.md#rule-PB-1), [PB-2](protocol-spec.md#rule-PB-2)). A Compromised Publisher embeds hostile markup or links in admitted prose, which a client may render as rich text† or present as overlays ([OV-6](protocol-spec.md#rule-OV-6); §7.3). Nothing constrains characters or structure inside `content`. The renderer therefore presents attacker-shaped UI as trusted data.
 
 **2. Mitigation.** Trust gating bounds exposure: foreign content is visible only when its `pubkey` is in the user's trusted set ([OV-7](protocol-spec.md#rule-OV-7); §7.5). The only warn-before-display rule warns before displaying or processing unverified artifacts ([IM-4](protocol-spec.md#rule-IM-4)), must-class but verification-only. Canonical bytes stay intact ([PB-1](protocol-spec.md#rule-PB-1)), so audit tooling still recovers the true content.
 
-**3. Gap.** Sanitization is absent as a protocol control, and no rule governs content rendering. §3.2's base-layer inheritance covers event structure and the patch envelope, not prose presentation. IM-4 covers artifact verification, never markup structure ([IM-4](protocol-spec.md#rule-IM-4)). Neutralizing hostile markup is client responsibility†, so exposure tracks each renderer's hygiene.
+**3. Gap.** Sanitization is absent as a protocol control, and no rule governs content rendering. §3.2's base-layer inheritance covers event structure and the patch envelope, not prose presentation. IM-4 covers artifact verification, never markup structure ([IM-4](protocol-spec.md#rule-IM-4)). Neutralizing hostile markup is client responsibility†. Exposure tracks each renderer's hygiene.
 
 **4. Impact: Medium** — Trusted, signed content renders as attacker-controlled UI, degrading G4 Trust Separation for every client that renders without sanitizing.
 
-**5. Likelihood: Possible** — A Compromised Publisher [B1, M3] already holds a trusted publication channel, and the remaining preconditions are unsanitized rich rendering† and an absent defense class.
+**5. Likelihood: Possible** — A Compromised Publisher [B1, M3] already holds a trusted publication channel. The remaining preconditions are unsanitized rich rendering† and an absent defense class.
 
 **6. Residual risk: Medium** — Bounded by trust-gate placement and client hygiene†, while portions of the trusted view stay attacker-shaped.
 
@@ -820,9 +820,9 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 
 **1. Problem.** A Spam/DoS Attacker generates valid events no validity rule rejects. V-valid events must not be turned away by A or D rules ([TR-1](protocol-spec.md#rule-TR-1)). §7.5 names the shape: sybil keys flood fake Products, Metadata, and Bindings that relays store. The flood consumes storage, bandwidth, and query responsiveness — degrading G8 and diluting G5 until presentation filtering dismisses it.
 
-**2. Mitigation.** Trust gating is structural: [TR-2](protocol-spec.md#rule-TR-2) admits only trusted pubkeys or trusted-Binding reachability, and [OV-7](protocol-spec.md#rule-OV-7) shows foreign overlays only to the trusted set. [TR-7](protocol-spec.md#rule-TR-7) keeps the flood out of any curated view at presentation. Patch-carrying floods hit [RL-2](protocol-spec.md#rule-RL-2)'s work ceilings and [RL-4](protocol-spec.md#rule-RL-4)'s serving block (compounds T-AV-02). A plain event flood reaches neither. NIP-13 Proof-of-Work is optional with no minimum difficulty (§3.1). †relay adoption is operator-set.
+**2. Mitigation.** Trust gating is structural. [TR-2](protocol-spec.md#rule-TR-2) admits only trusted pubkeys or trusted-Binding reachability. [OV-7](protocol-spec.md#rule-OV-7) shows foreign overlays only to the trusted set. [TR-7](protocol-spec.md#rule-TR-7) keeps the flood out of any curated view at presentation. Patch-carrying floods hit [RL-2](protocol-spec.md#rule-RL-2)'s work ceilings and [RL-4](protocol-spec.md#rule-RL-4)'s serving block (compounds T-AV-02). A plain event flood reaches neither. NIP-13 Proof-of-Work is optional with no minimum difficulty (§3.1). †relay adoption is operator-set.
 
-**3. Gap.** [RL-2](protocol-spec.md#rule-RL-2)'s should-class ceilings cover patch-application work only. Plain event volume escapes them. No per-author rate limit exists, and the §5.4 size bounds are only recommended ([RL-1](protocol-spec.md#rule-RL-1)). †Shared kind 1 namespace invites generic relay anti-spam throttling.
+**3. Gap.** [RL-2](protocol-spec.md#rule-RL-2)'s should-class ceilings cover patch-application work only. Plain event volume escapes them. No per-author rate limit exists. The §5.4 size bounds are only recommended ([RL-1](protocol-spec.md#rule-RL-1)). †Shared kind 1 namespace invites generic relay anti-spam throttling.
 
 **4. Impact: Medium** — query/storage availability degrades (G8) and discovery dilutes (G5) until trust filtering dismisses it. Curated views via [TR-2](protocol-spec.md#rule-TR-2), [OV-7](protocol-spec.md#rule-OV-7) are largely protected.
 
@@ -840,15 +840,15 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 | Goals | G8 Availability |
 | Spec | [TR-7](protocol-spec.md#rule-TR-7), [T1](protocol-spec.md#rule-T1), [CHN-3](protocol-spec.md#rule-CHN-3), [OV-9](protocol-spec.md#rule-OV-9), [SIG-1](protocol-spec.md#rule-SIG-1), [RL-1](protocol-spec.md#rule-RL-1), [RL-2](protocol-spec.md#rule-RL-2), [RL-3](protocol-spec.md#rule-RL-3), [RL-4](protocol-spec.md#rule-RL-4), [RL-5](protocol-spec.md#rule-RL-5); §5.4, §7.4 |
 
-**1. Problem.** A foreign publisher attaches overlays to any root at no trust cost, because [TR-7](protocol-spec.md#rule-TR-7) gates trust only at presentation time. Every client classifies each overlay against the target before gating ([TR-7](protocol-spec.md#rule-TR-7), [CHN-3](protocol-spec.md#rule-CHN-3)). Overlay count is adversary-controlled, and each hunk's determinism scan costs `|content| × |pattern|` comparisons ([T1](protocol-spec.md#rule-T1)). Only the total-event-size bound applies pre-SIG-1 (§5.4). A root author likewise sets chain length against [RL-1](protocol-spec.md#rule-RL-1)'s recommended bounds, which an adversary ignores. Traversal is linear under [RC-1](protocol-spec.md#rule-RC-1), so amplification is per-event work.
+**1. Problem.** A foreign publisher attaches overlays to any root at no trust cost, because [TR-7](protocol-spec.md#rule-TR-7) gates trust only at presentation time. Every client classifies each overlay against the target before gating ([TR-7](protocol-spec.md#rule-TR-7), [CHN-3](protocol-spec.md#rule-CHN-3)). Overlay count is adversary-controlled. Each hunk's determinism scan costs `|content| × |pattern|` comparisons ([T1](protocol-spec.md#rule-T1)). Only the total-event-size bound applies pre-SIG-1 (§5.4). A root author likewise sets chain length against [RL-1](protocol-spec.md#rule-RL-1)'s recommended bounds, which an adversary ignores. Traversal is linear under [RC-1](protocol-spec.md#rule-RC-1), so amplification is per-event work.
 
 **2. Mitigation.** [RL-2](protocol-spec.md#rule-RL-2) directs consumers to bound total patch-application work under configurable ceilings. A ceiling reached during classification yields an `unclassified` outcome, an [RL-3](protocol-spec.md#rule-RL-3) annotation instead of HALT ([OV-9](protocol-spec.md#rule-OV-9)). A stopped chain is reported as aborted under a ceiling, distinct from resolved and HALT ([RL-5](protocol-spec.md#rule-RL-5)). Abandoned content must not be served as canonical bytes ([RL-4](protocol-spec.md#rule-RL-4)).
 
-**3. Gap.** [RL-2](protocol-spec.md#rule-RL-2) and the ceiling guards carry no mandated default, so a spec-legal consumer may set none. The bound depends entirely on consumer configuration.
+**3. Gap.** [RL-2](protocol-spec.md#rule-RL-2) and the ceiling guards carry no mandated default. A spec-legal consumer may therefore set none. The bound depends entirely on consumer configuration.
 
 **4. Impact: High** — a ceiling-less client can spend unbounded work on one root's chain and overlays, degrading G8 for that user. Effects stay local to ceiling-less consumers.
 
-**5. Likelihood: Possible** — the Spam/DoS Attacker [B2, M3] generates sybil keys at scale, the precondition is only a ceiling-less consumer, and the defense class is should ([RL-2](protocol-spec.md#rule-RL-2)).
+**5. Likelihood: Possible** — the Spam/DoS Attacker [B2, M3] generates sybil keys at scale. The precondition is only a ceiling-less consumer. The defense class is should ([RL-2](protocol-spec.md#rule-RL-2)).
 
 **6. Residual risk: Medium** — certain for ceiling-less consumers under floods, bounded once ceilings apply.
 
@@ -864,13 +864,13 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 
 **1. Problem.** Relays enforce operator-configured per-event size limits. The relay protocol is inherited, not overridden (§3.2). [RL-1](protocol-spec.md#rule-RL-1) recommends a 64 KB cap and `imeta` above ~30 KB. A root or patch whose inline payload exceeds a relay's limit is not stored there. A root-author patch missing from a client's observed set leaves the chain at the last observed ancestor [RC-5](protocol-spec.md#rule-RC-5). Descendants are held [UR-4](protocol-spec.md#rule-UR-4). Rejection is per-relay, so a large event can reach some relays and not others. Clients on the dropping relays silently lose the update.
 
-**2. Mitigation.** §4.6 routes payloads above ~30 KB to NIP-92 `imeta` attachments, keeping event bodies small. [RL-1](protocol-spec.md#rule-RL-1) states the 64 KB bound. [IM-1](protocol-spec.md#rule-IM-1) and [IM-4](protocol-spec.md#rule-IM-4) bind fetched artifacts to the declared `x` hash and warn before unverified display. They govern verification, not acceptance, and the payload then travels over HTTP, not in the event. †A dropped event stays valid but absent. Re-publishing is the only recovery.
+**2. Mitigation.** §4.6 routes payloads above ~30 KB to NIP-92 `imeta` attachments, keeping event bodies small. [RL-1](protocol-spec.md#rule-RL-1) states the 64 KB bound. [IM-1](protocol-spec.md#rule-IM-1) and [IM-4](protocol-spec.md#rule-IM-4) bind fetched artifacts to the declared `x` hash and warn before unverified display. They govern verification, not acceptance. The payload then travels over HTTP, not in the event. †A dropped event stays valid but absent. Re-publishing is the only recovery.
 
 **3. Gap.** The bound is absent-normative: [RL-1](protocol-spec.md#rule-RL-1) is a producer should. No rule constrains relay acceptance. Publisher-side detection is absent: rejection is silent and per-relay. †NIP-11 `limitation` advertises limits, but support is inconsistent.
 
 **4. Impact: Medium** — G8 degrades for consumers whose relay set drops a large event. The update stays unavailable until re-published.
 
-**5. Likelihood: Possible** — events nearing relay limits are a stated design premise of §4.6, and controls are thin: a should-grade bound, no transport guarantee, no acceptance signal.
+**5. Likelihood: Possible** — Events nearing relay limits are a stated design premise of §4.6. Controls are thin: a should-grade bound, no transport guarantee, no acceptance signal.
 
 **6. Residual risk: Medium** — large-event content can silently strand part of the network. Recovery depends on republishing.
 
@@ -884,17 +884,17 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 | Goals | G8 Availability, G2 Authenticity, G6 Auditability |
 | Spec | [IM-1](protocol-spec.md#rule-IM-1), [IM-3](protocol-spec.md#rule-IM-3), [IM-4](protocol-spec.md#rule-IM-4); §4.6 |
 
-**1. Problem.** `imeta` attachments live at external URLs, where three failure modes converge: URL rot, legal takedown, and host compromise. [IM-1](protocol-spec.md#rule-IM-1) has clients stream the artifact and compare against the signed `x` hash, so verifying clients always see identical bytes. Split-world survives only as attacker-signed events declaring their own `x`, or as retrievals that skip the hash check. A missing or masked artifact degrades G2 and G6 for payload-grade claims like SBOMs and attestations.
+**1. Problem.** `imeta` attachments live at external URLs, where three failure modes converge: URL rot, legal takedown, and host compromise. [IM-1](protocol-spec.md#rule-IM-1) has clients stream the artifact and compare against the signed `x` hash. Verifying clients therefore always see identical bytes. Split-world survives only as attacker-signed events declaring their own `x`, or as retrievals that skip the hash check. A missing or masked artifact degrades G2 and G6 for payload-grade claims like SBOMs and attestations.
 
 **2. Mitigation.** [IM-1](protocol-spec.md#rule-IM-1) grounds every artifact in the signed `x` hash, verifiable by streaming. [IM-3](protocol-spec.md#rule-IM-3) allows multiple `url` entries, and "Mirror selection MUST NOT influence the validity decision — only the hash check does." [IM-4](protocol-spec.md#rule-IM-4) requires a warning before displaying or processing unverified artifacts.
 
-**3. Gap.** Verification is should-level, so it may be skipped. No rule mandates artifact duplication, pinning, or liveness checks. A missing artifact is indistinguishable from an absent one, and durability rests on ecosystem practice†.
+**3. Gap.** Verification is should-level, so it may be skipped. No rule mandates artifact duplication, pinning, or liveness checks. A missing artifact is indistinguishable from an absent one. Durability rests on ecosystem practice†.
 
 **4. Impact: Medium** — payload-grade claims such as SBOMs and attestations lose availability with their missing artifact (G8). Authenticity (G2) and auditability (G6) of the claim follow.
 
 **5. Likelihood: Possible** — Hostile Vendor [B4, M4] and Artifact-Targeting Attacker [B3, M3] have standing means, given a pressured host and a should-level check with a must warning.
 
-**6. Residual risk: Medium** — warnings curb surprise but cannot force durability, so artifacts stay hostage to hosting goodwill.
+**6. Residual risk: Medium** — Warnings curb surprise but cannot force durability. Artifacts stay hostage to hosting goodwill.
 
 #### T-AV-05: Overlay and No-Op Accumulation
 
@@ -906,17 +906,17 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 | Goals | G8 Availability, G6 Auditability |
 | Spec | [PT-8](protocol-spec.md#rule-PT-8), [N3](protocol-spec.md#rule-N3), [PT-7](protocol-spec.md#rule-PT-7), [OV-7](protocol-spec.md#rule-OV-7), [OV-5](protocol-spec.md#rule-OV-5), [RL-1](protocol-spec.md#rule-RL-1), [RL-2](protocol-spec.md#rule-RL-2); §5.4, §6.1, §7.4 |
 
-**1. Problem.** Two accumulation surfaces grow without any content change. [PT-8](protocol-spec.md#rule-PT-8) and [N3](protocol-spec.md#rule-N3) record every no-op patch in the chain as normal. A root-authority holder or a Compromised Publisher can pad chain length at no cost. [PT-7](protocol-spec.md#rule-PT-7) lets foreign patches reply to any root. [OV-7](protocol-spec.md#rule-OV-7) hides untrusted overlays while §7.4 step 5 classifies every foreign patch regardless of trust, so overlays accumulate unseen on a target. Compounds T-AV-02.
+**1. Problem.** Two accumulation surfaces grow without any content change. [PT-8](protocol-spec.md#rule-PT-8) and [N3](protocol-spec.md#rule-N3) record every no-op patch in the chain as normal. A root-authority holder or a Compromised Publisher can pad chain length at no cost. [PT-7](protocol-spec.md#rule-PT-7) lets foreign patches reply to any root. [OV-7](protocol-spec.md#rule-OV-7) hides untrusted overlays. §7.4 step 5 still classifies every foreign patch regardless of trust. Overlays therefore accumulate unseen on a target. Compounds T-AV-02.
 
 **2. Mitigation.** [OV-7](protocol-spec.md#rule-OV-7) gates visibility: "A foreign patch is visible to the user only if its `pubkey` is in the user's trusted set." [OV-5](protocol-spec.md#rule-OV-5) exposes classification via the API so downstream tooling can filter overlays. [N3](protocol-spec.md#rule-N3) leaves no-op content unchanged, and [PT-8](protocol-spec.md#rule-PT-8) records no-op topology only, so canonical bytes never shift.
 
-**3. Gap.** No rule caps overlay count per target. [RL-1](protocol-spec.md#rule-RL-1)'s chain-length bound is a producer rule the adversary ignores. [RL-2](protocol-spec.md#rule-RL-2) bounds application cost (should), not the accumulated record, so cumulative volume escapes it. Trusted-pubkey set admission via reputation thresholds (§6.1) can admit sybil keys (absent as protocol control), and no rule flags no-op density.
+**3. Gap.** No rule caps overlay count per target. [RL-1](protocol-spec.md#rule-RL-1)'s chain-length bound is a producer rule the adversary ignores. [RL-2](protocol-spec.md#rule-RL-2) bounds application cost (should), not the accumulated record. Cumulative volume escapes it. Trusted-pubkey set admission via reputation thresholds (§6.1) can admit sybil keys (absent as protocol control). No rule flags no-op density.
 
 **4. Impact: Medium** — accumulated no-ops and overlays bury legitimate history and dilute the record, degrading G8 and G6 without breaking any integrity invariant.
 
-**5. Likelihood: Possible** — Spam/DoS Attacker [B2, M3] generates sybil keys at scale, the precondition is trusted-set admission or a compromised root key, and no rule caps accumulation (absent).
+**5. Likelihood: Possible** — Spam/DoS Attacker [B2, M3] generates sybil keys at scale. The precondition is trusted-set admission or a compromised root key. No rule caps accumulation (absent).
 
-**6. Residual risk: Medium** — trusted-pubkey set curation bounds exposure, but the count itself is uncapped and sybil admission paths remain.
+**6. Residual risk: Medium** — Trusted-pubkey set curation bounds exposure. The count itself is uncapped. Sybil admission paths remain.
 
 ### §7.4: Discovery
 
@@ -1300,9 +1300,9 @@ Protocol Interactions — tensions between mechanisms and inherited Nostr semant
 | Goals | G6 Auditability |
 | Spec | no single rule: family DEL; see §10, §7.3 |
 
-**1. Problem.** SCRUTINY's audit trail rests on NIP-09 kind 5 deletions, which §3.2 inherits with relay honour made optional. §10 asserts a deleted event still exists on relays and is preserved for the audit trail, yet the guarantee rests on [DEL-11](protocol-spec.md#rule-DEL-11)'s should-level co-store. The kind 5 cascade ([DEL-2](protocol-spec.md#rule-DEL-2), [CHN-2](protocol-spec.md#rule-CHN-2)) and orphaned-overlay α/β rule ([DEL-7](protocol-spec.md#rule-DEL-7), [OV-3](protocol-spec.md#rule-OV-3)) are SCRUTINY-side semantics generic clients do not compute (†, §2). A relay that honours NIP-09 by discarding the target (†) makes historical state irrecoverable from that relay set.
+**1. Problem.** SCRUTINY's audit trail rests on NIP-09 kind 5 deletions, which §3.2 inherits with relay honour made optional. §10 asserts that a deleted event still exists on relays and that the audit trail preserves it, yet the guarantee rests on [DEL-11](protocol-spec.md#rule-DEL-11)'s should-level co-store. The kind 5 cascade ([DEL-2](protocol-spec.md#rule-DEL-2), [CHN-2](protocol-spec.md#rule-CHN-2)) and orphaned-overlay α/β rule ([DEL-7](protocol-spec.md#rule-DEL-7), [OV-3](protocol-spec.md#rule-OV-3)) are SCRUTINY-side semantics generic clients do not compute (†, §2). A relay that honours NIP-09 by discarding the target (†) makes historical state irrecoverable from that relay set.
 
-**2. Mitigation.** [DEL-11](protocol-spec.md#rule-DEL-11) asks SCRUTINY-aware relays to store deletions alongside originals, and [DEL-9](protocol-spec.md#rule-DEL-9) makes clients cache received kind 5s locally. [DEL-10](protocol-spec.md#rule-DEL-10) surfaces deleted events and their descendants through a show-deleted toggle, restoring audit visibility. [DEL-4](protocol-spec.md#rule-DEL-4) preserves root chains, overlays, and Bindings for audit when a root is retracted.
+**2. Mitigation.** [DEL-11](protocol-spec.md#rule-DEL-11) asks SCRUTINY-aware relays to store deletions alongside originals, and [DEL-9](protocol-spec.md#rule-DEL-9) makes clients cache received kind 5s locally. [DEL-10](protocol-spec.md#rule-DEL-10) surfaces deleted events and their descendants through a show-deleted toggle, restoring audit visibility. [DEL-4](protocol-spec.md#rule-DEL-4) preserves root chains, overlays, and Bindings for audit when the author retracts a root.
 
 **3. Gap.** Retention across relays is should-class variance, so audit completeness tracks the least deletion-honouring relay a query touches (absent). [DEL-9](protocol-spec.md#rule-DEL-9) and [DEL-10](protocol-spec.md#rule-DEL-10) recover the notice of deletion, never the deleted bytes once a relay has dropped them (†).
 
@@ -1330,7 +1330,7 @@ Protocol Interactions — tensions between mechanisms and inherited Nostr semant
 
 **4. Impact: High** — A broken primitive forges every event's signature and id, collapsing G1 and G2 across all historical and live data.
 
-**5. Likelihood: Very unlikely** — condition probability is negligible today with no practical cryptanalysis, absence-of-controls is total, and the level is dominated by the negligible condition, not the High impact.
+**5. Likelihood: Very unlikely** — condition probability is negligible today with no practical cryptanalysis, absence-of-controls is total, and the negligible condition dominates the level, not the High impact.
 
 **6. Residual risk: Low** — near-horizon the primitives face no practical exposure, and the far-horizon quantum-era forgeability is an unquantified planning concern, not a present-day residual.
 
@@ -1338,14 +1338,14 @@ Protocol Interactions — tensions between mechanisms and inherited Nostr semant
 
 ## §8: Residual Risks
 
-Limitations that follow from the protocol's design decisions and its inheritance of Nostr's architecture. They cannot be eliminated at the protocol layer this version. The ecosystem carries them. Catalog entries already rate their exploitable edges. This section states the structural residue.
+These limitations follow from the protocol's design decisions and its inheritance of Nostr's architecture. The protocol layer cannot eliminate them in this version. The ecosystem carries them. Catalog entries already rate their exploitable edges. This section states the structural residue.
 
 ### 8.1 Design-inherent trade-offs
 
 - **Key compromise without revocation.** A leaked key retains authority indefinitely (T-ID-01). No Nostr-wide revocation primitive exists. Recovery is social and asynchronous.
-- **Self-reported timestamps.** `created_at` is publisher-controlled and informational ([CA-1](protocol-spec.md#rule-CA-1) is a non-enforced directive). Audit conclusions drawn from bare timestamps inherit T-DI-01's exposure.
+- **Self-reported timestamps.** `created_at` is publisher-controlled and informational ([CA-1](protocol-spec.md#rule-CA-1) is a non-enforced directive). Audit conclusions that use bare timestamps inherit T-DI-01's exposure.
 - **Plaintext query exposure.** REQ subscriptions reveal exact client interests to relay operators in cleartext. Nostr offers no private-retrieval primitive inside protocol scope (T-SV-01, boundary assignment in §9).
-- **Artifact-fetch privacy.** Fetching an `imeta` attachment exposes the requester to the hosting server over HTTPS: integrity is hash-protected, privacy is not (T-SV-03).
+- **Artifact-fetch privacy.** Fetching an `imeta` attachment exposes the requester to the hosting server over HTTPS: the hash protects integrity, not privacy (T-SV-03).
 - **Observed-set divergence.** Canonical bytes track the event set a client currently observes. There is no set-agreement primitive (T-DI-02).
 
 ### 8.2 Bootstrap vulnerabilities
@@ -1355,11 +1355,11 @@ Limitations that follow from the protocol's design decisions and its inheritance
 
 ### 8.3 Corpus gaps (structural)
 
-Spec Appendix G ships application-layer and validity-layer vectors. The discovery-layer and serialization vectors are reserved and not yet published. Until they land, D-layer conformance rests on prose alone. Who verifies TR-2..TR-7 behavior is a test-coverage question, not a spec defect. T-EC-07 rates the supply-chain exposure of the corpus itself.
+Spec Appendix G ships application-layer and validity-layer vectors. The spec reserves the discovery-layer and serialization vectors and has not yet published them. Until they land, D-layer conformance rests on prose alone. Who verifies TR-2..TR-7 behavior is a test-coverage question, not a spec defect. T-EC-07 rates the supply-chain exposure of the corpus itself.
 
 ### 8.4 Deferred mechanisms named but not modeled
 
-- **Snapshot pins** (spec §11 future work): if shipped, stale pin-to-state references would need the same revision discipline as chains. Not a v0.8.1 mechanism. This line is the only sanctioned mention in this document.
+- **Snapshot pins** (spec §11 future work): if the spec ships them, stale pin-to-state references would need the same revision discipline as chains. Not a v0.8.1 mechanism. This line is the only sanctioned mention in this document.
 - **Cherry-pick attribution** (spec §11): deferred with no current mechanism. A future version defines the `cherry-pick` marker. No v0.8.1 threat entry cites it.
 - **Recursive overlays, merge adoption, supersedes tags, confidential metadata, vendor identity lists, metadata-to-metadata Bindings, DVM integration**: all deferred in spec §11. Not modeled here.
 
@@ -1484,7 +1484,7 @@ Ordered by class. "(spec-change)" = an edit to the spec. "(ecosystem)" = deploya
 
 ## Appendix A: Adversary Capability Bands and Motivation Axis
 
-This appendix defines the grading vocabulary used to rate adversary archetypes (§4) and to argue likelihood in catalog entries (§7). The vocabulary is adapted from ETSI TS 102 165-1 V5.3.1 (2025-02) clause 6.6.4 and Tables 7 and 8. This document does not apply the TVRA method. The exact scope of borrowing is declared in §A.3 so that the claim is checkable against the source. The borrowing scope is checkable against the ETSI source document clause by clause.
+This appendix defines the grading vocabulary used to rate adversary archetypes (§4) and to argue likelihood in catalog entries (§7). The vocabulary is adapted from ETSI TS 102 165-1 V5.3.1 (2025-02) clause 6.6.4 and Tables 7 and 8. This document does not apply the TVRA method. §A.3 declares the exact scope of borrowing so that the claim is checkable against the source. The borrowing scope is checkable against the ETSI source document clause by clause.
 
 ### A.1 Capability bands (adapted from TVRA Table 8 "Capability levels")
 
@@ -1533,7 +1533,7 @@ Claim to peer review: the crosswalk above is the complete list of TVRA elements 
 
 ## Appendix B: Terminology Map
 
-The previous revision of this threat model pins spec v0.5.3. Several terms changed meaning or were removed across the ten releases since. This map exists for two audiences: readers holding the old document, and any threat entry whose text predates v0.8.1. The rule for drafters: the rewritten document uses only the right-hand terms. Every left-column term is a fingerprint in the gate's I6 check, so the map is mechanically enforced. Dead-tier terms fail the gate once the document pins the current spec version, and warn while the old document is pinned. Three terms are mentions-only and warn in every mode. They can appear in legitimate prose. The set: snapshot pins (the sanctioned §8 residual line), topology cascade (spec vocabulary), and fork resolution (usable only when describing the removed mechanism).
+The previous revision of this threat model pins spec v0.5.3. Several terms changed meaning or were removed across the ten releases since. This map exists for two audiences: readers holding the old document, and any threat entry whose text predates v0.8.1. The rule for drafters: the rewritten document uses only the right-hand terms. Every left-column term is a fingerprint in the gate's I6 check. The map is therefore mechanically enforced. Dead-tier terms fail the gate once the document pins the current spec version. They warn while the old document is pinned. Three terms are mentions-only and warn in every mode. They can appear in legitimate prose. The set: snapshot pins (the sanctioned §8 residual line), topology cascade (spec vocabulary), and fork resolution (usable only when describing the removed mechanism).
 
 | v0.5.3 TM term | v0.8.1 term | Anchor | Note |
 |---|---|---|---|
