@@ -12,7 +12,7 @@
 
 ## §1: Scope and Method
 
-This document threat-models the SCRUTINY Fabric protocol v0.8.1: a security-metadata publication and discovery layer on public Nostr. It identifies adversary classes (§4), enumerates threats against protocol-level security goals (§2), rates threats by argument rather than by arithmetic (§5), and separates protocol-level obligations from ecosystem responsibilities (§9).
+This document threat-models the SCRUTINY Fabric protocol v0.8.1: a security-metadata publication and discovery layer on public Nostr. It identifies adversary classes (§4) and enumerates threats against protocol-level security goals (§2). It rates threats by argument rather than by arithmetic (§5). It separates protocol-level obligations from ecosystem responsibilities (§9).
 
 ### 1.1 In scope
 
@@ -213,7 +213,7 @@ Eleven capability classes. Archetypes are not mutually exclusive. One actor may 
 | A10 | Defaming Consumer | **[B1, M3]** | B1: one key, no position. M3: fabricated findings persist across friction. |
 | A11 | Artifact-Targeting Attacker | **[B3, M3]** | B3: operates or pressures artifact hosts (host-operation axis). M3: recurring fetch and takedown pressure. |
 
-**Clarifier (applies wherever Compromised Publisher is graded).** B3's positional clause covers those who OPERATE the channel (relay, Blossom-host, index operators), not those who publish through it. A leaked trusted key is an attack precondition argued per entry, not a position.
+**Clarifier (applies wherever Compromised Publisher is graded).** B3's positional clause covers those who OPERATE the channel: relay, Blossom-host, and index operators. It does not cover those who publish through it. A leaked trusted key is an attack precondition argued per entry, not a position.
 
 **Footnote to A1.** Malicious Relay Operator is M4 when acting as a vendor's suppression arm (A.2's worked example). T-DI-09 grades that case [B3, M4] and is conformant under this footnote.
 
@@ -976,7 +976,7 @@ Discovery: relay behavior and indexer alignment that break finding paths (G5, G6
 | Goals | G5 |
 | Spec | [IX-1](protocol-spec.md#rule-IX-1), [IX-3](protocol-spec.md#rule-IX-3), [DQ-1](protocol-spec.md#rule-DQ-1), [DQ-3](protocol-spec.md#rule-DQ-3); §8.1 |
 
-**1. Problem.** Root `i` and `k` tags are immutable, so patches modify `content` only ([IX-3](protocol-spec.md#rule-IX-3)). A root author patches a security-relevant reference into content without naming it in a root, keeping it in canon but out of discovery. `#i` filters match tags, never content ([DQ-1](protocol-spec.md#rule-DQ-1); §8.1), and patches carry no `i` tags, so the reference sits in canonical bytes ([RC-2](protocol-spec.md#rule-RC-2)) while `#i` queries miss it. The miss is indistinguishable from absence, degrading G5.
+**1. Problem.** Root `i` and `k` tags are immutable, so patches modify `content` only ([IX-3](protocol-spec.md#rule-IX-3)). A root author patches a security-relevant reference into content without naming it in a root, keeping it in canon but out of discovery. `#i` filters match tags, never content ([DQ-1](protocol-spec.md#rule-DQ-1); §8.1). Patches carry no `i` tags. The reference sits in canonical bytes ([RC-2](protocol-spec.md#rule-RC-2)) while `#i` queries miss it. The miss is indistinguishable from absence, degrading G5.
 
 **2. Mitigation.** [IX-1](protocol-spec.md#rule-IX-1) tells publishers to tag top-level indexers, and [IX-3](protocol-spec.md#rule-IX-3)'s honest path is a new root event whose `i` set names the reference. The §8.1 ladder falls back to NIP-50 free-text (step 3) and then full-scan parsing (step 4), NIP-50 relay-optional with client verification per [DQ-3](protocol-spec.md#rule-DQ-3). No step binds the publisher: each rests on relay support or client initiative.
 
@@ -998,7 +998,7 @@ Discovery: relay behavior and indexer alignment that break finding paths (G5, G6
 | Goals | G8 Availability, G3 Censorship Resistance |
 | Spec | [UR-1](protocol-spec.md#rule-UR-1), [UR-2](protocol-spec.md#rule-UR-2), [UR-3](protocol-spec.md#rule-UR-3), [UR-4](protocol-spec.md#rule-UR-4), [BD-6](protocol-spec.md#rule-BD-6); §7.5, §7.6 |
 
-**1. Problem.** Withholding events freezes dependent computations: an event sent to one relay may never reach its clients, so the freeze persists. A withheld reply parent keeps a root-author patch out of chain construction and self-fork detection ([UR-4](protocol-spec.md#rule-UR-4)). A withheld root blocks authorship classification ([UR-2](protocol-spec.md#rule-UR-2)), and withheld binding endpoints keep a Binding pending [BD-6](protocol-spec.md#rule-BD-6). UR-1 makes the freeze spec-compliant, so omission is correct behavior, not a bug ([UR-1](protocol-spec.md#rule-UR-1)): it delays or prevents computation and never shortens the answer set (vs T-CE-01).
+**1. Problem.** Withholding events freezes dependent computations: an event sent to one relay may never reach its clients, so the freeze persists. A withheld reply parent keeps a root-author patch out of chain construction and self-fork detection ([UR-4](protocol-spec.md#rule-UR-4)). A withheld root blocks authorship classification ([UR-2](protocol-spec.md#rule-UR-2)), and withheld binding endpoints keep a Binding pending [BD-6](protocol-spec.md#rule-BD-6). UR-1 makes the freeze spec-compliant ([UR-1](protocol-spec.md#rule-UR-1)). Omission is therefore correct behavior, not a bug. It delays or prevents computation and never shortens the answer set (vs T-CE-01).
 
 **2. Mitigation.** [UR-2](protocol-spec.md#rule-UR-2) and [UR-4](protocol-spec.md#rule-UR-4) require retention and re-evaluation on arrival, so a late event heals the freeze. [UR-1](protocol-spec.md#rule-UR-1) forbids discarding referencing events and [UR-3](protocol-spec.md#rule-UR-3) forbids caching a patch as invalid while its root is unobserved. §7.5 counsels multi-relay querying and [DQ-2](protocol-spec.md#rule-DQ-2) adds periodic kind 5 polls, the only recurring re-check.
 
@@ -1072,7 +1072,7 @@ Surveillance: query and fetch behavior revealing user interests (G9).
 | Goals | G9 Privacy |
 | Spec | [DQ-1](protocol-spec.md#rule-DQ-1), [IX-1](protocol-spec.md#rule-IX-1), [TR-7](protocol-spec.md#rule-TR-7); §8.0, §7.5 |
 
-**1. Problem.** Discovery inherits NIP-01 REQ filters per §3.2, and every `#i` indexer, `#e` id, and pubkey a client requests reaches the serving relay as readable plaintext. [DQ-1](protocol-spec.md#rule-DQ-1) fixes `#t:["scrutiny-fabric"]` in each discovery query, and the spec declares relays honest but curious (§7.5), so filters are observable and retainable by baseline. A relay can profile each vulnerability or product indexer queried, often before public disclosure. Named sub-case (absorbed T-SV-02): an organization's `#i` sequence exposes its internal product inventory and post-disclosure response timeline, and author-focused patterns reveal its trusted-pubkey community (A11).
+**1. Problem.** Discovery inherits NIP-01 REQ filters per §3.2. Every `#i` indexer, `#e` id, and pubkey a client requests reaches the serving relay as readable plaintext. [DQ-1](protocol-spec.md#rule-DQ-1) fixes `#t:["scrutiny-fabric"]` in each discovery query, and the spec declares relays honest but curious (§7.5), so filters are observable and retainable by baseline. A relay can profile each vulnerability or product indexer queried, often before public disclosure. Named sub-case (absorbed T-SV-02): an organization's `#i` sequence exposes its internal product inventory and post-disclosure response timeline, and author-focused patterns reveal its trusted-pubkey community (A11).
 
 **2. Mitigation.** [IX-1](protocol-spec.md#rule-IX-1) keeps indexer tagging the publisher-side discovery affordance, and [TR-7](protocol-spec.md#rule-TR-7) keeps trust filtering a presentation-time, client-side choice. No spec rule conceals REQ content from the serving relay.
 
@@ -1475,7 +1475,7 @@ Ordered by class. "(spec-change)" = an edit to the spec. "(ecosystem)" = deploya
 3. **CommonMark §4.5**: fenced code blocks. The patch payload envelope (spec §5.2).
 4. **ETSI TS 102 165-1 V5.3.1 (2025-02)**: clause 6.6.4, Tables 7 ("Motivation levels") and 8 ("Capability levels"). Also Tables 9 ("Mapping of motivation with capability to identify threat level"), 4 ("Summary of likelihood metric"), and 14 ("Occurrence likelihood"). Adopted/adapted/not-adopted scope declared in Appendix A.
 5. **RFC 2119, RFC 8174**: keyword convention this document's header declares.
-6. **ASD-STE100 Issue 9 (January 2025)**: style source for the adopted structural rules. Adopted: descriptive sentences ≤25 words, procedural sentences ≤20, one topic per sentence, one topic per paragraph, no prose semicolons, simple tenses, active voice. The subset binds prose paragraphs and vertical-list items. Tables and diagrams carry structure outside sentence rules. The semicolon separating rule IDs from section anchors is citation apparatus, not prose.
+6. **ASD-STE100 Issue 9 (January 2025)**: style source for the adopted structural rules. Adopted: descriptive sentences ≤25 words, procedural sentences ≤20, one topic per sentence, one topic per paragraph, no prose semicolons, simple tenses, active voice. The subset binds prose paragraphs and vertical-list items. Tables and diagrams carry structure outside sentence rules. The semicolon separating rule IDs from section anchors is citation apparatus, not prose. The same applies to the rating-line factor chains in segments 4 to 6: archetype grade, band and motivation justification, condition and defense factors. The template requires these chains in one auditable line. Their length is apparatus, not prose.
 7. **Nostr MU/MS study**: "Nostr: A Protocol for Censorship Resistant Social Media" (EuroS&P 2025, ePrint 2025/1459). Evidence behind the §3.3 downgraded assumption about client conformance to must-level rules.
 8. **Methodology lineage:** Dolev–Yao adversary modeling as practiced in the GossipSub analysis (IEEE S&P 2024), sigstore's threat documentation, and RFC 9420 (MLS).
 9. **OpenTimestamps** (https://opentimestamps.org/) and **Blossom**: external systems the protocol integrates (spec §3.1, §4.6).
