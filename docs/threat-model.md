@@ -1,4 +1,4 @@
-# SCRUTINY Fabric — Threat Model
+# SCRUTINY Fabric: Threat Model
 
 **Protocol version:** 0.8.1  
 **Document status:** Draft for security review  
@@ -10,7 +10,7 @@
 
 ---
 
-## §1 — Scope and Method
+## §1: Scope and Method
 
 This document threat-models the SCRUTINY Fabric protocol v0.8.1: a security-metadata publication and discovery layer on public Nostr. It identifies adversary classes (§4) and enumerates threats against protocol-level security goals (§2). It rates threats by argument rather than by arithmetic (§5). It separates protocol-level obligations from ecosystem responsibilities (§9).
 
@@ -56,7 +56,7 @@ Two cross-checks bound the catalog (§6). Every entry point in §1b is crossed w
 
 ---
 
-## §1b — System Model and Entry Points
+## §1b: System Model and Entry Points
 
 ```mermaid
 flowchart LR
@@ -111,7 +111,7 @@ Every interface where attacker-shaped input crosses a trust boundary or changes 
 
 ---
 
-## §2 — Security Goals
+## §2: Security Goals
 
 Protocol-relative goals. **Scope note:** goals are protocol-relative. Visibility of published events is public by design. Network-layer attacks (traffic analysis, endpoint compromise, TLS interception) operate below the protocol layer and are §9 boundary assignments, not goal violations. A goal is degraded when an adversary defeats a property the protocol itself claims to protect.
 
@@ -138,7 +138,7 @@ Protocol-relative goals. **Scope note:** goals are protocol-relative. Visibility
 
 ---
 
-## §3 — Trust Model and Assumptions
+## §3: Trust Model and Assumptions
 
 Fixes the actor model from spec §7.5 and states the assumptions the rest of this document stands on.
 
@@ -169,7 +169,7 @@ Fixes the actor model from spec §7.5 and states the assumptions the rest of thi
 
 ---
 
-## §3b — Asset Inventory
+## §3b: Asset Inventory
 
 Assets the catalog reasons about, with the security properties each needs. **C**onfidentiality, **I**ntegrity, **A**vailability, and **Au**thenticity (attribution to the signing key) are tracked per asset. **NR** is key-level non-repudiation: the signing key cannot plausibly deny events it signed. That claim binds the key, not the real-world operator behind it.
 
@@ -195,7 +195,7 @@ Assets the catalog reasons about, with the security properties each needs. **C**
 
 ---
 
-## §4 — Adversary Archetypes
+## §4: Adversary Archetypes
 
 Eleven capability classes. Archetypes are not mutually exclusive. One actor may combine several. Grades use Appendix A: capability band per A.1's test questions (crossing axis named) and motivation per A.2. An archetype's grade bounds what its members can bring. A specific attack's demands live in each entry's Likelihood segment and never re-grade the archetype.
 
@@ -217,7 +217,7 @@ Eleven capability classes. Archetypes are not mutually exclusive. One actor may 
 
 **Footnote to A1.** Malicious Relay Operator is M4 when acting as a vendor's suppression arm (A.2's worked example). T-DI-09 grades that case [B3, M4] and is conformant under this footnote.
 
-### A1 — Malicious Relay Operator
+### A1: Malicious Relay Operator
 
 | Capabilities | Cannot do |
 |---|---|
@@ -228,7 +228,7 @@ Eleven capability classes. Archetypes are not mutually exclusive. One actor may 
 
 Drives T-DC-01, T-DC-05, T-CE-01, T-SV-01, T-DI-03, T-DI-09.
 
-### A2 — Compromised Publisher
+### A2: Compromised Publisher
 
 | Capabilities | Cannot do |
 |---|---|
@@ -239,7 +239,7 @@ Drives T-DC-01, T-DC-05, T-CE-01, T-SV-01, T-DI-03, T-DI-09.
 
 Drives T-DI-01, T-DI-04, T-DI-07, T-DI-08, T-ID-01, T-ID-05, T-ID-06, T-DC-03 (with A4), T-AV-05 (with A7), T-EC-04 (with A6), T-ID-04 (with A8).
 
-### A3 — Network-Level Attacker
+### A3: Network-Level Attacker
 
 | Capabilities | Cannot do |
 |---|---|
@@ -250,7 +250,7 @@ Drives T-DI-01, T-DI-04, T-DI-07, T-DI-08, T-ID-01, T-ID-05, T-ID-06, T-DC-03 (w
 
 Drives T-CE-02.
 
-### A4 — Hostile Vendor
+### A4: Hostile Vendor
 
 | Capabilities | Cannot do |
 |---|---|
@@ -261,7 +261,7 @@ Drives T-CE-02.
 
 Drives T-PI-01, T-AV-04 (with A11), T-DC-03 (with A2).
 
-### A5 — Occasionally Lying Publisher
+### A5: Occasionally Lying Publisher
 
 | Capabilities | Cannot do |
 |---|---|
@@ -271,7 +271,7 @@ Drives T-PI-01, T-AV-04 (with A11), T-DC-03 (with A2).
 
 Drives T-EC-05 (with A6, A7).
 
-### A6 — Sybil Amplifier
+### A6: Sybil Amplifier
 
 | Capabilities | Cannot do |
 |---|---|
@@ -281,7 +281,7 @@ Drives T-EC-05 (with A6, A7).
 
 Drives T-ID-02, T-EC-04 (with A2), T-EC-05 (with A5, A7).
 
-### A7 — Spam/DoS Attacker
+### A7: Spam/DoS Attacker
 
 | Capabilities | Cannot do |
 |---|---|
@@ -291,7 +291,7 @@ Drives T-ID-02, T-EC-04 (with A2), T-EC-05 (with A5, A7).
 
 Drives T-AV-01, T-AV-02, T-AV-05 (with A2), T-EC-05 (with A5, A6).
 
-### A8 — Identifier Squatter
+### A8: Identifier Squatter
 
 | Capabilities | Cannot do |
 |---|---|
@@ -302,7 +302,7 @@ Drives T-AV-01, T-AV-02, T-AV-05 (with A2), T-EC-05 (with A5, A6).
 
 Drives T-ID-03, T-ID-04 (with A2).
 
-### A9 — Infrastructure Impersonator
+### A9: Infrastructure Impersonator
 
 | Capabilities | Cannot do |
 |---|---|
@@ -312,7 +312,7 @@ Drives T-ID-03, T-ID-04 (with A2).
 
 Drives T-EC-02.
 
-### A10 — Defaming Consumer
+### A10: Defaming Consumer
 
 | Capabilities | Cannot do |
 |---|---|
@@ -322,7 +322,7 @@ Drives T-EC-02.
 
 Drives no current catalog entry. The defamation mechanism is covered by T-ID-04’s identity-claim surface and T-EC-04’s fabrication-scale entry. Defaming Consumer is retained because its can/cannot table bounds that class.
 
-### A11 — Artifact-Targeting Attacker
+### A11: Artifact-Targeting Attacker
 
 | Capabilities | Cannot do |
 |---|---|
@@ -335,7 +335,7 @@ Drives T-AV-04 (with A4), T-SV-03, T-DI-06.
 
 ---
 
-## §5 — Risk Method
+## §5: Risk Method
 
 Ratings are ordinal-with-rationale. No formulas, no multiplication of levels, no numeric scores. Each rating is a claim an argument can audit. The levels below are the entire vocabulary. Every application of them appears with its reasoning in the entry's segments 4 to 6.
 
@@ -378,7 +378,7 @@ Entries of Type `structural-weakness` name the design decision or assumption res
 
 ---
 
-## §6 — Coverage and Completeness
+## §6: Coverage and Completeness
 
 ### 6.1 Catalog overview
 
@@ -485,14 +485,14 @@ graph TD
 
 ---
 
-## §7 — Threat Catalog
+## §7: Threat Catalog
 
 
-### §7.1 — Data Integrity
+### §7.1: Data Integrity
 
 Data Integrity — content, chains, attachments, and deletion behavior that corrupt or distort deterministic state (G1, G6, G8).
 
-#### T-DI-01 — Forged `created_at` in Audit Evidence
+#### T-DI-01: Forged `created_at` in Audit Evidence
 
 | Field | Value |
 |---|---|
@@ -514,7 +514,7 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **6. Residual risk: Low** — the forgery is cheap and persistent, but it deceives only adjudicators trusting self-reported times, and OTS evidence remains available on demand.
 
-#### T-DI-02 — Relay-Subset Divergence in Canonical Bytes
+#### T-DI-02: Relay-Subset Divergence in Canonical Bytes
 
 | Field | Value |
 |---|---|
@@ -536,7 +536,7 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **6. Residual risk: Medium overall, Low for non-UI** — Non-UI consumers converge on arrival under a must-class recompute duty [RC-3](protocol-spec.md#rule-RC-3). Interactive clients that defer [RC-4](protocol-spec.md#rule-RC-4) can show stale or frozen content until refresh.
 
-#### T-DI-03 — Retraction Propagation Gaps
+#### T-DI-03: Retraction Propagation Gaps
 
 | Field | Value |
 |---|---|
@@ -558,7 +558,7 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **6. Residual risk: Medium** — must-class caching cannot deliver a deletion never received, and completeness stays absent, so stale bytes persist until a should-level check runs.
 
-#### T-DI-04 — Binding Relationship Ambiguity
+#### T-DI-04: Binding Relationship Ambiguity
 
 | Field | Value |
 |---|---|
@@ -580,7 +580,7 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **6. Residual risk: Low–Medium** — human readers and audits bound the false claim at Low, while automated consumers that trust rendered edges meet it at Medium.
 
-#### T-DI-06 — Attached Payload Integrity in Transit
+#### T-DI-06: Attached Payload Integrity in Transit
 
 | Field | Value |
 |---|---|
@@ -602,7 +602,7 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **6. Residual risk: Medium** — Verifying clients stay sound, but nothing compels the cautious path, so unverified ingestion persists.
 
-#### T-DI-07 — Publish-Then-Delete Admission Revocation Lag
+#### T-DI-07: Publish-Then-Delete Admission Revocation Lag
 
 | Field | Value |
 |---|---|
@@ -624,7 +624,7 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **6. Residual risk: Medium** — revocation holds wherever the kind 5 is observed, but lag is unbounded, so exposure persists per client until arrival.
 
-#### T-DI-08 — Indefinite Self-Fork Freeze (Trusted Root Key)
+#### T-DI-08: Indefinite Self-Fork Freeze (Trusted Root Key)
 
 | Field | Value |
 |---|---|
@@ -646,7 +646,7 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **6. Residual risk: High** — No revocation means a re-fork restores the freeze at one patch's cost (†), and social migration is the only remedy (§7.5).
 
-#### T-DI-09 — Unverified Kind 5 Honoring Cascades Canonical Chains
+#### T-DI-09: Unverified Kind 5 Honoring Cascades Canonical Chains
 
 | Field | Value |
 |---|---|
@@ -668,11 +668,11 @@ Data Integrity — content, chains, attachments, and deletion behavior that corr
 
 **6. Residual risk: Low–Medium** — conformant clients are immune and the forgery stays auditable (lower bound), while non-conformant ones serve that chain as current (upper bound)†.
 
-### §7.2 — Identity
+### §7.2: Identity
 
 Identity — keys, trust-radius expansion, and self-asserted claims entering the user view (G2, G4, G5).
 
-#### T-ID-01 — Key Compromise — No Key Revocation
+#### T-ID-01: Key Compromise — No Key Revocation
 
 | Field | Value |
 |---|---|
@@ -694,7 +694,7 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **6. Residual risk: Critical** — carried from v0.5.3. §7.5 states the sovereignty inheritance, forensic asymmetry, and absent revocation, keeping this the model's most severe threat.
 
-#### T-ID-02 — Sybil Amplification Through WoT Expansion
+#### T-ID-02: Sybil Amplification Through WoT Expansion
 
 | Field | Value |
 |---|---|
@@ -716,7 +716,7 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **6. Residual risk: Medium** — bounded by trusted-set discipline and warning uptake. Irreducible while the trust model stays permissionless.
 
-#### T-ID-03 — Indexer Squatting
+#### T-ID-03: Indexer Squatting
 
 | Field | Value |
 |---|---|
@@ -738,7 +738,7 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **6. Residual risk: Medium** — bounded by trusted-set curation. Declines as authoritative keys gain wide trust.
 
-#### T-ID-04 — Unverifiable Identity Claims
+#### T-ID-04: Unverifiable Identity Claims
 
 | Field | Value |
 |---|---|
@@ -760,7 +760,7 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **6. Residual risk: Low–Medium** — Low for out-of-band verified trusted-pubkey sets ([TR-2](protocol-spec.md#rule-TR-2); §7.5). Medium upper bound covers bootstrap users and unverified defaults (compounds T-EC-02).
 
-#### T-ID-05 — Author-Hint Forgery on Binding `e` Tags
+#### T-ID-05: Author-Hint Forgery on Binding `e` Tags
 
 | Field | Value |
 |---|---|
@@ -782,7 +782,7 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **6. Residual risk: Low** — Compliant consumers are immune, and the residual surface is non-compliant renderer behavior with must-class anchors†.
 
-#### T-ID-06 — Hostile Markup in Rendered Content
+#### T-ID-06: Hostile Markup in Rendered Content
 
 | Field | Value |
 |---|---|
@@ -804,11 +804,11 @@ Identity — keys, trust-radius expansion, and self-asserted claims entering the
 
 **6. Residual risk: Medium** — Bounded by trust-gate placement and client hygiene†, while portions of the trusted view stay attacker-shaped.
 
-### §7.3 — Availability
+### §7.3: Availability
 
 Availability — inflation, exhaustion, and hosting fragility that degrade compute and retrieval (G8).
 
-#### T-AV-01 — Spam and Graph Pollution
+#### T-AV-01: Spam and Graph Pollution
 
 | Field | Value |
 |---|---|
@@ -830,7 +830,7 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 
 **6. Residual risk: Medium** — the curated view survives. Relay storage, query availability, and discovery quality degrade with volume until operators adopt bounds and rate limits.
 
-#### T-AV-02 — Foreign-Overlay and Chain-Application Amplified Work
+#### T-AV-02: Foreign-Overlay and Chain-Application Amplified Work
 
 | Field | Value |
 |---|---|
@@ -852,7 +852,7 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 
 **6. Residual risk: Medium** — certain for ceiling-less consumers under floods, bounded once ceilings apply.
 
-#### T-AV-03 — Event Size Exceeding Relay Limits
+#### T-AV-03: Event Size Exceeding Relay Limits
 
 | Field | Value |
 |---|---|
@@ -874,7 +874,7 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 
 **6. Residual risk: Medium** — large-event content can silently strand part of the network. Recovery depends on republishing.
 
-#### T-AV-04 — Artifact Hosting Fragility
+#### T-AV-04: Artifact Hosting Fragility
 
 | Field | Value |
 |---|---|
@@ -896,7 +896,7 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 
 **6. Residual risk: Medium** — warnings curb surprise but cannot force durability, so artifacts stay hostage to hosting goodwill.
 
-#### T-AV-05 — Overlay and No-Op Accumulation
+#### T-AV-05: Overlay and No-Op Accumulation
 
 | Field | Value |
 |---|---|
@@ -918,11 +918,11 @@ Availability — inflation, exhaustion, and hosting fragility that degrade compu
 
 **6. Residual risk: Medium** — trusted-pubkey set curation bounds exposure, but the count itself is uncapped and sybil admission paths remain.
 
-### §7.4 — Discovery
+### §7.4: Discovery
 
 Discovery — relay behavior and indexer alignment that break finding paths (G5, G6).
 
-#### T-DC-01 — Malicious relay support-claim and query-result manipulation
+#### T-DC-01: Malicious relay support-claim and query-result manipulation
 
 | Field | Value |
 |---|---|
@@ -944,7 +944,7 @@ Discovery — relay behavior and indexer alignment that break finding paths (G5,
 
 **6. Residual risk: High** — should-class defenses do not defeat a relay that lies about capabilities, and eclipse erases cross-checking.
 
-#### T-DC-02 — Web-of-trust bootstrap trap
+#### T-DC-02: Web-of-trust bootstrap trap
 
 | Field | Value |
 |---|---|
@@ -966,7 +966,7 @@ Discovery — relay behavior and indexer alignment that break finding paths (G5,
 
 **6. Residual risk: High** — The protocol's correctness holds regardless of provenance, so no in-protocol defense can compensate for a compromised initial set.
 
-#### T-DC-03 — Indexer Burial in Patched Content
+#### T-DC-03: Indexer Burial in Patched Content
 
 | Field | Value |
 |---|---|
@@ -988,7 +988,7 @@ Discovery — relay behavior and indexer alignment that break finding paths (G5,
 
 **6. Residual risk: Medium** — the per-chain gap is persistent and motive-safe, bounded only by NIP-50 uptake and audit discipline.
 
-#### T-DC-05 — Relay-Omission Chain Freeze
+#### T-DC-05: Relay-Omission Chain Freeze
 
 | Field | Value |
 |---|---|
@@ -1010,11 +1010,11 @@ Discovery — relay behavior and indexer alignment that break finding paths (G5,
 
 **6. Residual risk: Medium** — must-class retention cannot deliver a withheld event, and completeness is absent, so omission persists until another relay has it.
 
-### §7.5 — Censorship
+### §7.5: Censorship
 
 Censorship — suppression of valid events at presentation (G3).
 
-#### T-CE-01 — Relay-Level Event Suppression
+#### T-CE-01: Relay-Level Event Suppression
 
 | Field | Value |
 |---|---|
@@ -1036,7 +1036,7 @@ Censorship — suppression of valid events at presentation (G3).
 
 **6. Residual risk: Low–Medium** — Low bound: diverse-relay users who cross-reference restore complete views, since suppression affects only its operator's responses. Medium bound: deployments pinned to a narrow relay set (enterprise policy, regional egress) cannot cross-reference, so suppression becomes effective per-user censorship.
 
-#### T-CE-02 — Eclipse Attack on Relay Set
+#### T-CE-02: Eclipse Attack on Relay Set
 
 | Field | Value |
 |---|---|
@@ -1058,11 +1058,11 @@ Censorship — suppression of valid events at presentation (G3).
 
 **6. Residual risk: Low–High** — Deployment variance per §5 is genuine. Low bound: users with diverse relays and alternate network paths keep one honest reference. High bound: users inside fully controlled egress (state-managed networks, captive gateways) lack protocol-level detection or escape.
 
-### §7.6 — Surveillance
+### §7.6: Surveillance
 
 Surveillance — query and fetch behavior revealing user interests (G9).
 
-#### T-SV-01 — REQ filter leakage to relays
+#### T-SV-01: REQ filter leakage to relays
 
 | Field | Value |
 |---|---|
@@ -1084,7 +1084,7 @@ Surveillance — query and fetch behavior revealing user interests (G9).
 
 **6. Residual risk: High** — Without protocol-level concealment, out-of-protocol defenses (anonymous routing, batching, superset queries) are † ecosystem practice.
 
-#### T-SV-03 — Artifact-Host Tracking via `imeta` Fetches
+#### T-SV-03: Artifact-Host Tracking via `imeta` Fetches
 
 | Field | Value |
 |---|---|
@@ -1106,11 +1106,11 @@ Surveillance — query and fetch behavior revealing user interests (G9).
 
 **6. Residual risk: High** — the mechanism and the spec are unchanged from the old rating, and byte-integrity rules never intersect the fetch channel, so the leak stands in full.
 
-### §7.7 — Ecosystem
+### §7.7: Ecosystem
 
 Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
-#### T-EC-01 — Indexer Re-Centralization
+#### T-EC-01: Indexer Re-Centralization
 
 | Field | Value |
 |---|---|
@@ -1132,7 +1132,7 @@ Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
 **6. Residual risk: Medium** — The open data model supplies a theoretical escape from any single service, but practical switching costs grow with scale (†).
 
-#### T-EC-02 — Default Trusted-Pubkey Set Compromise
+#### T-EC-02: Default Trusted-Pubkey Set Compromise
 
 | Field | Value |
 |---|---|
@@ -1154,7 +1154,7 @@ Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
 **6. Residual risk: High** — Exposure lasts until curation replaces the seed: no protocol anchor detects a compromised source, and correction is social (†).
 
-#### T-EC-03 — Kind 1 Namespace Coupling with Relay Policy
+#### T-EC-03: Kind 1 Namespace Coupling with Relay Policy
 
 | Field | Value |
 |---|---|
@@ -1176,7 +1176,7 @@ Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
 **6. Residual risk: Medium** — A long-term structural dependency on a shared, evolving namespace, with practical impact varying by relay operator policy (†).
 
-#### T-EC-04 — Automated False Metadata at Scale
+#### T-EC-04: Automated False Metadata at Scale
 
 | Field | Value |
 |---|---|
@@ -1198,7 +1198,7 @@ Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
 **6. Residual risk: Medium** — Curation and corroboration bound a curated user's exposure, but trusted keys running undisclosed pipelines pass at full weight (†).
 
-#### T-EC-05 — Economic and Social Signal Manipulation
+#### T-EC-05: Economic and Social Signal Manipulation
 
 | Field | Value |
 |---|---|
@@ -1220,7 +1220,7 @@ Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
 **6. Residual risk: Medium** — Bounded for curated users by the trust perimeter, rising with N-hop trust expansion and naive signal consumption (†).
 
-#### T-EC-06 — Opaque Admission Silently Skips Future Safety Semantics
+#### T-EC-06: Opaque Admission Silently Skips Future Safety Semantics
 
 | Field | Value |
 |---|---|
@@ -1242,7 +1242,7 @@ Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
 **6. Residual risk: Medium–High** — low bound: no future release, no divergence. High bound: each opaque admission misrepresents content no mitigating rule reaches, and divergence is unbounded.
 
-#### T-EC-07 — Conformance Corpus Supply Chain
+#### T-EC-07: Conformance Corpus Supply Chain
 
 | Field | Value |
 |---|---|
@@ -1264,11 +1264,11 @@ Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
 **6. Residual risk: Medium** — The pinned core holds, but two layers stay uncheckable until vectors publish, halt diagnostics remain advisory by design, and release governance stays protocol-external.
 
-### §7.8 — Protocol Interactions
+### §7.8: Protocol Interactions
 
 Protocol Interactions — tensions between mechanisms and inherited Nostr semantics.
 
-#### T-PI-01 — Legal Pressure Vector
+#### T-PI-01: Legal Pressure Vector
 
 | Field | Value |
 |---|---|
@@ -1290,7 +1290,7 @@ Protocol Interactions — tensions between mechanisms and inherited Nostr semant
 
 **6. Residual risk: Medium** — coercion resists rule-level defenses, and only operational diversity of relays, jurisdictions, and archives bounds it (†).
 
-#### T-PI-02 — NIP-09 Deletion Retention Tension
+#### T-PI-02: NIP-09 Deletion Retention Tension
 
 | Field | Value |
 |---|---|
@@ -1312,7 +1312,7 @@ Protocol Interactions — tensions between mechanisms and inherited Nostr semant
 
 **6. Residual risk: Medium** — Audit completeness is as strong as the most deletion-honouring relay in the queried set, with no must-level retention rule to lift it (absent).
 
-#### T-PI-03 — Cryptographic Agility Gap
+#### T-PI-03: Cryptographic Agility Gap
 
 | Field | Value |
 |---|---|
@@ -1336,7 +1336,7 @@ Protocol Interactions — tensions between mechanisms and inherited Nostr semant
 
 ---
 
-## §8 — Residual Risks
+## §8: Residual Risks
 
 Limitations that follow from the protocol's design decisions and its inheritance of Nostr's architecture. They cannot be eliminated at the protocol layer this version. The ecosystem carries them. Catalog entries already rate their exploitable edges. This section states the structural residue.
 
@@ -1372,7 +1372,7 @@ Spec Appendix G ships application-layer and validity-layer vectors. The discover
 
 ---
 
-## §9 — Boundary Matrix
+## §9: Boundary Matrix
 
 Which layer owns each responsibility. "Protocol layer" entries point at rules or sections. "ecosystem layer" entries are duties no spec rule imposes.
 
@@ -1402,7 +1402,7 @@ Which layer owns each responsibility. "Protocol layer" entries point at rules or
 
 ---
 
-## §10 — Summary Table
+## §10: Summary Table
 
 Canonical mapping of goals and rules. Risk column equals each entry's residual risk.
 
@@ -1448,7 +1448,7 @@ Canonical mapping of goals and rules. Risk column equals each entry's residual r
 
 ---
 
-## §11 — Recommendations
+## §11: Recommendations
 
 Ordered by class. "(spec-change)" = an edit to the spec. "(ecosystem)" = deployable without spec change. "(accepted-risk)" = consciously retained.
 
@@ -1468,7 +1468,7 @@ Ordered by class. "(spec-change)" = an edit to the spec. "(ecosystem)" = deploya
 
 ---
 
-## §12 — Sources
+## §12: Sources
 
 1. **SCRUTINY Fabric Protocol Specification v0.8.1** (this repository, `docs/protocol-spec.md`) — primary source. Every mechanism claim in this document anchors to its rule IDs (Appendix F, 142 rules).
 2. **Nostr NIPs** — base tier mandatory per spec §3.1: NIP-01 (event structure, signatures, relay protocol), NIP-09 (kind 5 deletion), NIP-10 (`e` marker threading), NIP-73 (`i` tag format). May-tier per spec §3.1: NIP-03 (OpenTimestamps, audit signal), NIP-13 (proof-of-work), NIP-18 (reposts), NIP-25 (reactions), NIP-57 (zaps). Optional per spec §3.1: NIP-92 (`imeta` attachments). NIP-50 full-text search is relay-optional per spec §8. Two further NIPs are live prose dependencies of this document. NIP-02 follow lists are the web-of-trust substrate behind T-ID-02 and T-DC-02. NIP-11 relay information documents are §8.0's capability pre-check, named in T-DC-01.
@@ -1482,7 +1482,7 @@ Ordered by class. "(spec-change)" = an edit to the spec. "(ecosystem)" = deploya
 
 ---
 
-## Appendix A — Adversary Capability Bands and Motivation Axis
+## Appendix A: Adversary Capability Bands and Motivation Axis
 
 This appendix defines the grading vocabulary used to rate adversary archetypes (§4) and to argue likelihood in catalog entries (§7). The vocabulary is adapted from ETSI TS 102 165-1 V5.3.1 (2025-02) clause 6.6.4 and Tables 7 and 8. This document does not apply the TVRA method. The exact scope of borrowing is declared in §A.3 so that the claim is checkable against the source. The borrowing scope is checkable against the ETSI source document clause by clause.
 
@@ -1531,7 +1531,7 @@ Claim to peer review: the crosswalk above is the complete list of TVRA elements 
 
 ---
 
-## Appendix B — Terminology Map
+## Appendix B: Terminology Map
 
 The previous revision of this threat model pins spec v0.5.3. Several terms changed meaning or were removed across the ten releases since. This map exists for two audiences: readers holding the old document, and any threat entry whose text predates v0.8.1. The rule for drafters: the rewritten document uses only the right-hand terms. Every left-column term is a fingerprint in the gate's I6 check, so the map is mechanically enforced. Dead-tier terms fail the gate once the document pins the current spec version, and warn while the old document is pinned. Three terms are mentions-only and warn in every mode. They can appear in legitimate prose. The set: snapshot pins (the sanctioned §8 residual line), topology cascade (spec vocabulary), and fork resolution (usable only when describing the removed mechanism).
 
