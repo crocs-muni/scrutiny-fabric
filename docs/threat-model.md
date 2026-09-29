@@ -1,1043 +1,1556 @@
 # SCRUTINY Fabric — Threat Model
 
-**Protocol version:** 0.5.3  
-**Document status:** Draft  
-**Methodology:** Qualitative risk assessment aligned with ETSI TS 102 165-1 (TVRA) capability-based adversary modeling
+**Protocol version:** 0.8.1  
+**Document status:** Draft for security review  
+**Methodology:** Adversary-model-based, in the Dolev–Yao tradition of numbered capability classes. Adversary grading adapts ETSI TS 102 165-1 V5.3.1 capability bands and the motivation axis (Appendix A, explicitly scoped). Risk ratings are ordinal-with-rationale (§5). No ordinal arithmetic is applied. Validated against protocol-spec v0.8.1. Every mechanism claim cite-checks against rule IDs in spec Appendix F.
+
+**Keyword declaration.** The key words MUST, SHOULD, and MAY and their negations appear in this document in uppercase ONLY inside verbatim quotations. The permitted quotations are protocol-spec rules anchored by rule ID, protocol-spec prose anchored by section, and the previous revision quoted as evidence in Appendix B. All analysis and guidance in this document uses lowercase modal verbs. When an uppercase keyword appears, it belongs to the quoted source, not to this document. This declaration follows the RFC 2119 and RFC 8174 convention of reserving capitals for formal obligation.
+
+**Marker legend.** `†` marks TM-side guidance or implementation-behavior observations that no spec rule requires. Everything not marked `†` is anchored to a protocol-spec rule ID or to common-knowledge infrastructure behavior.
 
 ---
 
-## §1 — Scope
+## §1 — Scope and Method
 
-This document provides a complete threat model for the SCRUTINY Fabric protocol v0.5.3. It identifies adversaries, enumerates threats against protocol-defined security goals, assesses residual risk, and distinguishes protocol-level mitigations from ecosystem responsibilities.
+This document threat-models the SCRUTINY Fabric protocol v0.8.1: a security-metadata publication and discovery layer on public Nostr. It identifies adversary classes (§4) and enumerates threats against protocol-level security goals (§2). It rates threats by argument rather than by arithmetic (§5). It separates protocol-level obligations from ecosystem responsibilities (§9).
 
-**In scope:**
+### 1.1 In scope
 
-- The four SCRUTINY event types (Product, Metadata, Binding, Patch) and their tag schemas (§4).
-- The diff format, canonical-view computation, chain topology, fork resolution, and dispute overlay (§5, §7).
-- Trust admission rules and graph traversal semantics (§6).
-- Identifier mirroring, canonical identifier discipline, and discovery patterns (§4.4.1, §8, §9).
-- Kind 5 deletion, topology cascade, and orphaned-state handling (§10).
-- Attached payloads via imeta + Blossom (§4.5).
-- Inherited Nostr protocol properties affecting SCRUTINY integrity, availability, and privacy.
+- The four SCRUTINY event types (Product, Metadata, Binding, Patch) and their `t` tag schema (spec §3, §4, TAG-1 to TAG-5).
+- Version-tag form, ordering, and forward-compatibility (spec §3, VER-1 to VER-4).
+- The unified-diff payload format, application semantics, and consumer resource ceilings (spec §5, PB-1 to RL-5).
+- Trust admission and visibility gating: V/A/D layering, trusted-pubkey sets, Binding-conferred admission, presentation-time filtering (spec §6, TR-1 to TR-7).
+- Canonical chains, root self-forks, foreign overlays, and patched-content computation (spec §7, RC-1 to SF-7, OV-2 to UR-4).
+- Discovery queries, indexer discipline, and the canonical indexer registry (spec §4.5, §8, §9, DQ-1 to IR-4).
+- Kind 5 deletion semantics: cascade, retroactive application, overlay degradation, retention guidance (spec §10, DEL-1 to DEL-11).
+- Payload attachments through `imeta` and Blossom: hash binding, mirror handling, warning duties (spec §4.6, IM-1 to IM-5).
+- The conformance corpus: its publication format, digest pinning, and coverage limits (spec Appendix G).
+- Inherited Nostr properties that affect SCRUTINY integrity, availability, and privacy (spec §3.2).
 
-**Out of scope:**
+### 1.2 Out of scope
 
-- Specific client implementations and UI rendering.
-- Relay software internals beyond observable behavior per §8.0.
-- Key generation, storage, and management practices.
-- Transport-layer security (TLS downgrade, certificate validation, DNS poisoning).
-- Legal and regulatory compliance (noted only where it intersects with protocol design in §§6.5, 6.8).
-- Economic and social signal ranking algorithms (zaps, reposts, reactions) — client-layer interpretation.
-- AI agent interpretation of payloads (delegated to client implementations; protocol is designed to be machine-processable).
+- Client implementation internals: rendering hygiene, storage layout, UI design. Where the protocol leaves a decision to clients, the exposure is named and the client layer owns the fix (§9).
+- Relay software internals beyond behavior observable at the protocol interface (spec §8.0).
+- Key generation, storage, and operational key hygiene.
+- Transport-layer security: TLS downgrade, certificate validation, DNS poisoning. These are platform concerns (§8 excluded-concerns list).
+- Legal and regulatory compliance, except where legal pressure directly enters the threat model (T-PI-01).
+- Ranking and aggregation of optional social signals (NIP-13, NIP-18, NIP-25, NIP-57): the spec marks all four as may-tier (spec §3.1). Their interpretation is client-layer.
+- AI-agent interpretation of event contents. AI agents participate only through publisher keys and are indistinguishable from human publishers at the protocol layer (Appendix A.3).
+
+### 1.3 Method
+
+1. Derive security goals from the spec's design principles and rule set (§2). Record non-goals explicitly.
+2. Fix the trust model and assumptions from spec §7.5 (§3). Assumptions that empirical evidence contradicts are downgraded and flagged.
+3. Define adversary archetypes as capability classes with explicit can/cannot tables, each graded by Appendix A's band and motivation criteria with the crossing axis named (§4).
+4. Enumerate threats per entry point and per rule family (§6). Write adversarial entries when a named archetype can act. Write structural-weakness entries when the exposure follows from a design decision alone (§5).
+5. Rate each entry: Impact names the degraded goal, the affected parties, and the scope. Likelihood argues motivation, capability, preconditions, and defense class (Absence of a control is itself a named class). Residual states what remains after the spec's own mitigations.
+6. Record what the protocol cannot fix at its own layer as residual risks (§8) and as boundary assignments (§9).
+
+### 1.4 Verification
+
+Every catalog entry cites bracketed rule IDs from spec Appendix F, and every cited rule exists in the registry (Appendix F). Every rule family is either cited by at least one catalog entry or dispositioned with a rationale in §6.3. A mechanical gate (`tools/verify-tm-sync.mjs`) enforces version pinning, catalog/summary parity, citation admissibility, ledger bidirectionality, and the absence of retired terminology. Suspected spec defects halt the citing entry and are escalated rather than worked around. None was found necessary for v0.8.1: no surviving entry depends on an internally contradicted rule.
+
+### 1.5 Completeness claim
+
+Two cross-checks bound the catalog (§6). Every entry point in §1b is crossed with every archetype in §4. Every rule family in spec Appendix F is either cited by a catalog entry or dispositioned with a rationale. Uncited rules that carry no surviving adversarial premise are named explicitly in §6.3, not silently skipped.
+
+---
+
+## §1b — System Model and Entry Points
+
+```mermaid
+flowchart LR
+    subgraph Pub["Publishers"]
+        RA["Root author<br/>(Product, Metadata,<br/>Patch, kind 5)"]
+        FA["Foreign annotator<br/>(overlays)"]
+        BA["Binding author"]
+    end
+    subgraph Mesh["Relay mesh (untrusted)"]
+        R1["Relay A"]
+        R2["Relay B"]
+        R3["Relay C"]
+    end
+    subgraph Client["Consumer client"]
+        V["V admission<br/>(SIG-1, TAG, VER)"]
+        C["Chain + overlay<br/>computation"]
+        G["Trust gate<br/>(presentation edge, TR-7)"]
+        UI["Rendered view"]
+    end
+    subgraph Hosts["Artifact hosts"]
+        B1["Blossom host"]
+    end
+    RA --> Mesh; FA --> Mesh; BA --> Mesh
+    Mesh --> V --> C --> G --> UI
+    UI -.-> B1
+    RA -.-> B1
+```
+
+Four trust boundaries, each anchored to one rule family:
+
+1. **Signature boundary** — every event crosses it once: `sig` over `id` over canonical serialization ([SIG-1]). Beyond it, events may be forged or replayed. Inside, a failing event is never processed.
+2. **Transport boundary** — TLS between client and relay and between client and artifact host. Confidentiality and integrity of transit end here. Content beyond it is public by design.
+3. **Artifact boundary** — the `x` SHA-256 hash in `imeta` tags ([IM-1], [IM-4]). Inside it, fetched bytes are trustworthy. Outside it, a host serves attacker-chosen bytes.
+4. **Trust boundary** — the user's trusted-pubkey set applied at the presentation edge, after chain and overlay computation ([TR-7]). Nothing is pre-filtered at ingress.
+
+### 1b.1 Entry points
+
+Every interface where attacker-shaped input crosses a trust boundary or changes protocol state:
+
+| Entry point | Input shape | Primary catalog entries |
+|---|---|---|
+| E1 Publication | Signed events of the four types from any key | T-ID-01, T-EC-04, T-EC-05 |
+| E2 Query responses (`#t`, `#e`, `#i`, kind 5) | Filter results from relays, including withheld or fabricated subsets | T-DC-01, T-CE-01, T-DI-03, T-DC-05 |
+| E3 `imeta` fetch | Blossom artifact bytes behind a URL | T-AV-04, T-SV-03, T-DI-06 |
+| E4 Trusted-pubkey set import | Allowlist, NIP-02 expansion, or reputation-source input | T-DC-02, T-EC-02, T-ID-02 |
+| E5 Patch payload | Unified-diff text inside a fenced block | T-AV-02, T-AV-05 |
+| E6 Kind 5 ingestion | Deletion events and their cascades | T-DI-03, T-DI-07, T-DI-09, T-PI-02 |
+| E7 Opaque forward-version admission | Events of a higher version than the implementation | T-EC-06 |
+| E8 Conformance corpus import | Digest-pinned vectors from spec Appendix G | T-EC-07 |
+| E9 NIP-02 follow-list import | Follow graphs during WoT bootstrap | T-ID-02 |
+| E10 NIP-50 responses | Free-text search results from relays | T-DC-01, T-DC-03 |
 
 ---
 
 ## §2 — Security Goals
 
-| # | Property | Description |
+Protocol-relative goals. **Scope note:** goals are protocol-relative. Visibility of published events is public by design. Network-layer attacks (traffic analysis, endpoint compromise, TLS interception) operate below the protocol layer and are §9 boundary assignments, not goal violations. A goal is degraded when an adversary defeats a property the protocol itself claims to protect.
+
+| # | Goal | Definition |
 |---|---|---|
-| **G1** | Integrity | Events are tamper-evident. Content, identifiers, and attachments are cryptographically bound to their signing pubkey. Patch chains produce deterministic canonical views; unauthorized modification invalidates signatures. |
-| **G2** | Authenticity | Every event is attributable to a specific Nostr pubkey. Authorship is provable and non-repudiable. Attestations about products, metadata, and bindings are forensically traceable. |
-| **G3** | Censorship Resistance | No single relay, vendor, or authority can suppress publication of valid events or prevent discovery of existing events. The protocol's multi-relay design and portable event format ensure that suppression at one point does not eliminate data from the network. |
-| **G4** | Trust Separation | Each user selects their own trusted pubkey set. No global authority dictates which attestations are valid. Untrusted events are filtered before any processing occurs. A user's view of the graph is a function of their trust decisions alone. |
-| **G5** | Discoverability | Given a canonical identifier (`cve:`, `cpe:`, `purl:`), a client can query relays and traverse bindings to find all affiliated security metadata visible within the user's trust perimeter. Identifier-based discovery is the protocol's primary value proposition. |
-| **G6** | Auditability | Historical state remains recoverable. Canonical chain history is preserved through kind 5 retention policies. All mutations (patches, deletions) are signed and attributable. Snapshot pins provide verifiable historical references. |
-| **G7** | Portability | Events are self-contained, replicable across any compliant Nostr relay, and transportable to external archives. No relay-specific state taints the event format. Artifact integrity is independently verifiable via SHA-256 hash. |
+| G1 | Integrity | Events, indexers, and attachments stay bound to the signing key. Canonical bytes derive deterministically from the root event plus the canonical chain. Unauthorized modification invalidates the signature or fails the hash check. |
+| G2 | Authenticity | Every event is attributable to its signing key, and the attribution is verifiable by any consumer. Claim limited to the key: binding a key to a real-world identity is out-of-band (§3), so the protocol promises attribution, never real-world identification. |
+| G3 | Censorship Resistance | No single relay, vendor, or authority can remove valid events from the network. Suppression at one point never eliminates the data from the mesh (spec §7.5). |
+| G4 | Trust Separation | Each user selects their own trusted-pubkey set. Admission to the user's view is a presentation-time filter applied after chain and overlay computation ([TR-7]); no global authority overrides the user's set. |
+| G5 | Discoverability | Given an indexer (`cve:`, `cpe:`, `purl:`, and the other §9 prefixes), a client finds affiliated security metadata within its trust perimeter through `#i` queries and Binding traversal. |
+| G6 | Auditability | Historical state stays recoverable: chain history, deletions, and timestamps remain attributable and reconstructable for audit. Audit surfaces never re-enter chain construction. |
+| G7 | Portability | Events are self-contained and replicable across any compliant relay and into external archives. No relay-local state taints the event format. |
+| G8 | Availability | A client that follows the spec's multiplicity guidance keeps computing, serving, and retrieving protocol state: per-root work stays bounded, chains do not freeze without a surfaced cause, and relay omission does not stall the client. |
+| G9 | Privacy | Participation reveals no more than published events plus the query behavior a user necessarily exposes to the relays and hosts they talk to. The protocol adds no disclosure on top of publication itself. |
+
+### 2.1 Non-goals (not currently addressed)
+
+- **Real-world identity binding.** Any key may claim any identity — permissionless key generation (spec §1). Verification is delegated out-of-band.
+- **Key revocation.** No mechanism exists in this protocol version. Recovery after compromise is social (T-ID-01, §8).
+- **Relay incentive and penalty mechanisms.** Honest service is an operational assumption, not an enforced property.
+- **Confidential metadata.** Deferred (spec §11: NIP-44 encrypted variants).
+- **Recursive overlays and merge adoption.** Deferred (spec §11). V0.8.1 renders overlays only.
+- **Cherry-pick attribution and state anchoring for Bindings.** Both deferred in spec §11. No v0.8.1 mechanism exists to model.
 
 ---
 
-## §3 — Trust Model
+## §3 — Trust Model and Assumptions
 
-SCRUTINY Fabric operates on top of public Nostr. Its trust model is declared in spec §7.5 and governs every admission rule, chain resolution procedure, and discovery pattern in the protocol. This section formalizes those declarations.
+Fixes the actor model from spec §7.5 and states the assumptions the rest of this document stands on.
 
-### 3.1 Actor Model
+### 3.1 Actors
 
-Three actor types participate in the protocol:
+**Publishers** sign every event with their Nostr key: nobody else produces a valid signature for the key. Nobody modifies a signed event without invalidating the signature. Nobody deletes another publisher's event. Publishers may still set an arbitrary `created_at` — signing proves identity, not time (CA-1 is a non-enforced directive). Root authors are sovereign over their chains: they extend them with patches and resolve self-forks by kind 5 deletion. Foreign annotators never mutate canonical content. Their events render as overlays (spec §7.3). Any key may author a Binding — trust controls visibility, not existence.
 
-**Publishers** sign every event with their Nostr key. Cryptography guarantees: no other party can produce a valid signature for a publisher's pubkey; no party can modify a signed event without invalidating its signature; no party can delete another publisher's event (NIP-09 pubkey check). Publishers MAY lie about `created_at` — signing proves identity, not time. Root authors are sovereign over their product/metadata chains; they control the canonical history and can attempt backdating. Disputers cannot overwrite canonical state. Any pubkey can create Bindings — trust controls visibility, not existence.
+**Relays** store and serve events, apply `#t`/`#e`/`#i` filters, and propagate publications. The baseline is honest-but-curious. Relays may also omit results, serve stale data, drop filter support, or stop answering. The defense is multiplicity: query multiple relays, cache locally, cross-reference (spec §7.5). No relay is trusted with completeness.
 
-**Relays** store and serve events, apply filters (`#t`, `#e`, `#i`), and propagate publications among peers. The baseline assumption is **honest but curious**: a well-behaved relay returns matching events and propagates publications. Relays MAY be malicious — they can omit results, serve stale data, drop filter support, or degrade into total non-response. The protocol's defense is multiplicity: query multiple relays, cache locally, cross-reference. No single relay is trusted with completeness.
+**Users** maintain a trusted-pubkey set: manual allowlist, NIP-02 web-of-trust expansion, or a reputation-source threshold. The curation mechanism is out of protocol scope (spec §6.1). The set's existence is a hard protocol requirement. Untrusted, unreachable events leave the user's view through a presentation-time filter, never through pre-filtering of computation.
 
-**Query clients** maintain a trusted-pubkey set — an allowlist of Nostr identities whose attestations the user accepts. The trust mechanism is out of scope, but its existence is a hard protocol requirement: untrusted events are filtered before any processing (§6). Clients SHOULD query multiple relays and cross-reference results.
+### 3.2 Derived trust properties
 
-### 3.2 Derived Trust Properties
+- **Sybil resistance** is delegated to the user's trusted set. An attacker with thousands of keys floods the network with valid events. Such events enter the view only where the user's trust radius admits them (T-ID-02).
+- **Relay-level suppression** has no cryptographic defense. The defense is operational (publish widely, query broadly, spec §7.5).
+- **Key compromise** has no protocol-level remedy. A leaked root key confers full chain sovereignty (T-ID-01). Pre-compromise events are forensically distinguishable, strengthened by external timestamp evidence (spec §7.5). Post-compromise events are indistinguishable.
+- **Permissionless identity** enables participation at the cost of moving identity verification outside the protocol (T-ID-04).
 
-The following derive directly from spec §7.5:
+### 3.3 Assumptions
 
-- **Sybil resistance** is delegated to the user's web-of-trust. An attacker generating thousands of keys can flood the network with syntactically valid events. These enter a user's view only if the attacker's keys fall within the user's trust radius (direct trust or N-hop expansion). Wider expansion weakens resistance proportionally; a tightly curated allowlist strengthens it. Clients SHOULD warn when trust-radius expansion would admit a large number of previously unseen pubkeys.
-- **Relay-level censorship** is mitigated by publishing to multiple relays and by Blossom-hosted payloads surviving relay takedowns. A hostile vendor can pressure relays to drop specific events; clients querying only pressured relays see a censored graph. No cryptographic mechanism prevents this — the defense is operational.
-- **Key compromise** has no protocol-level remedy. If a root author's nsec leaks, the attacker inherits sovereignty over all chains originating from that pubkey. Bindings authored pre-compromise remain signed by the legitimate author; post-compromise bindings are indistinguishable. Recovery is social (announce, rotate key, rebuild trust).
-- **Permissionless identity** means any pubkey can claim any real-world identity. The protocol delegates identity verification to out-of-band trust establishment. This is a design choice, not a defect — it enables permissionless participation at the cost of shifting verification burden to users.
-- **Machine-processable design.** The protocol is designed to be machine-processable: events carry sufficient structure for automated agents (including AI agents) to discover, parse, and act on them without human intervention. This is an intentional design property, not a vulnerability.
+1. Secp256k1 Schnorr signatures and SHA-256 are computationally sound against non-quantum adversaries.
+2. Consumers perform SIG-1's id+signature verification before processing every event. This is load-bearing: T-DI-09 is the failure mode.
+3. At least one honest, non-coerced relay exists in each user's configured set during normal operation.
+4. Publishers control their own private keys until a compromise is analyzed as a named threat (T-ID-01).
+5. The Nostr base layers remain stable within the evaluation horizon. Base layers per spec §3.1: NIP-01, NIP-09, NIP-10, NIP-73, CommonMark §4.5. May-tier layers per spec §3.1: NIP-03, NIP-13, NIP-18, NIP-25, NIP-57. NIP-50 search per spec §8. NIP-92 `imeta` is optional per spec §3.1.
 
-### 3.3 Assumptions Underpinning the Threat Model
-
-1. Cryptographic primitives (secp256k1 signatures, SHA-256 hashing) are computationally sound against non-quantum adversaries.
-2. Clients correctly implement signature verification, trust filtering, and canonical-view computation per §5.3 and §7.4.
-3. At least one honest relay exists in each user's configured relay set during normal operation.
-4. Publishers control their own private keys; key hygiene is assumed absent explicit compromise.
-5. The Nostr protocol ecosystem (NIP-01, NIP-09, NIP-10, NIP-13, NIP-18, NIP-25, NIP-57, NIP-73, NIP-92) remains stable within the evaluation horizon.
+**Downgraded assumption.** Earlier revisions assumed clients correctly implement all must-level spec rules. Empirical work on the Nostr client ecosystem (Nostr MU/MS, EuroS&P 2025) shows major clients skip signature and id verification, among other gaps. This document therefore treats client-side must-level obligations as honored only where a conformance check exists (spec Appendix G). It rates "client skips the check" as an exploitable class (T-DI-09, T-EC-06).
 
 ---
 
 ## §3b — Asset Inventory
 
-The following assets represent what SCRUTINY Fabric protects. Columns: **C**onfidentiality, **I**ntegrity, **A**vailability, **Au**thenticity, **NR** = Non-Repudiation.
+Assets the catalog reasons about, with the security properties each needs. **C**onfidentiality, **I**ntegrity, **A**vailability, and **Au**thenticity (attribution to the signing key) are tracked per asset. **NR** is key-level non-repudiation: the signing key cannot plausibly deny events it signed. That claim binds the key, not the real-world operator behind it.
 
 | # | Asset | Description | C | I | A | Au | NR |
 |---|---|---|---|---|---|---|---|
 | A1 | Product events | Signed root events identifying security-relevant targets | — | ● | ● | ● | ● |
 | A2 | Metadata events | Signed root events carrying observations, findings, certifications | — | ● | ● | ● | ● |
-| A3 | Binding events | Immutable directed edges connecting two events | — | ● | ● | ● | ● |
+| A3 | Binding events | Directed edges connecting two events | — | ● | ● | ● | ● |
 | A4 | Patch events | Diff-carrying replies forming canonical chains | — | ● | ● | ● | ● |
-| A5 | Kind 5 deletion events | NIP-09 deletions triggering topology cascade or edge retraction | — | ● | ◐ | ● | ● |
-| A6 | Canonical chains | Ordered sequences of root-author patches defining evolving state | — | ● | ● | ● | ● |
-| A7 | Canonical views | Computed state (content, i-surfaces, imeta-surfaces) at chain tip | — | ● | ◐ | — | — |
-| A8 | Canonical identifiers (`i` tags) | NIP-73 indexed values enabling relay-side discovery queries | — | ◐ | ● | — | — |
-| A9 | Binding topology / relationship graph | Directed edges linking products to metadata | — | ● | ● | ● | — |
-| A10 | Attached artifacts (imeta + Blossom) | External payloads referenced by SHA-256 hash | ◐ | ● | ◐ | — | — |
-| A11 | Trust lists / WoT configuration | User-curated pubkey allowlists governing event admission | ○ | ● | ◐ | — | — |
-| A12 | Pubkey-to-reputation mappings | Implicit associations between pubkeys and user-perceived trustworthiness | ○ | ● | ◐ | ● | — |
-| A13 | Timestamp ordering claims | `created_at` fields, OTS proofs, fork-resolution rankings | — | ◐ | — | — | — |
+| A5 | Kind 5 deletion events | NIP-09 deletions driving cascade or edge retraction | — | ● | ◐ | ● | ● |
+| A6 | Canonical chains | Linear root-author patch sequences defining current state | — | ● | ● | ● | ● |
+| A7 | Canonical bytes | Root content plus applied canonical chain ([RC-2]) | — | ● | ◐ | — | — |
+| A8 | Indexers (`i` tags) | NIP-73-shaped values enabling `#i` relay discovery | — | ◐ | ● | — | — |
+| A9 | Binding topology | The relationship graph the discovery flow traverses | — | ● | ● | ● | — |
+| A10 | Attached artifacts (`imeta` + Blossom) | External payloads pinned by SHA-256 | ◐ | ● | ◐ | — | — |
+| A11 | Trusted-pubkey set | The user's allowlist driving admission | ○ | ● | ◐ | — | — |
+| A12 | Pubkey-to-reputation mappings | Associations between keys and perceived trustworthiness | ○ | ● | ◐ | ● | — |
+| A13 | Timestamp/audit claims | `created_at` values and OTS attestations as audit input | — | ◐ | — | — | — |
+| A14 | Conformance corpus | Digest-pinned per-release test vectors (App G.1, G.3); discovery and serialization layers reserved, not yet published | — | ● | ◐ | ● | — |
+| A15 | Rendered content | Client-presented prose, overlays, and attachments derived from published events; attacker-shaped input surface | ◐ | ◐ | ◐ | — | — |
 
-**Legend:** ● = asset requires this property be maintained. ◐ = partial or situational requirement. ○ = confidentiality of trust lists may be desirable (operational security) but is not a protocol-level goal. — = not applicable.
+**Legend:** ● required. ◐ partial or situational. ○ desirable operationally but not a protocol-level property. — not applicable.
 
 ---
 
 ## §4 — Adversary Archetypes
 
-Each archetype describes a capability class. Archetypes are not mutually exclusive; a real-world entity may combine several. Every threat in §6 references one or more archetypes from this section.
+Eleven capability classes. Archetypes are not mutually exclusive. One actor may combine several. Grades use Appendix A: capability band per A.1's test questions (crossing axis named) and motivation per A.2. An archetype's grade bounds what its members can bring. A specific attack's demands live in each entry's Likelihood segment and never re-grade the archetype.
+
+| # | Archetype | Grade | Justification |
+|---|---|---|---|
+| A1 | Malicious Relay Operator | **[B3, M3]** | B3: holds a named infrastructure role (test question 3). M3: suppression is recurring, vendor-incentivized, and cheap to repeat (§7.5). |
+| A2 | Compromised Publisher | **[B1, M3]** | B1: stock tooling plus one key; no infrastructure position (test 4 answers no). M3: recurring attempts, undeterred by signature attribution. |
+| A3 | Network-Level Attacker | **[B5, M4]** | B5: observes or controls the network layer (test question 1). M4: goal-directed isolation of a target. |
+| A4 | Hostile Vendor | **[B4, M4]** | B4: staff, legal apparatus, multi-region reach (test question 2). M4: A.2's own worked example — suppression of unfavorable findings. |
+| A5 | Occasionally Lying Publisher | **[B1, M3]** | B1: one trusted key, no position. M3: maintains presence deliberately to repeat. |
+| A6 | Sybil Amplifier | **[B2, M3]** | B2: sybil key generation at scale is the band's own marker. M3: expansion attempts repeat after failure. |
+| A7 | Spam/DoS Attacker | **[B2, M3]** | B2: custom scripts and self-hosted capacity. M3: recurring floods, attribution costs nothing. |
+| A8 | Identifier Squatter | **[B1, M2]** | B1: stock tooling, one key. M2: opportunistic; attribution risk deters where defenses are mid-strength. |
+| A9 | Infrastructure Impersonator | **[B3, M3]** | B3: operates lookalike infrastructure roles. M3: targets bootstrap repeatedly. |
+| A10 | Defaming Consumer | **[B1, M3]** | B1: one key, no position. M3: fabricated findings persist across friction. |
+| A11 | Artifact-Targeting Attacker | **[B3, M3]** | B3: operates or pressures artifact hosts (host-operation axis). M3: recurring fetch and takedown pressure. |
+
+**Clarifier (applies wherever Compromised Publisher is graded).** B3's positional clause covers those who OPERATE the channel — relay, Blossom-host, index operators — not those who publish through it. A leaked trusted key is an attack precondition argued per entry, not a position.
+
+**Footnote to A1.** Malicious Relay Operator is M4 when acting as a vendor's suppression arm (A.2's worked example). T-DI-09 grades that case [B3, M4] and is conformant under this footnote.
 
 ### A1 — Malicious Relay Operator
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
 | Controls relay storage, serving logic, and filter implementation | Forge or modify signed events |
-| Can censor, delay, reorder, or selectively serve events | Break TLS connections from other relays |
-| Can observe all subscription filters, connection metadata, and query patterns | Prevent clients from querying alternative relays |
-| Can drop NIP-specific filter support silently (e.g., `#i`) | Force clients to accept forged results (signatures protect integrity) |
-| May operate under legal or economic pressure from third parties | Delete events permanently from relays they do not control |
+| Omits results, serves stale data, drops `#i` or NIP-50 support silently | Prevent clients from querying alternative relays |
+| Observes all subscription filters, timing, and query patterns | Force clients to accept forged results (signatures protect integrity) |
+| May operate under legal or economic pressure from third parties | Delete events permanently from relays it does not control |
+
+Drives T-DC-01, T-DC-05, T-CE-01, T-SV-01, T-DI-03, T-DI-09.
 
 ### A2 — Compromised Publisher
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Holds a valid Nostr private key (own or stolen) | Modify or forge events signed by other pubkeys |
-| Can publish, patch, and kind 5-delete events authoritative to that key | Force relays to serve or suppress specific events |
-| Can craft arbitrary `created_at` values | Bypass trust filtering on clients where the key is not trusted |
-| Can create arbitrarily many keypairs for Sybil operations | Override the canonical chain of a product owned by a different pubkey |
-| Inherits full sovereignty over all chains rooted at the compromised pubkey | Undo the cryptographic attribution of pre-existing events |
+| Holds a valid key (own, stolen, or organizational) | Modify events signed by other pubkeys |
+| Publishes, patches, and kind 5-deletes events authoritative to that key | Override the canonical chain of a root owned by another key |
+| Crafts arbitrary `created_at` values | Bypass the trust gate on clients that do not trust the key |
+| Inherits full sovereignty over chains rooted at the compromised key | Undo cryptographic attribution of pre-compromise events |
+
+Drives T-DI-01, T-DI-04, T-DI-07, T-DI-08, T-ID-01, T-ID-05, T-ID-06, T-DC-03 (with A4), T-AV-05 (with A7), T-EC-04 (with A6), T-ID-04 (with A8).
 
 ### A3 — Network-Level Attacker
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Can intercept, drop, or redirect WebSocket connections | Break TLS without a compromised CA |
-| Can isolate a client to a controlled relay set (eclipse) | Forge Nostr event signatures |
-| Can perform traffic analysis on connection timing and volume | Read TLS-encrypted payloads |
-| May control network infrastructure (ISP, corporate firewall, state-level) | Modify events in transit (TLS integrity protection). Prevent out-of-band relay discovery or cached-event verification |
+| Intercepts, drops, or redirects WebSocket connections | Break TLS without a compromised CA |
+| Eclipses a client into a controlled relay set | Forge event signatures |
+| Performs traffic analysis on connection timing and volume | Read TLS-encrypted payloads |
+| May control corporate, ISP, or state infrastructure | Modify events in transit |
+
+Drives T-CE-02.
 
 ### A4 — Hostile Vendor
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Commercial entity whose product has unfavorable findings | Forge or modify signed events |
-| Can exert economic pressure on relay operators (contracts, payments) | Prevent re-broadcast from relays outside legal jurisdiction |
-| Can exert legal pressure (DMCA, cease-and-desist, trade secret claims) | Distinguish voluntary retraction from coerced retraction at protocol level |
-| Can initiate lawsuits against individual publishers | Suppress events stored on Blossom hosts beyond legal reach |
-| Has financial resources for sustained multi-jurisdictional campaigns | Prevent archival publication through jurisdiction-diverse relay sets |
+| Exerts economic pressure on relay operators (contracts, payments) | Forge or modify signed events |
+| Exerts legal pressure (takedown notices, cease-and-desist claims) | Prevent re-broadcast from relays outside its legal reach |
+| Funds sustained multi-jurisdiction campaigns | Distinguish voluntary retraction from coerced retraction at protocol level |
+| Suppresses unfavorable findings about its own product | Suppress events on artifact hosts beyond its reach |
+
+Drives T-PI-01, T-AV-04 (with A11), T-DC-03 (with A2).
 
 ### A5 — Occasionally Lying Publisher
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Holds a trusted key with established track record of accurate contributions | Override trust filtering on clients not trusting the key |
-| Maintains reputation deliberately to maximize impact of intermittent false publications | Prevent post-hoc forensic attribution to the signing key |
-| Can inject subtly misleading patches (downgraded severity, fabricated test results) | Manipulate events signed by other pubkeys |
-| Can time false publications to coincide with high-impact disclosure windows | Prevent other trusted parties from publishing contradicting findings |
-| False entries are mixed with genuine work, making detection difficult | Control whether other publishers corroborate or dispute their claims |
+| Holds a trusted key with an established track record | Override trust gating on clients not trusting the key |
+| Injects subtly false publications, timed for maximum impact | Prevent forensic attribution to the signing key |
+| Mixes false entries into genuine work, making detection hard | Prevent contradictions from other trusted publishers |
+
+Drives T-EC-05 (with A6, A7).
 
 ### A6 — Sybil Amplifier
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Generates thousands of Nostr keypairs at near-zero cost | Control who follows or trusts the generated keys |
-| Engineers WoT placement through social manipulation, follow-back exchanges | Bypass trust filtering on clients with tightly curated allowlists |
-| Publishes Products, Metadata, Bindings, and disputes from Sybil keys | Guarantee expansion into a specific user's trust radius |
-| Floods discovery queries (`#i`, `#t`) with Sybil-authored events | Prevent users from warning-on-expansion per spec §7.5 SHOULD |
-| Combines with T-ID-02 mechanics for compound amplification | Make Sybil keys indistinguishable from legitimate keys under forensic audit |
+| Generates thousands of keypairs at near-zero cost | Control who follows or trusts the generated keys |
+| Engineers trust-radius placement through social manipulation | Bypass gating on clients with curated allowlists |
+| Floods discovery queries with sybil-authored events | Guarantee expansion into a specific user's radius |
+
+Drives T-ID-02, T-EC-04 (with A2), T-EC-05 (with A5, A7).
 
 ### A7 — Spam/DoS Attacker
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Generates large volumes of syntactically valid SCRUTINY events | Bypass trust filtering on clients with curated allowlists |
-| Constructs pathological graph topologies (deep chains, extreme fan-out) | Force relay acceptance beyond relay storage/rate-limit policies |
-| Uploads large artifacts to Blossom hosts consuming quotas | Impersonate trusted publishers through forged signatures |
-| Targets specific products with focused flooding campaigns | Make spam events indistinguishable from trusted events under signature verification |
-| Operates at low per-event cost using automated tooling | Guarantee event retention if relays enforce PoW requirements |
+| Generates large volumes of syntactically valid events | Bypass gating on clients with curated allowlists |
+| Pads chains and overlays at per-event cost near zero | Force relay acceptance beyond relay limits |
+| Targets single products with focused flooding | Make spam indistinguishable from trusted content under verification |
+
+Drives T-AV-01, T-AV-02, T-AV-05 (with A2), T-EC-05 (with A5, A6).
 
 ### A8 — Identifier Squatter
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Publishes events claiming well-known canonical identifiers | Validate those claims against authoritative registries |
-| Backdates `created_at` for first-mover advantage (amplified by T-DI-01) | Prevent the real authority from publishing competing events |
-| Builds thin trust footprint through Sybil-assisted WoT placement | Make squatting events indistinguishable from authoritative ones under trust filtering |
-| Claims CVE, CPE, PURL, CC certificates without authorization | Control which pubkeys users choose to trust for given identifiers |
-| Pre-positions before actual vendors enter the ecosystem | Prevent long-term forensic attribution or reputation damage |
+| Claims well-known indexers on self-published events | Validate claims against authoritative registries |
+| Backdates `created_at` for audit-evidence corruption only, gaining no chain-ordering or discovery priority ([RC-1], [SF-4]; §8.1: NIP-50 ranks by relevance; NIP-01 limit-pagination is newest-first, so a backdated claim reduces its own recency) | Prevent the real authority from publishing competing events |
+| Claims CVE, CPE, PURL, CC identifiers without authorization | Control which keys users trust for given indexers |
+| Pre-positions before vendors enter the ecosystem | Escape long-term attribution of the squatting behavior |
+
+Drives T-ID-03, T-ID-04 (with A2).
 
 ### A9 — Infrastructure Impersonator
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Creates web services, relays, or clients mimicking official SCRUTINY infrastructure | Forge Nostr event signatures from legitimate project keys |
-| Distributes tampered default trust lists, relay recommendations, client binaries | Prevent users from verifying event signatures independently |
-| Registers similar domain names using project branding and documentation | Affect users obtaining software from legitimate distribution channels |
-| Targets new users during bootstrap when brand recognition is weakest | Prevent community detection and exposure of the impersonation |
-| Combines with compromised-distribution techniques | Make an impostor relay produce events it never received |
+| Mimics official SCRUTINY infrastructure (relays, clients, services) | Forge signatures from legitimate project keys |
+| Distributes tampered default trusted-pubkey sets and software | Affect users on legitimate distribution channels |
+| Targets new users when brand recognition is weakest | Prevent community detection and exposure |
+
+Drives T-EC-02.
 
 ### A10 — Defaming Consumer
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Publishes fabricated negative findings as Metadata events | Bypass trust filtering on clients not trusting the key |
-| Creates doctored test results, forged reports, AI-generated evidence | Remove permanent cryptographic attribution to the defamer's pubkey |
-| Binds fabricated findings to target products | Prevent competing trusted parties from publishing contradictory findings |
-| May build minimal trust over time before launching attack | Forge signatures from the targeted vendor's key |
-| Exploits asymmetric burden: vendor must investigate each false claim individually | Prove a negative cryptographically (that a vulnerability does not exist) |
+| Publishes fabricated negative findings | Remove cryptographic attribution to their own key |
+| Binds fabricated findings to target products | Forge the targeted vendor's signature |
+| Exploits the asymmetric cost of investigating each false claim | Prove a negative cryptographically |
+
+Drives no current catalog entry. The defamation mechanism is covered by T-ID-04’s identity-claim surface and T-EC-04’s fabrication-scale entry. Defaming Consumer is retained because its can/cannot table bounds that class.
 
 ### A11 — Artifact-Targeting Attacker
 
-| Capabilities | Cannot Do |
+| Capabilities | Cannot do |
 |---|---|
-| Compromises or operates artifact hosts (Blossom servers, CDN endpoints) | Forge events referencing the artifacts (signatures protect event integrity) |
-| Replaces artifact bytes after publication despite SHA-256 hash commitments | Make a correctly hash-verified artifact appear corrupted |
-| Issues takedown notices against legitimate artifact hosts | Prevent artifact retrieval from mirrors, archives, or IPFS |
-| Embeds tracking URLs in imeta references for surveillance correlation | Hide the tracking behavior from clients inspecting imeta URL patterns |
-| Exploits single-source hosting fragility | Prevent multi-host distribution by community or ecosystem actors |
+| Compromises or pressures artifact hosts | Forge events referencing the artifacts |
+| Replaces artifact bytes where hash verification is skipped | Corrupt correctly hash-verified artifacts |
+| Embeds tracking URLs in `imeta` references | Hide tracking from clients inspecting URL patterns |
+| Exploits single-source hosting fragility | Prevent mirror distribution by others |
+
+Drives T-AV-04 (with A4), T-SV-03, T-DI-06.
 
 ---
 
-## §5 — Risk Methodology
+## §5 — Risk Method
 
-Residual risk is assessed qualitatively as **Risk = Impact × Likelihood**, informed by the capability bounds of §4 archetypes.
+Ratings are ordinal-with-rationale. No formulas, no multiplication of levels, no numeric scores. Each rating is a claim an argument can audit. The levels below are the entire vocabulary. Every application of them appears with its reasoning in the entry's segments 4 to 6.
 
-### Impact Scale
+### 5.1 Impact (severity vocabulary)
 
 | Level | Definition |
-|---|---|
-| **Critical** | Permanently breaks ≥1 core security goal (Integrity, Authenticity, Trust Separation) with no protocol-level recovery path. Damage is systemic and self-propagating once achieved. |
-| **High** | Causes significant, measurable degradation of a core security goal under realistic conditions. Partial mitigations exist but leave material gaps. |
-| **Medium** | Partially degrades a security goal; impact bounded by client implementation quality, ecosystem maturity, or attacker sustainment cost. Active effort required; payoff is conditional. |
-| **Low** | Minor or operational impact under unlikely configurations; narrow attack surface; consequence is self-limiting or easily detected. |
+|---|---|---|
+| Critical | A security goal breaks permanently for some class of users, with no protocol-level recovery path. |
+| High | A security goal degrades measurably for a class of users under realistic conditions; partial mitigations leave material gaps. |
+| Medium | A security goal degrades partially; the impact is bounded by implementation quality, deployment shape, or attacker sustainment cost. |
+| Low | Minor or operational impact under narrow configurations; consequence is self-limiting or easily detected. |
 
-### Likelihood Factors
+Impact = which goal breaks, for whom, at what scope. One sentence per entry.
 
-- Number of preconditions required for exploitation.
-- Whether the vulnerability is a passive structural property of the design or requires active, sustained attack effort.
-- Attacker capability class from §4 — higher-capability archetypes increase likelihood.
-- Whether defenses are mandatory (MUST), recommended (SHOULD), optional (MAY), or absent.
+### 5.2 Likelihood (five-label scale)
 
-### Range Ratings
+| Label | Reading |
+|---|---|---|
+| Very unlikely | Exotic configuration or sustained effort with weak payoff. |
+| Unlikely | Realistic configuration but meaningful preconditions or friction. |
+| Possible | Reachable by the driving archetype under normal deployment oddities. |
+| Likely | Recurring in the wild or near-costless to attempt. |
+| Very likely | Present by default; only active defense stands between the adversary and the outcome. |
 
-Range ratings (Low–Medium, Low–High) indicate residual risk varies substantially by implementation quality or deployment context. The lower bound assumes a well-implemented, security-conscious client following all SHOULD recommendations. The upper bound assumes a naive client ignoring non-MUST guidance.
+The labels are borrowed from ETSI TS 102 165-1 V5.3.1, Table 4 "Summary of likelihood metric" and Table 14 "Occurrence likelihood". Labels only: the numeric values TVRA attaches to them are rejected (Appendix A.3).
+
+Likelihood = driving archetype motivation × capability band × preconditions × defense class. Defense class names the cited mitigation's own keyword level: must, should, may, or absent (no rule). An assumption declared in §7.5 with no normative rule behind it counts as absent. Structural-weakness entries take no adversary: Likelihood argues condition probability (how often the design's preconditions arise in the wild) × absence of controls.
+
+### 5.3 Residual
+
+What remains after counting the spec's own mitigations, stated with the same vocabulary. A ranged residual (e.g., Low–Medium) is allowed only where implementation-quality variance genuinely shifts the outcome. Both bounds are narrated. Ranges are not a hedge. The entry names which configuration yields which bound.
+
+### 5.4 Structural weaknesses
+
+Entries of Type `structural-weakness` name the design decision or assumption responsible in place of an adversary. They carry a Spec row of the form `no single rule: family <letters>; see §<x.y>`. They flag exposures that follow from a documented trade-off rather than from an adversary's action.
+
+### 5.5 Marker
+
+`†` = TM-side guidance, not a spec requirement. Attached to any statement about what implementations do or should do that no rule ID backs.
 
 ---
 
-## §6 — Threats
+## §6 — Coverage and Completeness
+
+### 6.1 Catalog overview
 
 | Prefix | Category | Count | Focus |
 |---|---|---|---|
-| DI | Data Integrity | 6 | Content, diffs, chains, attribution |
-| ID | Identity | 5 | Pubkeys, trust, impersonation |
-| AV | Availability | 5 | Spam, exhaustion, artifacts |
-| DC | Discovery | 4 | Relay capability gaps, identifier findability |
-| CE | Censorship | 3 | Suppression, eclipse, coercion |
-| SV | Surveillance | 3 | Query privacy, host tracking |
-| EC | Ecosystem | 5 | Adoption-scale risks |
-| PI | Protocol Interactions | 4 | Cross-mechanism semantic tensions |
+| DI | Data Integrity | 8 | Content, chains, attachments, deletion admission |
+| ID | Identity | 6 | Keys, trust radius, indexers, publishing identity |
+| AV | Availability | 5 | Inflation, exhaustion, artifact hosting |
+| DC | Discovery | 4 | Relay behavior, indexer desync, bootstrap |
+| CE | Censorship | 2 | Suppression and eclipse at presentation |
+| SV | Surveillance | 2 | Query and fetch privacy |
+| EC | Ecosystem | 7 | Adoption-scale, corpus, forward compatibility |
+| PI | Protocol Interactions | 3 | Cross-mechanism tensions |
 
-### §6.1 — Data Integrity
+Total: 37 entries.
 
-#### T-DI-01 — Timestamp Manipulation via Forged `created_at`
+### 6.2 Entry point × archetype
 
-| Field | Value |
-|---|---|
-| Adversary | Compromised Publisher, Identifier Squatter |
-| Assets | A13 Timestamp ordering claims, A6 Canonical chains, A7 Canonical views |
-| Spec | §7.2, §3.1 OTS |
+Every §1b.1 entry point was crossed against every §4 archetype. Cells that produce a threat land as entries. Each row lists that cell's primary entries. §4's Drives lines carry the full per-archetype mapping.
 
-**1. Problem.** The `created_at` field in Nostr events is self-reported by the publisher with no relay-side verification. A Compromised Publisher backdates patches to claim earlier authorship than truth, or post-dates forks to manipulate default-head selection per §7.2. Fork resolution uses `created_at` as the primary sort key and falls back to event ID hash only on tie — meaning a crafted timestamp deterministically selects the attacker's preferred tip as the default head. In the absence of OpenTimestamps proofs, there is no mechanism to detect or reject implausible timestamps. Root authors are sovereign over their chains; a malicious root author can rewrite their canonical history at will by publishing post-dated forks retroactively.
+| Entry point | Reaching archetypes | Entries |
+|---|---|---|
+| E1 Publication | A2, A4, A5, A6, A7, A8, A10 | T-ID-01, T-EC-04, T-EC-05, T-AV-01, T-AV-03 |
+| E2 Query responses | A1 | T-DC-01, T-CE-01, T-DI-03, T-DC-05 |
+| E3 imeta fetch | A11, A4 | T-AV-04, T-SV-03, T-DI-06 |
+| E4 Trusted-set import | A6, A9 | T-DC-02, T-EC-02, T-ID-02 |
+| E5 Patch payload | A2, A7 | T-AV-02, T-AV-05 |
+| E6 Kind 5 ingestion | A1, A2 | T-DI-03, T-DI-07, T-DI-09, T-PI-02 |
+| E7 Opaque admission | structural | T-EC-06 |
+| E8 Corpus import | structural (supply chain) | T-EC-07 |
+| E9 NIP-02 import | A6 | T-ID-02 |
+| E10 NIP-50 responses | A1, A4 | T-DC-01, T-DC-03 |
 
-**2. Mitigation.** NIP-03 OpenTimestamps (MAY) provides Bitcoin-confirmed temporal attestation. When an OTS proof exists for competing patches during tip selection, clients SHOULD prefer the Bitcoin timestamp over self-reported `created_at` (§7.2). Fork resolution includes a tie-break on event ID hash that prevents purely deterministic exploitation when two tips share the same `created_at`. Root authors MAY publish kind 5 deletions targeting unwanted tips to explicitly abandon them. Disputers MAY flag suspected backdating via foreign patches as informational annotations.
+Archetypes with no entry-point reach left (A3 drives T-CE-02 through network-layer eclipse, below the protocol layer, assigned per §4 rather than through these entry points).
 
-**3. Gap.** OTS adoption is voluntary (MAY) and ecosystem-level uptake is currently low. In its absence, `created_at` ranking trusts the root author's claimed clock. No relay-side rejection of anomalous timestamps is specified. No client-side policy mandates flagging or discarding events with implausible timestamps. The protocol's sovereignty model — root authors control their chains — makes timestamp honesty a matter of publisher integrity rather than protocol enforcement.
+### 6.3 Rule-family coverage matrix
 
-**4. Residual risk: High.** Fork resolution is structurally vulnerable to crafted timestamps. OTS mitigates but is gated on voluntary adoption. Until OTS is widely deployed, canonical history depends on publisher honesty for temporal ordering.
+Each spec Appendix F rule family: cited by entries, or dispositioned with a rationale. Uncited members of cited families are format-internal rules (schema, grammar, procedural sequencing) unless named below.
+
+| Family | Cited | Entries / disposition |
+|---|---|---|
+| BD | 5/12 | T-DC-05, T-DI-04, T-ID-05. uncited members (BD-1..BD-5, BD-7, BD-8) are endpoint-typing and pending-lifecycle mechanics rolled into T-ID-05’s hint-forgery disposition |
+| C | 0/8 | assessed, no surviving threat — consumer-tolerance grammar; malformed diffs are validity failures, not attack surface |
+| CA | 1/1 | T-DI-01 |
+| CHN | 2/3 | T-AV-02, T-PI-02. CHN-1 (forward walk) is sequencing-internal; CHN-2/3 cited |
+| DEL | 9/11 | T-DI-03, T-DI-07, T-DI-08, T-DI-09, T-PI-01, T-PI-02. DEL-3 assessed (see below); DEL-6 (kind 5 undeletable) is an internal invariant |
+| DQ | 4/4 | T-CE-01, T-DC-01, T-DC-03, T-DC-05, T-DI-03, T-DI-07, T-SV-01 |
+| E | 0/7 | assessed, no surviving threat — envelope grammar, validity-internal |
+| H | 0/2 | assessed, no surviving threat — HALT is an outcome class, not an attack vector; its abuse surfaces through T-AV-02 and chain-freeze entries |
+| IM | 4/5 | T-AV-03, T-AV-04, T-DI-06, T-ID-06, T-SV-03. IM-5 deliberately uncited: the NIP-92 extension is scope-enabling, not a control (T-DI-06 companion rationale) |
+| IR | 1/4 | T-ID-03. IR-1, IR-3, IR-4 are prefix/value grammar; self-assertion exposure covered by T-ID-03 through IR-2 |
+| IX | 2/4 | T-DC-03, T-ID-03, T-SV-01. IX-2, IX-4 are should-class tag-quantity hygiene against discovery dilution; the dilution premise overlaps T-AV-01's flood economics and has no distinct entry |
+| MD | 1/5 | T-ID-06. MD-2..MD-5 are Metadata schema rows, validity-internal |
+| N | 1/3 | T-AV-05. N1, N2 assessed — tolerance rules inside the diff grammar; N3 cited by T-AV-05, which prices no-op handling as an adversarial surface |
+| OTS | 1/1 | T-DI-01, T-ID-01, T-PI-03 |
+| OV | 5/9 | T-AV-01, T-AV-02, T-AV-05, T-ID-03, T-ID-04, T-ID-06, T-PI-02. OV-1 is a reserved ID, cross-reference-only by spec design; OV-2, OV-4, OV-8 are snapshot/determinism/ignore-rule mechanics internal to the overlay contract |
+| P | 0/4 | assessed, no surviving threat — producer obligations on encoding and context lines; violations are producer-side (A-layer duties consumers must not reject over); P2 is the family's V-layer rule, applied at validity |
+| PB | 2/2 | T-ID-06 |
+| PR | 1/5 | T-ID-06. PR-2..PR-5 are Product schema rows, validity-internal |
+| PT | 2/11 | T-AV-05. PT-1/2/3/4/5/6/9 mechanics internal; PT-10, PT-11 explicitly assessed (see below) |
+| RC | 5/5 | T-AV-02, T-AV-03, T-DC-03, T-DI-01, T-DI-02, T-DI-08, T-EC-01, T-ID-01, T-ID-03. RC family completeness (per T-DI-02’s disposition record): RC-1/RC-2 define the canonical-chain and canonical-bytes surface that AV-02, DC-03, DI-01, DI-02, DI-08, EC-01, and ID-01 anchor on; RC-3..RC-5 bind conformance duties (recompute, tip identification) whose failure modes are the DI family’s observed-set and freeze entries |
+| RL | 5/5 | T-AV-01, T-AV-02, T-AV-03, T-AV-05, T-EC-01 |
+| SF | 5/7 | T-DI-01, T-DI-02, T-DI-08, T-ID-01, T-ID-03. SF-6, SF-7 explicitly assessed (see below) |
+| SIG | 1/1 | T-AV-02, T-CE-02, T-DI-09, T-EC-04, T-EC-07, T-ID-01, T-ID-04, T-ID-05, T-PI-03 |
+| T | 1/3 | T-AV-02. T2, T3 are sequencing mechanics of the same determinism family; T1 cited by T-AV-02 |
+| TAG | 4/5 | T-EC-03, T-EC-06. TAG-4 is kebab-case hygiene, validity-internal |
+| TR | 5/7 | T-AV-01, T-AV-02, T-CE-01, T-CE-02, T-DI-07, T-EC-02, T-EC-04, T-EC-05, T-ID-02, T-ID-04, T-ID-05, T-SV-01. TR-5, TR-6 (chain/binding admission transitivity) underpin entry point E4; no independent threat beyond T-ID-02 and T-DC-02’s bootstrap surface |
+| UR | 4/4 | T-AV-03, T-DC-05, T-EC-07 |
+| VER | 4/4 | T-EC-06 |
+
+**Explicitly assessed, uncited rules:**
+- PT-10, PT-11 (patch endpoint-typing procedure): internal classification mechanics with no surviving adversarial premise at v0.8.1. Their failure mode is admission rejection itself (spec §4.4), a dead end for the adversary.
+- SF-6, SF-7 (multi-fork and fork/HALT precedence): resolve ambiguities inside the freeze decision itself. The exploitable freeze is adversary-independent and treated in T-DI-02 / T-DI-08. No independent threat.
+- DEL-3 (deletion of a foreign overlay hides it from default rendering): the overlay's own author retracting it removes only that author's contribution. Canonical bytes are unaffected by rule, so no adversary gains leverage. No surviving premise.
+
+### 6.4 Flagship attack trees
+
+Two illustrations. Trees are not the completeness carrier (entry points and the family matrix are) because goal-rooted trees drop spec-mechanism edges.
+
+```mermaid
+graph TD
+    K0["Goal: control a root's canonical state (G1/G8)"]
+    K1["Steal the root key (T-ID-01)"]
+    K2["Publish false patches"]
+    K3["Induce self-fork (freeze, T-DI-08)"]
+    K4["Kind 5 delete legitimate history (T-PI-02)"]
+    K5["Rely on a client that skips id+sig verification (T-DI-09)"]
+    K0 --> K1; K0 --> K5
+    K1 --> K2; K1 --> K3; K1 --> K4
+```
+
+```mermaid
+graph TD
+    C0["Goal: suppress findings from a user's view (G3/G5)"]
+    C1["Omit matching events (T-CE-01, T-DC-05)"]
+    C2["Withhold kind 5 deletions (T-DI-03)"]
+    C3["Pressure the operator (T-PI-01)"]
+    C4["Eclipse the client (T-CE-02)"]
+    C5["Lie about filter support (T-DC-01)"]
+    C0 --> C1; C0 --> C2; C0 --> C3; C0 --> C4; C0 --> C5
+```
 
 ---
 
-#### T-DI-02 — Fork Resolution Determinism Across Implementations
+---
+
+## §7 — Threat Catalog
+
+
+### §7.1 — Data Integrity
+
+Data Integrity — content, chains, attachments, and deletion behavior that corrupt or distort deterministic state (G1, G6, G8).
+
+#### T-DI-01 — Forged `created_at` in Audit Evidence
 
 | Field | Value |
 |---|---|
-| Adversary | N/A (structural) |
-| Assets | A6 Canonical chains, A7 Canonical views |
-| Spec | §7.2, §7.4 |
+| Type | adversarial |
+| Adversary | Compromised Publisher |
+| Assets | A13 Timestamp/audit claims |
+| Goals | G6 Auditability |
+| Spec | [CA-1], [OTS-1], [RC-1], [SF-4]; §3.1, §4, §7.5 |
 
-**1. Problem.** Fork resolution (§7.2) specifies "latest `created_at` wins, tie-break by lowest event ID hash." While this algorithm is deterministic given a static set of patches, the set itself depends on relay completeness — a client connected to different relays may see different subsets of patches. Two independent implementations computing the canonical view from non-identical input sets produce divergent canonical views. This is not a cryptographic integrity failure (each event is individually signed), but creates inconsistent state across the ecosystem when relay coverage gaps interact with fork resolution.
+**1. Problem.** Publishers set `created_at` themselves and signing proves identity, not time ([CA-1]; §7.5). Chain construction ignores timestamps, confining forgery to the audit channel ([RC-1], [SF-4]). An in-window event stores with no error and no plausibility check ([CA-1]; §4). Publication times stay indistinguishable in-band, and G6 Auditability degrades.
 
-**2. Mitigation.** The specification explicitly acknowledges fork existence and requires clients to surface multiple tips when present rather than silently selecting a winner. Canonical view computation (§7.4) applies kind 5 cascade before tip selection, so root-author deletions prune unwanted tips deterministically. Multi-relay querying (§8.0) reduces the probability of divergent patch sets.
+**2. Mitigation.** OpenTimestamps attestations give tamper-resistant proof of existence at or before a Bitcoin block, for disputes over timestamp authenticity ([OTS-1]; §3.1). Relays commonly reject events outside a bounded window ([CA-1]; §4), bounding a usable backdate to roughly one to three years. CA-1 directs publishers not to backdate, but nothing enforces it cryptographically ([CA-1]; §7.5).
 
-**3. Gap.** No protocol-level guarantee that all clients see identical patch sets. Relay omission of a tip event changes the fork-resolution outcome silently. No cross-client consistency verification mechanism exists. The determinism property holds only within the boundary of patches visible to a single client.
+**3. Gap.** CA-1 is a should with no enforcement, so any timestamp inside the window is accepted as published. OpenTimestamps is a may with low adoption, so most events lack tamper-resistant evidence ([OTS-1]; §3.1). The window is ecosystem practice, not a rule: absent as a protocol control, and no client must flag an implausible timestamp.†
 
-**4. Residual risk: Medium.** Integrity of individual events is protected by signatures; the risk is inconsistency of computed views across clients, not corruption of signed data. Bounded by multi-relay query discipline.
+**4. Impact: Low** — the forgery falsifies one evidentiary field, degrading G6 for adjudicators trusting self-reported times, while canonical chains are unaffected.
 
----
+**5. Likelihood: Unlikely** — a Compromised Publisher [B1, M3] needs a contested audit and an OTS-free event, against an unenforced should ([CA-1]) and a may-class OTS.
+
+**6. Residual risk: Low** — the forgery is cheap and persistent, but it deceives only adjudicators trusting self-reported times, and OTS evidence remains available on demand.
+
+#### T-DI-02 — Relay-Subset Divergence in Canonical Bytes
+
+| Field | Value |
+|---|---|
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A6 Canonical chains, A7 Canonical bytes |
+| Goals | G1 Integrity, G6 Auditability |
+| Spec | no single rule: family RC; see §7.1 |
+
+**1. Problem.** Chain and overlay state follow the event set a client currently observes (§7.1). Relays are honest but curious, and no relay is trusted with completeness (§7.5). Heterogeneous subsets are the mesh's steady state, so clients can disagree on canonical bytes. A root self-fork typically arises from two-device publishing (§7.2). Its kind 5 resolution [SF-5] can arrive late, so the same root may show frozen content [SF-2] where a peer already shows a resolved chain. G1 integrity holds per observed set, not per root.
+
+**2. Mitigation.** Non-UI consumers must recompute canonical bytes and overlay states when their observed event set changes in a way that affects events they serve ([RC-3]). UI consumers should do the same ([RC-4]). Multi-relay querying and local caching defend against relay incompleteness (§7.5).
+
+**3. Gap.** The recompute duties bind each client to its own observed set, and nothing requires the sets to agree ([RC-3], [RC-4]). Set agreement is absent, multi-relay querying is should-class (§7.5), and UI recompute is should-class ([RC-4]). Divergence persists until the missing event arrives.
+
+**4. Impact: Medium** — While sets differ, users of different clients disagree on a root's current state (G1), and audit claims (G6) contradict.
+
+**5. Likelihood: Likely** — condition probability is high, since out-of-order, late, or absent arrivals are the inherited Nostr model (§3.2), and no set-agreement control exists.
+
+**6. Residual risk: Medium overall, Low for non-UI** — Non-UI consumers converge on arrival under a must-class recompute duty [RC-3]. Interactive clients that defer [RC-4] can show stale or frozen content until refresh.
 
 #### T-DI-03 — Retraction Propagation Gaps
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Malicious Relay Operator |
-| Assets | A5 Kind 5 deletion events, A7 Canonical views, A9 Binding topology |
-| Spec | §10, §7.4 cascade |
+| Assets | A5 Kind 5 deletion events, A7 Canonical bytes, A9 Binding topology |
+| Goals | G1 Integrity, G6 Auditability |
+| Spec | [DEL-2], [DEL-8], [DEL-9], [DEL-11], [DQ-2]; §7.4, §8, §10 |
 
-**1. Problem.** Kind 5 deletion events trigger topology cascade (§10): when a root-author patch is deleted, all descendants in the canonical chain are invalidated. However, cascading requires that clients see the kind 5 event. A Malicious Relay Operator withholding a kind 5 deletion causes clients relying on that relay to compute a stale canonical view where the deleted patch (and its descendants) remain applied. Conversely, a relay that stores kind 5 events but not the original continues to surface the deletion without context. The split is not detectable by clients querying a single relay — both views appear internally consistent.
+**1. Problem.** Deleting a root-author patch cascades to every canonical descendant ([DEL-2]). The cascade runs only against deletions a client has observed ([DEL-9]). A relay withholding a kind 5 leaves its clients computing stale canonical bytes. A relay storing the kind 5 without its target surfaces a context-free retraction, and a single-relay client sees no split.
 
-**2. Mitigation.** Spec §8.0 mandates that clients cache locally received kind 5 events and apply them during chain construction even if the relay omits them from filter results. Multi-relay querying increases the probability of receiving kind 5 events from at least one honest relay. The relay policy (§10) recommends storing deletion events alongside originals, preserving the audit trail for clients that specifically request it.
+**2. Mitigation.** Implementations cache locally received kind 5s and apply them even when the queried relay omits them ([DEL-9]). A late-target deletion is recorded and applied retroactively on arrival ([DEL-8]). SCRUTINY-aware relays store a kind 5 alongside its target and surface it to SCRUTINY-aware queriers ([DEL-11]). Periodic `{kinds:[5], #e:[<id>]}` polls per cached root, patch, and Binding, plus multi-relay querying, guard against default-result omissions ([DQ-2]; §7.5).
 
-**3. Gap.** NIP-09 honoring is optional at the relay layer. No mechanism ensures kind 5 events propagate to all relays holding the target event. No relay-side requirement to co-serve deletions alongside the events they target. No client-side requirement to actively verify deletion status before accepting a patch as valid.
+**3. Gap.** No rule requires a complete result set or user-side verification, so completeness is absent. [DEL-9] and [DEL-8] caching are must-class but cover only deletions already received. [DEL-11] co-serving and [DQ-2] polling are should-level, letting a withholding relay leave stale bytes.
 
-**4. Residual risk: Medium.** Exploits the structural gap between "deletion published" and "deletion universally visible." Risk increases if the practical relay set is small. Multi-relay querying (SHOULD) bounds but does not eliminate the gap.
+**4. Impact: Medium** — Clients of a withholding relay compute stale canonical bytes, degrading G1 and G6 at relay scope.
 
----
+**5. Likelihood: Possible** — a Malicious Relay Operator [B3, M3] recurs by position and interest, needing single-relay reliance against should-class checks.
+
+**6. Residual risk: Medium** — must-class caching cannot deliver a deletion never received, and completeness stays absent, so stale bytes persist until a should-level check runs.
 
 #### T-DI-04 — Binding Relationship Ambiguity
 
 | Field | Value |
 |---|---|
-| Adversary | Compromised Publisher, Occasionally Lying Publisher |
-| Assets | A3 Binding events, A9 Binding topology, A8 Canonical identifiers |
-| Spec | §4.3 (`t` tags for relationship semantics) |
+| Type | adversarial |
+| Adversary | Compromised Publisher |
+| Assets | A3 Binding events, A9 Binding topology |
+| Goals | G1 Integrity, G5 Discoverability |
+| Spec | [BD-9], [BD-10], [BD-11], [BD-12]; §4.3, §8.3 |
 
-**1. Problem.** Binding relationship semantics are expressed as free-form prose in `content`, optionally hinted via `t` tags (e.g., `["t", "vulnerability"]`) alongside `scrutiny-binding` (§4.3). There is no closed vocabulary — any string is a valid relationship value. A publisher can assert a binding with `t: vulnerability` while the prose describes a benign compatibility note, or vice versa. Because bindings are immutable (no patch mechanism applies to them), correction requires a full kind 5 delete-and-republish cycle. The `t` tag hint is explicitly advisory; the `content` field is authoritative. But automated tooling and relay filters consume `t` tag hints, creating a structural divergence between machine-processed relationships and human-interpreted semantics.
+**1. Problem.** Binding relationship semantics live in free-form `content`, with structured labels deliberately dropped for canonical indexer discipline (§8.3). No closed vocabulary exists, so the protocol never classifies a claimed relationship as true, false, or complete. Validation covers shape only, at most one `e root` and one `e link` per Binding ([BD-10]). A machine consumer parsing relationship claims cannot tell false from honest.
 
-**2. Mitigation.** The spec declares `content` as the authoritative statement of relationship semantics (§4.3). Clients MAY flag bindings where `t` tag hints contradict prose description. Bindings are signed and attributable — mislabeling is forensically traceable to the publisher. Kind 5 deletion enables removal; replacement publishes a fresh binding with corrected semantics. Trust filtering limits visibility of bindings from untrusted publishers.
+**2. Mitigation.** Trust follows the verified pubkey, never a hint, keeping attribution pinned ([BD-12]). A false Binding is corrected by kind 5 deletion and a fresh replacement, with competing Bindings carrying corrected prose (§4.3, [BD-9]). Renderers may collapse visually identical duplicates at presentation ([BD-11]).
 
-**3. Gap.** No schema validation of relationship tags against event content. No protocol-level enumeration of valid relationships. The retract-and-republish correction path is not atomic — deleted and replacement bindings propagate to relays at different speeds. Automated discovery tools that key on `t` tag hints rather than parsing `content` inherit whatever ambiguity the publisher created.
+**3. Gap.** [BD-12] verification is must-class but pins identity only, so no rule checks what the claim says. Correction is author-driven and non-atomic, so a false Binding stands until the author retracts or a competitor outranks it ([BD-9]). Truth verification of relationship claims is absent, and mislabeling is traceable but never prevented.
 
-**4. Residual risk: Low–Medium.** Low for human-mediated consumption where content is read. Medium for automated toolchains relying solely on relationship hints for classification. Bounded by publisher accountability (attribution persists).
+**4. Impact: Medium** — A trusted key's false relationship claim renders as fact until corrected or out-competed, degrading G1 for readers and G5 for automated classification.
 
----
+**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] recurs and needs only a key and a trusting consumer, against must-class identity checks that never touch claim truth.
 
-#### T-DI-05 — Cherry-Pick Attribution Laundering
+**6. Residual risk: Low–Medium** — human readers and audits bound the false claim at Low, while automated consumers that trust rendered edges meet it at Medium.
 
-| Field | Value |
-|---|---|
-| Adversary | Compromised Publisher, Occasionally Lying Publisher |
-| Assets | A4 Patch events, A6 Canonical chains, A7 Canonical views |
-| Spec | §11 (future work) |
-
-**1. Problem.** Cherry-pick semantics (§11) make `cherry-pick` references informational attribution only — appliers do NOT fetch or consult the source patch. A malicious root author adopts a foreign disputer's diff, applies it to their canonical chain as a root-author patch, and either omits the `cherry-pick` reference entirely or references a different (benign) source. The resulting canonical view incorporates the third party's contribution without crediting them. Because canonical history is root-author sovereign, the omission is indistinguishable from original authorship. If the true source is later retracted (kind 5), the cherry-picked patch's diff continues to apply normally (§7.4) — the laundering survives source invalidation.
-
-**2. Mitigation.** Cherry-pick references are informational and do not gate diff application. The root author is always accountable for the state of their canonical chain — adopting another's diff without attribution carries reputational risk discoverable through forensic comparison of event timelines. Disputers retain their own signed patches as evidence of original authorship. Independent observers can correlate diff content across chains to detect unattributed borrowing.
-
-**3. Gap.** No protocol-level enforcement of attribution accuracy. No relay-verifiable link between a cherry-picked diff and its claimed source. A root author can silently absorb foreign contributions. Detection requires out-of-band diff-comparison tooling that the protocol does not specify. The design intentionally avoids making attribution normative — but the gap between "informational" and "reliable" grows as cherry-picking becomes common practice.
-
-**4. Residual risk: Medium.** Integrity of the diff itself is not compromised (it applies correctly to the chain). The risk is attribution integrity — who gets credit for the change. Bounded by ecosystem-level audit tooling and community norms around attribution practices.
-
----
-
-#### T-DI-06 — Attached Content Integrity (Diff-in-Transit + Blossom Split-World)
+#### T-DI-06 — Attached Payload Integrity in Transit
 
 | Field | Value |
 |---|---|
-| Adversary | Artifact-Targeting Attacker, Malicious Relay Operator |
-| Assets | A4 Patch events, A10 Attached artifacts, A7 Canonical views |
-| Spec | §5.2 lookup, §4.5 imeta |
+| Type | adversarial |
+| Adversary | Artifact-Targeting Attacker |
+| Assets | A10 Attached artifacts (imeta), A15 Rendered content |
+| Goals | G1 Integrity, G2 Authenticity |
+| Spec | [IM-1], [IM-2], [IM-3], [IM-4]; §4.6 |
 
-**1. Problem.** Patch diffs may be inline (in the event's `content`) or attached via imeta + Blossom (§5.2). Two distinct integrity concerns arise. First, the **diff-in-transit** concern: an inline diff travels inside the Nostr event and is protected by the event signature — relay-side tampering invalidates the signature. However, Blossom-attached diffs are fetched from external URLs after the event is verified. An Artifact-Targeting Attacker who compromises the Blossom host can replace the diff bytes with a different diff whose SHA-256 matches the event's `x` hash (preimage attack) or, more practically, replace the diff at the URL after the `x` hash was published but before the client fetches (a window between publication and consumption). Second, the **split-world** concern: a Malicious Relay Operator serves different clients different imeta URLs — some clients receive the legitimate Blossom URL, others receive a malicious mirror containing a doctored diff. Both clients verify the `x` hash against their respective fetches; both see internally consistent views. Without cross-client comparison, neither detects the split.
+**1. Problem.** Payload claims attach out-of-band via `imeta` tags, and the signature attests the declared hash, not the fetched bytes. Verification is should-level [IM-1], so a client may skip it and only warn before display or processing [IM-4]. An Artifact-Targeting Attacker with serving-path control feeds substituted bytes to any client that skips the check. No two distinct byte streams pass one declared SHA-256, so divergence among clients signals a skipped check, not a hash break.
 
-**2. Mitigation.** SHA-256 hash verification (`imeta` `x`) MUST be performed by clients before trusting fetched artifacts (§4.5). The protocol's separation of event from artifact supports multi-source retrieval — the hash is the identity, not the URL. Spec §5.2 recommends inline diffs as the primary lookup path; attached diffs are a fallback for large payloads. Multi-relay querying reduces the probability that all clients contact the same compromised host.
+**2. Mitigation.** [IM-1] directs streamed verification of the `x` hash, and a declared `size` mismatch fails the fetch the same way [IM-2]. [IM-3] allows multiple `url` entries, settling on the first whose bytes match, so mirror choice cannot sway validity.
 
-**3. Gap.** Hash verification catches content substitution but not split-world attacks (both versions match their respective hashes because the attacker controls the URL-to-content mapping). No protocol-level requirement for artifact mirroring or content-addressed retrieval. No standardized fallback URL set for imeta references. The window between event publication and artifact fetch leaves a temporal gap where undetected substitution is possible if the host is compromised post-publication. Clients have no mechanism to distinguish "host temporarily unavailable" from "host serving substituted content."
+**3. Gap.** Verification stays should-level [IM-1], the size check is conditional should [IM-2], mirror neutrality is must-class [IM-3], and the [IM-4] warning is must-class with no block. The warning is presentational, so headless or routine ingestion satisfies it with no human decision and erodes the only guard†. Host rot, takedown, and compromise removal are T-AV-04's scope, while this entry covers bytes accepted without the [IM-1] check.
 
-**4. Residual risk: Medium.** Inline diffs (the primary path) are signature-protected. Attached-diff integrity depends on hash verification and host trustworthiness. Split-world attacks require sustained host compromise. Risk is highest for patches relying exclusively on imeta-attached diffs with single-source hosting.
+**4. Impact: Medium** — A consumer acting on unverified payload bytes may ingest content unrelated to the signed declaration, breaking G1 and G2 for that application.
 
----
+**5. Likelihood: Possible** — Artifact-Targeting Attacker [B3, M3] holds the serving position, and success needs only a skip-verification or headless client against a should-level check.
 
-### §6.2 — Identity
+**6. Residual risk: Medium** — Verifying clients stay sound, but nothing compels the cautious path, so unverified ingestion persists.
 
-#### T-ID-01 — Key Compromise — No Nostr Revocation
+#### T-DI-07 — Publish-Then-Delete Admission Revocation Lag
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
+| Adversary | Compromised Publisher |
+| Assets | A3 Binding events, A9 Binding topology, A11 Trusted-pubkey set |
+| Goals | G4 Trust Separation |
+| Spec | [DEL-5], [DEL-8], [DEL-9], [DEL-11], [DQ-2], [TR-3], [TR-4]; §6.3, §6.4, §8, §10 |
+
+**1. Problem.** A trusted author's Binding admits both endpoints, even ones by untrusted authors ([TR-3], [TR-4]; §6.4). An attacker on a compromised trusted key publishes such a Binding to hostile endpoints, harvests the borrowed trust, then deletes it. Deletion revokes it only where the kind 5 is observed ([DEL-5]), and relay honoring is optional ([DEL-11]; §10). It then persists silently in withheld views, degrading G4 Trust Separation (compounds T-DI-03).
+
+**2. Mitigation.** DEL-5 revokes the conferred admission when the Binding is deleted ([DEL-5]). The same revocation serves lawful retractions, where removing honest endpoints is the author's choice, not a defect. Clients cache received kind 5s despite relay omission ([DEL-9]), reapply them to late targets ([DEL-8]), and poll per cached Binding ([DQ-2]; §8).
+
+**3. Gap.** DEL-5 sits at the D layer, so revocation reshapes views without invalidating endpoints ([DEL-5]; §10). Relay cooperation and polls are should-class ([DEL-11], [DQ-2]), while must-class caching reaches only received deletions ([DEL-9]). No protocol control bounds the deletion-to-observation lag.
+
+**4. Impact: Medium** — hostile endpoints keep rendering under borrowed trust in withheld views until the deletion arrives, degrading G4 Trust Separation for that client.
+
+**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs a key moment plus withheld views, against should-class polls ([DQ-2]) and must-class caching ([DEL-9]).
+
+**6. Residual risk: Medium** — revocation holds wherever the kind 5 is observed, but lag is unbounded, so exposure persists per client until arrival.
+
+#### T-DI-08 — Indefinite Self-Fork Freeze (Trusted Root Key)
+
+| Field | Value |
+|---|---|
+| Type | adversarial |
+| Adversary | Compromised Publisher |
+| Assets | A4 Patch events, A5 Kind 5 deletion events, A6 Canonical chains, A7 Canonical bytes, A11 Trusted-pubkey set |
+| Goals | G8 Availability, G6 Auditability |
+| Spec | [SF-1], [SF-2], [SF-3], [SF-4], [SF-5], [RC-5], [DEL-1]; §7.2, §7.5, §10 |
+
+**1. Problem.** A Compromised Publisher with a trusted root key publishes a competing patch at any chain point, a root self-fork ([SF-1]). The canonical chain and the tip stay undefined while unresolved ([RC-5]). Clients freeze the content at the shared parent ([SF-2]), surface the fork explicitly ([SF-3]), and must not pick a branch ([SF-4]). Resolution belongs to the root key alone: a kind 5 deletion on one branch ([SF-5]; §10), and no revocation exists (§7.5).
+
+**2. Mitigation.** Clients must freeze at the shared parent ([SF-2]) and must not pick a branch by any heuristic ([SF-4]). The fork surfaces explicitly with both branch IDs and timestamps, so an honest root author can resolve via kind 5 ([SF-3], [SF-5]).
+
+**3. Gap.** No timeout bounds an unresolved self-fork: the frozen state may persist forever (absent). No alternative resolver exists: only the root key's kind 5 is honored ([DEL-1]), so the key holder alone unlocks the freeze. Against a malicious holder, that must-class resolution is attacker-operated, and re-freezing costs one broadcast patch per cycle (†).
+
+**4. Impact: High** — Users trusting the root key see frozen canonical bytes and a surfaced error for an unbounded period, degrading G8 and G6.
+
+**5. Likelihood: Possible** — [B1, M3] (no infrastructure position, recurring under signature attribution) × trusted-key compromise or vendor malice (T-ID-01) × must-class freezes only the key holder can lift.
+
+**6. Residual risk: High** — No revocation means a re-fork restores the freeze at one patch's cost (†), and social migration is the only remedy (§7.5).
+
+#### T-DI-09 — Unverified Kind 5 Honoring Cascades Canonical Chains
+
+| Field | Value |
+|---|---|
+| Type | adversarial |
+| Adversary | Malicious Relay Operator |
+| Assets | A5 Kind 5 deletion events, A6 Canonical chains, A7 Canonical bytes |
+| Goals | G1 Integrity, G5 Discoverability |
+| Spec | [DEL-1], [DEL-2], [DEL-8], [DEL-11], [SIG-1]; §3, §10 |
+
+**1. Problem.** A kind 5 is honored only when its `pubkey` matches the target's ([DEL-1]; §10). An attacker's own kind 5 against a victim's patches still verifies, so honoring it skips the DEL-1 match. Skipping id-recomputation lets a relay pair a captured signature with a substituted body: "A signature-only check is insufficient" ([SIG-1]; §3). Clients honoring either forgery cascade the victim's chain ([DEL-2]) and late targets retroactively ([DEL-8]).
+
+**2. Mitigation.** SIG-1 requires verifying the signature and that `id` hashes the canonical serialization, before processing any event including kind 5 ([SIG-1]; §3). DEL-1 gates honoring on the author match, made mandatory by §10's validation prose ([DEL-1]; §10).
+
+**3. Gap.** Both checks are must-class ([SIG-1], [DEL-1]), so the exposure is clients honoring relay-served deletions unverified†. No rule compels relay-side validation, and relay cooperation stays should-class ([DEL-11]). Affected clients silently render the reverted ancestor as the victim's current state, no error surfaced†.
+
+**4. Impact: Medium** — the victim's chain reverts to its last surviving ancestor for affected clients, degrading G1 Integrity and G5 Discoverability.
+
+**5. Likelihood: Possible** — a Malicious Relay Operator [B3, M4] needs one served client skipping either must-class check, and must-rule client conformance is empirically unreliable†.
+
+**6. Residual risk: Low–Medium** — conformant clients are immune and the forgery stays auditable (lower bound), while non-conformant ones serve that chain as current (upper bound)†.
+
+### §7.2 — Identity
+
+Identity — keys, trust-radius expansion, and self-asserted claims entering the user view (G2, G4, G5).
+
+#### T-ID-01 — Key Compromise — No Key Revocation
+
+| Field | Value |
+|---|---|
+| Type | adversarial |
 | Adversary | Compromised Publisher |
 | Assets | A1 Product events, A2 Metadata events, A3 Binding events, A4 Patch events, A6 Canonical chains, A12 Pubkey-to-reputation mappings |
-| Spec | §7.5 trust model |
+| Goals | G1 Integrity, G2 Authenticity, G4 Trust Separation |
+| Spec | [SIG-1], [SF-2], [SF-5], [RC-2], [OTS-1]; §3.1, §7.5 |
 
-**1. Problem.** If a publisher's nsec leaks, the attacker inherits full sovereignty over all chains rooted at that pubkey. Post-compromise patches are indistinguishable from legitimate ones — they are signed by the correct key. The attacker can publish false metadata, alter canonical views, kind 5-delete legitimate history, forge timestamp rankings, and publish malicious bindings that inherit the key's accumulated trust weight. Bindings authored pre-compromise remain signed by the legitimate author, providing no signal of compromise timing. Nostr has no native key revocation mechanism — once compromised, a key retains authority indefinitely.
+**1. Problem.** A leaked root author's nsec hands the attacker sovereignty over all chains that key originates (§7.5). The attacker extends chains with false patches, kind 5-deletes legitimate history, induces root self-forks, and writes genuine-looking bindings ([SF-2], [SF-5]; §7.5). Post-compromise events pass signature and id checks identically to genuine ones ([SIG-1]; §7.5). Canonical bytes change under the leaked key ([RC-2]; §7.5).
 
-**2. Mitigation.** The spec acknowledges this as a structural limitation (§7.5). Pre-compromise events remain verifiably attributable to the key at the time they were signed, providing a forensic boundary. The remedy is social: announce compromise out-of-band, rotate to a new key, encourage the community to migrate trust to the new key. Multiple independent trust sources reduce reliance on any single pubkey.
+**2. Mitigation.** Pre-compromise events remain signed by the legitimate author and are forensically distinguishable. OpenTimestamps strengthen that boundary as an audit signal ([OTS-1]; §3.1, §7.5). The remedy is social: "announce compromise out-of-band, rotate to a new key, encourage the community to migrate trust" (§7.5).
 
-**3. Gap.** No protocol-level key revocation, rotation, or emergency broadcast mechanism exists in Nostr or SCRUTINY. No distinction between pre- and post-compromise events is possible at the signature layer. A compromised high-authority key (major vendor, certification body, prolific researcher) can corrupt the canonical view for every user who trusts that key, with no protocol-level recovery path. The social remedy requires reaching every trusting party — no guarantee of completeness.
+**3. Gap.** "There is no key-revocation mechanism in this protocol version" (§7.5). The forensic boundary is may-class: OpenTimestamps proofs are optional, and ecosystem adoption is currently low ([OTS-1]; §3.1). The social remedy is absent as a protocol control, so completeness depends on reaching every trusting party.
 
-**4. Residual risk: Critical.** Direct, catastrophic break of Integrity, Authenticity, and Trust Separation with zero protocol-level recovery. Inherited from Nostr's key architecture. This is the single most severe threat in the model.
+**4. Impact: Critical** — G1, G2, and G4 break for every party trusting the leaked key, with no in-protocol recovery path (§7.5).
 
----
+**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs only stock tooling, custody failures are routine, and no defense class exists (absent).
+
+**6. Residual risk: Critical** — carried from v0.5.3. §7.5 states the sovereignty inheritance, forensic asymmetry, and absent revocation, keeping this the model's most severe threat.
 
 #### T-ID-02 — Sybil Amplification Through WoT Expansion
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Sybil Amplifier |
-| Assets | A11 Trust lists, A1–A4 All event types, A8 Canonical identifiers, A9 Binding topology |
-| Spec | §7.5, §6.1, §6.3–6.4 |
+| Assets | A11 Trusted-pubkey set, A8 Indexers (`i` tags), A1 Product events, A2 Metadata events, A3 Binding events, A4 Patch events |
+| Goals | G4 Trust Separation, G5 Discoverability |
+| Spec | [TR-2], [TR-3]; §6.1, §7.5 |
 
-**1. Problem.** Sybil resistance is delegated to the user's web-of-trust (§7.5). A direct allowlist is highly resistant: only explicitly trusted pubkeys gain admission. The moment trust-radius expansion activates — N-hop traversal of NIP-02 follow lists — resistance weakens proportionally to expansion depth. A Sybil Amplifier generates thousands of keypairs and engineers their placement within follow lists of seed pubkeys via social manipulation, follow-back exchanges, or compromise of a minor follower. At N=1 expansion, every direct follow of every seed becomes admitted through transitive trust. At N=2, every follow-of-a-follow enters the user's view. The amplified keys then publish events across all SCRUTINY types, polluting the user's view with attacker-controlled data. Bindings authored by Sybil keys within trust radius pull untrusted endpoints into the reachable graph via §6.4, compounding the injection.
+**1. Problem.** Sybil resistance is delegated to the user's web-of-trust (§7.5). A curated allowlist admits only explicitly trusted pubkeys. An N-hop expansion via NIP-02 follow lists admits any key a trusted key follows. An attacker generating keys at scale then needs one placement inside the radius — bought follows, follow-back exchanges, or one compromised minor account. Each admitted key may publish valid events of every type ([TR-2] admits all-or-nothing). The flood erodes trust separation (G4) and discovery value (G5).
 
-**2. Mitigation.** Trust filtering is the primary defense: only admitted pubkeys are processed. The spec explicitly addresses the Sybil-vs-expansion trade-off and mandates a SHOULD-level warning when expansion would admit a large number of previously unseen pubkeys (§7.5). Binding admission rules (§6.3) require direct trust on the binding's author — trust does not flow transitively through binding endpoints. Attribution is permanently preserved: all Sybil events are signed by identifiable keys.
+**2. Mitigation.** Binding admission does not widen: a Binding is admitted only when its own author is trusted, and trust does not flow through endpoints ([TR-3]). §7.5 sets a should defense: "Implementations SHOULD warn when trust-radius expansion would admit a large number of previously unseen pubkeys."
 
-**3. Gap.** No protocol-level Sybil resistance mechanism (proof-of-personhood, stake, social-graph stamping). WoT scoring algorithms (depth weighting, decay, reputation aggregation) are explicitly out of scope. The "warn on large expansion" SHOULD is non-normative and may be ignored. N-hop expansion without depth weighting treats a directly trusted key's follow identically to the user's own trust decision — a structural flattening of trust distance.
+**3. Gap.** No protocol-level sybil-cost rule exists. §6.1 leaves expansion depth, scoring, and curation out of scope (control absent). The expansion warning is a should clients may omit. Unweighted expansion flattens trust distance: a key three hops out counts the same as a direct follow.
 
-**4. Residual risk: Medium.** Bounded entirely by user trust-list discipline and client implementation of expansion warnings. Higher for users relying on automated WoT expansion without curation. The protocol cannot eliminate this risk without abandoning the permissionless trust model.
+**4. Impact: Medium** — sybil admission pollutes every event surface (A1–A4), eroding G4 per-user and diluting G5, proportional to expansion depth.
 
----
+**5. Likelihood: Likely** — the Sybil Amplifier [B2, M3] runs sybil key generation at scale for days to weeks, needs no position, and faces a should-level, possibly absent, warning.
 
-#### T-ID-03 — Canonical Identifier Squatting
+**6. Residual risk: Medium** — bounded by trusted-set discipline and warning uptake. Irreducible while the trust model stays permissionless.
+
+#### T-ID-03 — Indexer Squatting
 
 | Field | Value |
 |---|---|
-| Adversary | Identifier Squatter, Compromised Publisher |
-| Assets | A8 Canonical identifiers, A1 Product events, A2 Metadata events |
-| Spec | §9, §4.4.2 discipline |
+| Type | adversarial |
+| Adversary | Identifier Squatter |
+| Assets | A8 Indexers (`i` tags), A1 Product events, A2 Metadata events |
+| Goals | G5 Discoverability |
+| Spec | [IX-1], [IR-2], [IX-3]; §9 |
 
-**1. Problem.** `i` tag values are self-asserted with no validation against authoritative registries. A publisher claiming `cve:CVE-2024-X` has not been validated against MITRE; a publisher claiming `cpe:2.3:h:some-vendor:...` has not been checked against the NIST CPE dictionary. Spec §9 states the convention ("Value is the source authority's canonical form, preserved verbatim") but provides no enforcement. An Identifier Squatter publishes events claiming widely known identifiers. Combined with backdated `created_at` (T-DI-01), the squatter achieves first-mover advantage — appearing in `#i` queries before the legitimate authority publishes. With thin trust amplification (T-ID-02), the squatter's events become visible alongside authoritative ones. Users must discriminate by pubkey trust, but the squatter's pre-positioned chain of patches and bindings can appear established by the time legitimate publishers enter.
+**1. Problem.** `i` tag values are self-asserted. Nothing validates a claimed `cve:` or `cpe:` indexer against MITRE or the NIST dictionary. §9 records only a format convention: "Value is the source authority's canonical form, preserved verbatim" ([IR-2]). IX-1's inclusion guidance is a should, not a registry check. A squatter claims a known indexer early. Its standing rests on real publication time. No surface rewards a backdate: chains ignore `created_at` ([RC-1], [SF-4]), indexer queries fix no result ordering (§8.1), NIP-50 ranks by relevance, and NIP-01 paginates newest-first. Root indexers are immutable ([IX-3]), so the claim persists. The attack degrades discovery within the user's trust perimeter (G5).
 
-**2. Mitigation.** Trust filtering: squatter events do not enter a curated user's view unless the squatter's pubkey is trusted or reachable via trusted Binding. Multiple competing events for the same identifier are expected by design — the user's trust list determines what they see. Canonical identifier clustering allows side-by-side comparison. Real publishers can publish their own events, and trusted bindings naturally outweigh untrusted ones.
+**2. Mitigation.** Squatter events reach a curated view only through trusted or Binding-reachable keys. Competing claims render side by side inside the user's trusted set ([OV-7]; §7.5). Authoritative keys outrank squatters by curation alone.
 
-**3. Gap.** No cross-reference with authoritative registries. No conflict-detection mechanism for multiple events claiming the same identifier. No priority for the actual vendor's or registry authority's key — the protocol does not know who the real authority is. The asymmetry favors squatters during ecosystem bootstrap when legitimate publishers have not yet entered and trust lists are sparse.
+**3. Gap.** Registry cross-reference is absent. No rule checks an indexer against its issuing authority, and no conflict detection or authority priority exists. IX-1's should does not bind squatters. The asymmetry (cheap squatting, costly defense) favors the squatter while trusted-pubkey sets are sparse during bootstrap.
 
-**4. Residual risk: Medium.** Bounded by trust-list curation. The asymmetry — squatters publish cheaply; authorities must defend — is structural to the permissionless design. Risk decreases as the ecosystem matures and authoritative keys gain widespread trust.
+**4. Impact: Medium** — diluted `#i` discovery (G5) and side-by-side noise with legitimate metadata, per-user, worst during bootstrap.
 
----
+**5. Likelihood: Possible** — the Identifier Squatter [B1, M2] needs only stock tooling, but trusted-set admission gates damage and attribution risk deters a curious-motivation actor.
+
+**6. Residual risk: Medium** — bounded by trusted-set curation. Declines as authoritative keys gain wide trust.
 
 #### T-ID-04 — Unverifiable Identity Claims
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Compromised Publisher, Identifier Squatter |
 | Assets | A1 Product events, A2 Metadata events, A12 Pubkey-to-reputation mappings |
-| Spec | §7.5, §6.1 |
+| Goals | G2 Authenticity, G4 Trust Separation |
+| Spec | [SIG-1], [TR-2], [TR-3], [OV-7]; §3.1, §6.1, §7.5 |
 
-**1. Problem.** Anyone can generate a Nostr keypair and claim, in `content` prose, to be any real-world entity. The protocol provides no identity attestation mechanism — no DNS-binding (NIP-05 is not a dependency in v0.5.3), no domain-proofing, no organizational certification. A user encountering an event signed by pubkey `0xabcd...` claiming to be Infineon must establish out-of-band that Infineon controls that key. The protocol delegates this entirely to trust-list curation: if the user has placed `0xabcd...` in their trust list, that key is treated as Infineon for that user. A Compromised Publisher creating a fake-vendor Product event with accurate canonical identifiers (exploiting T-ID-03 squatting) and convincing prose can pass for legitimate to users with permissive trust lists or compromised default trust lists (T-EC-02). The combined product-impostor scenario merges fake vendor identity with accurate identifier claims — the impostor's Product looks structurally identical to the real vendor's to any client that has not independently verified the pubkey-to-entity mapping.
+**1. Problem.** Anyone can generate a keypair and claim, in `content` prose, to be any real-world entity (§1 permissionless publication). The dependency list names no identity-attestation NIP, DNS binding, or certification layer (§3.1). A user facing an event claiming Infineon must establish out-of-band that Infineon controls the key. Admission keys on `pubkey` alone ([TR-2]). Once admitted, its claims read as Infineon for that user.
 
-**2. Mitigation.** Permissionless identity is a design choice, not a defect — the spec explicitly intends no central identity authority (§7.5). The cryptographic permanence of signatures provides forensic attribution: even if the user does not recognize the impostor at consumption time, every false claim is permanently traceable to the pubkey that signed it. Trust lists curated against organization-claimed pubkeys obtained through verified channels provide immunity for disciplined users.
+**2. Mitigation.** Permissionless identity is a stated design assumption with no central identity authority (§7.5). Signature plus id verification anchors every claim to the signing key (must, [SIG-1]). Curated trusted-pubkey sets from organization-published keys shield disciplined users ([TR-2], [OV-7]; §7.5). Binding admission gates on the Binding's own `pubkey`, never transitive through endpoints ([TR-3]).
 
-**3. Gap.** No in-protocol identity binding mechanism. No safe-harbor convention for vendors to canonically claim their own pubkey within the protocol. The fake-identity concern is delegated entirely to ecosystem-level identity infrastructure (organization websites listing pubkeys, third-party registries, community verification). New users without established trust lists have no basis for discriminating legitimate from impostor claims.
+**3. Gap.** Pubkey-to-entity binding is absent as a protocol control: the trust mechanism itself is out of scope (§7.5), and curation is practice-only†. Users on unverified defaults have no in-protocol basis for discriminating keys (compounds T-EC-02). Squatting is free while authorities must defend every claim†.
 
-**4. Residual risk: Low–Medium.** Low for users with trust lists curated against verified pubkey-to-entity mappings. Medium for new users in the bootstrap phase or users relying on unverified default trust lists (T-EC-02).
+**4. Impact: Medium** — an admitted impostor degrades G2 Authenticity and G4 Trust Separation for every user admitting the key.
 
----
+**5. Likelihood: Possible** — an Identifier Squatter [B1, M2] or Compromised Publisher [B1, M3] needs only prose and a new key against an absent defense class.
 
-#### T-ID-05 — Author Hint Forgery on `e` Tags
+**6. Residual risk: Low–Medium** — Low for out-of-band verified trusted-pubkey sets ([TR-2]; §7.5). Medium upper bound covers bootstrap users and unverified defaults (compounds T-EC-02).
+
+#### T-ID-05 — Author-Hint Forgery on Binding `e` Tags
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Compromised Publisher |
 | Assets | A3 Binding events, A4 Patch events |
-| Spec | §4.3 e tag semantics |
+| Goals | G2 Authenticity |
+| Spec | [BD-12], [BD-6], [TR-3], [SIG-1]; §3.2, §4.3 |
 
-**1. Problem.** Spec §4.3 specifies `e` tags with an `<author_pk>` field described as an "advisory optimization hint." The hint tells clients the expected pubkey of the referenced event without requiring a fetch. A Compromised Publisher crafting a binding can populate the author hint with a trusted pubkey (e.g., a reputable vendor) while the actual referenced event, when fetched, belongs to an attacker-controlled key. During the pre-fetch window — before the client retrieves and verifies the referenced event — the UI may display misleading attribution based on the hint alone. A client that uses the hint for trust pre-filtering (bypassing the actual pubkey check) is exposed to outright admission bypass, though this is explicitly forbidden by the spec.
+**1. Problem.** An `e` tag's author-hint suffix is advisory, consulted for outbox-model discovery when the relay hint does not resolve (§3.2, §4.3). The hint never affects a Binding's validity ([BD-12]), so a Compromised Publisher can pair a trusted hint pubkey with an attacker-keyed referenced event. Any consumer trusting or rendering the hint misattributes the referenced event's author.
 
-**2. Mitigation.** The spec mandates that the hint MUST NOT gate admission; the actual fetched pubkey is authoritative. Discrepancy is explicitly handled: when the fetched pubkey differs from the hint, clients flag both the binding and the referenced event with a discrepancy warning. Trust admission uses verified pubkeys exclusively, not hints. Verification behavior is documented in the §4.3 table: unverified → annotate as such; mismatch → flag discrepancy and use actual pubkey.
+**2. Mitigation.** Trust decisions rest on the verified event `pubkey`, never the hint ([BD-12]). Signature plus id verification binds the fetched event to its key (must, [SIG-1]). Pending Bindings stay stored but unrendered until both endpoints are observed ([BD-6]). Admission requires the Binding's own author be trusted ([TR-3]).
 
-**3. Gap.** Pre-fetch UI may display the hint optimistically before the referenced event is available. Users may make trust decisions based on hint values during this window. The "flag with discrepancy warning" mandate is implemented at the client level; non-compliant clients may silently accept the hint. The author-hint mechanism is structurally a hint that may diverge from truth — the design accepts this and depends on client discipline to handle divergence cleanly.
+**3. Gap.** No rule flags a hint mismatch as a user-facing warning (defense class absent). The hint is structurally unverifiable until the endpoint arrives, and BD-6 plus BD-12 protect only compliant consumers†. Hint-faithful renderers propagate the misattribution†.
 
-**4. Residual risk: Low.** The protocol's explicit non-gating rule contains the impact. The threat is user-deception via UI optimism, not protocol bypass. Bounded by client compliance with the discrepancy-flagging mandate.
+**4. Impact: Low** — G2 Authenticity degrades only where a consumer violates BD-12 or renders pending content. Compliant consumers see true authorship.
 
----
+**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs only a crafted tag, and deception lands where a client trusts hints against a must-class rule†.
 
-### §6.3 — Availability
+**6. Residual risk: Low** — Compliant consumers are immune, and the residual surface is non-compliant renderer behavior with must-class anchors†.
+
+#### T-ID-06 — Hostile Markup in Rendered Content
+
+| Field | Value |
+|---|---|
+| Type | adversarial |
+| Adversary | Compromised Publisher |
+| Assets | A15 Rendered content |
+| Goals | G4 Trust Separation |
+| Spec | [PR-1], [MD-1], [PB-1], [PB-2], [OV-6], [OV-7], [IM-4]; §3.2 |
+
+**1. Problem.** Product and Metadata `content` is free-form with no grammar ([PR-1], [MD-1]). PB-1 and PB-2 keep payload bytes verbatim end-to-end ([PB-1], [PB-2]). A Compromised Publisher embeds hostile markup or links in admitted prose, which a client may render as rich text† or present as overlays ([OV-6]; §7.3). Nothing constrains characters or structure inside `content`, so the renderer presents attacker-shaped UI as trusted data.
+
+**2. Mitigation.** Trust gating bounds exposure: foreign content is visible only when its `pubkey` is in the user's trusted set ([OV-7]; §7.5). The only warn-before-display rule warns before displaying or processing unverified artifacts ([IM-4]), must-class but verification-only. Canonical bytes stay intact ([PB-1]), so audit tooling still recovers the true content.
+
+**3. Gap.** Sanitization is absent as a protocol control, and no rule governs content rendering. §3.2's base-layer inheritance covers event structure and the patch envelope, not prose presentation. IM-4 covers artifact verification, never markup structure ([IM-4]). Neutralizing hostile markup is client responsibility†, so exposure tracks each renderer's hygiene.
+
+**4. Impact: Medium** — Trusted, signed content renders as attacker-controlled UI, degrading G4 Trust Separation for every client that renders without sanitizing.
+
+**5. Likelihood: Possible** — A Compromised Publisher [B1, M3] already holds a trusted publication channel, and the remaining preconditions are unsanitized rich rendering† and an absent defense class.
+
+**6. Residual risk: Medium** — Bounded by trust-gate placement and client hygiene†, while portions of the trusted view stay attacker-shaped.
+
+### §7.3 — Availability
+
+Availability — inflation, exhaustion, and hosting fragility that degrade compute and retrieval (G8).
 
 #### T-AV-01 — Spam and Graph Pollution
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Spam/DoS Attacker |
-| Assets | A1–A4 All event types, A8 Canonical identifiers, A9 Binding topology |
-| Spec | §3.1 PoW (MAY), §8.0 relays |
+| Assets | A1 Product events, A2 Metadata events, A9 Binding topology |
+| Goals | G8 Availability, G5 Discoverability |
+| Spec | [TR-1], [TR-2], [TR-7], [OV-7], [RL-1], [RL-2], [RL-4]; §7.5 |
 
-**1. Problem.** A Spam/DoS Attacker generates large volumes of syntactically valid SCRUTINY events — well-formed tags, valid signatures — that cannot be rejected by relays on syntactic grounds. The attacker floods `#t:scrutiny-fabric` queries with bogus events, consumes relay storage and bandwidth, and pollutes discovery queries for canonical identifiers. For users with permissive trust lists or active WoT expansion (T-ID-02), these events enter the visible graph. Unlike generic Nostr spam, SCRUTINY-spam carries the structural weight of protocol compliance — relays cannot distinguish automated garbage from legitimate publications by format alone. All SCRUTINY events share `kind:1` relay namespace with social posts, meaning relay-level rate-limiting and storage policies apply uniformly to both.
+**1. Problem.** A Spam/DoS Attacker generates valid events no validity rule rejects. V-valid events must not be turned away by A or D rules ([TR-1]). §7.5 names the shape: sybil keys flood fake Products, Metadata, and Bindings that relays store. The flood consumes storage, bandwidth, and query responsiveness — degrading G8 and diluting G5 until presentation filtering dismisses it.
 
-**2. Mitigation.** Trust filtering is the structural defense: untrusted-pubkey events are invisible to curated clients regardless of volume. NIP-13 Proof-of-Work (MAY) imposes per-event computational cost — the recommended baseline is 16 leading zero bits (~65K hashes). SCRUTINY-specific `t` tags enable relay-side filtering to isolate SCRUTINY traffic from broader Nostr noise. Relays MAY advertise PoW requirements via NIP-11 `min_pow_difficulty`; clients SHOULD inspect relay info documents before publishing.
+**2. Mitigation.** Trust gating is structural: [TR-2] admits only trusted pubkeys or trusted-Binding reachability, and [OV-7] shows foreign overlays only to the trusted set. [TR-7] keeps the flood out of any curated view at presentation. Patch-carrying floods hit [RL-2]'s work ceilings and [RL-4]'s serving block (compounds T-AV-02). A plain event flood reaches neither. NIP-13 Proof-of-Work is optional with no minimum difficulty (§3.1). †relay adoption is operator-set.
 
-**3. Gap.** PoW is MAY-level; relays are not required to enforce it. No per-author rate limit is specified. No anti-spam scoring or reputation mechanism exists at protocol level. Kind 1 namespace sharing means relays may apply aggressive rate-limiting to all kind 1 events, throttling legitimate SCRUTINY traffic alongside spam. The asymmetry — attacker cost is near-zero without PoW enforcement — persists until relay operators adopt PoW requirements broadly.
+**3. Gap.** [RL-2]'s should-class ceilings cover patch-application work only. Plain event volume escapes them. No per-author rate limit exists, and the §5.4 size bounds are only recommended ([RL-1]). †Shared kind 1 namespace invites generic relay anti-spam throttling.
 
-**4. Residual risk: Medium.** Bounded by trust filtering for curated users. Higher in scenarios where relays accept all SCRUTINY-tagged events without rate limits, PoW is unenforced, and clients do not trust-filter strictly. Ecosystem-level: relay operators bear uncompensated storage cost.
+**4. Impact: Medium** — query/storage availability degrades (G8) and discovery dilutes (G5) until trust filtering dismisses it. Curated views via [TR-2], [OV-7] are largely protected.
 
----
+**5. Likelihood: Likely** — [B2, M3] generates sybil keys at scale with near-zero preconditions, against should-class recommended bounds ([RL-1]) and operator-dependent PoW (NIP-13).
 
-#### T-AV-02 — Graph Traversal Amplification
+**6. Residual risk: Medium** — the curated view survives. Relay storage, query availability, and discovery quality degrade with volume until operators adopt bounds and rate limits.
+
+#### T-AV-02 — Foreign-Overlay and Chain-Application Amplified Work
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Spam/DoS Attacker |
-| Assets | A3 Binding events, A9 Binding topology, A4 Patch events, A6 Canonical chains |
-| Spec | §6.4 binding traversal, §7.4 chain computation |
+| Assets | A4 Patch events, A6 Canonical chains, A7 Canonical bytes, A8 Indexers |
+| Goals | G8 Availability |
+| Spec | [TR-7], [T1], [CHN-3], [OV-9], [SIG-1], [RL-1], [RL-2], [RL-3], [RL-4], [RL-5]; §5.4, §7.4 |
 
-**1. Problem.** Discovery proceeds by graph traversal: Product → Bindings → Metadata → recursively deeper. An attacker constructs pathological topologies designed to amplify client resource consumption. Three amplification vectors exist: deep canonical chains (hundreds of patches prolonging canonical-view computation), extreme binding fan-out (thousands of fabricated Metadata bound to one Product via Sybil-amplified keys), and recursive binding graphs (A → B → C → A inducing cycles). A naive client traversing without depth or fan-out budgets exhausts memory, stalls on network round-trips, or enters infinite loops during canonical-view computation. Chain computation (§7.4) already mandates cycle detection, but binding traversal (§6.4) does not.
+**1. Problem.** A foreign publisher attaches overlays to any root at no trust cost, because [TR-7] gates trust only at presentation time. Every client classifies each overlay against the target before gating ([TR-7], [CHN-3]). Overlay count is adversary-controlled, and each hunk's determinism scan costs `|content| × |pattern|` comparisons ([T1]). Only the total-event-size bound applies pre-SIG-1 (§5.4). A root author likewise sets chain length against [RL-1]'s recommended bounds, which an adversary ignores. Traversal is linear under [RC-1], so amplification is per-event work.
 
-**2. Mitigation.** Trust filtering limits which bindings cause endpoint admission: only bindings whose authors are trusted trigger traversal per §6.4. Canonical-view computation (§7.4) explicitly requires cycle detection — implementations MUST break cycles by excluding the patch with the higher event ID hash from further traversal. Foreign patches are not transitively admitted via root admission (§6.4); they require independent trust, which bounds dispute-driven amplification.
+**2. Mitigation.** [RL-2] directs consumers to bound total patch-application work under configurable ceilings. A ceiling reached during classification yields an `unclassified` outcome, an [RL-3] annotation instead of HALT ([OV-9]). A stopped chain is reported as aborted under a ceiling, distinct from resolved and HALT ([RL-5]). Abandoned content must not be served as canonical bytes ([RL-4]).
 
-**3. Gap.** No depth or fan-out limit is specified for binding graph traversal. No pagination budget is mandated. No timeout or resource cap is defined for canonical-view computation beyond cycle detection. A permissive-trust user (wide WoT expansion) is structurally exposed to fan-out amplification. Chain computation for deep canonical chains is CPU-bound by repeated diff application with no ceiling.
+**3. Gap.** [RL-2] and the ceiling guards carry no mandated default, so a spec-legal consumer may set none. The bound depends entirely on consumer configuration.
 
-**4. Residual risk: High.** A real exposure for clients without explicit resource budgets. The protocol's structural defense is trust filtering; the implementation defense (budgets, limits) is not required.
+**4. Impact: High** — a ceiling-less client can spend unbounded work on one root's chain and overlays, degrading G8 for that user. Effects stay local to ceiling-less consumers.
 
----
+**5. Likelihood: Possible** — the Spam/DoS Attacker [B2, M3] generates sybil keys at scale, the precondition is only a ceiling-less consumer, and the defense class is should ([RL-2]).
+
+**6. Residual risk: Medium** — certain for ceiling-less consumers under floods, bounded once ceilings apply.
 
 #### T-AV-03 — Event Size Exceeding Relay Limits
 
 | Field | Value |
 |---|---|
-| Adversary | Spam/DoS Attacker, Compromised Publisher |
-| Assets | A1–A4 All event types, A10 Attached artifacts |
-| Spec | §4.5 imeta recommendation |
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A1 Product events, A2 Metadata events, A4 Patch events, A6 Canonical chains |
+| Goals | G8 Availability |
+| Spec | no single rule: family IM; see §4.6 |
 
-**1. Problem.** Nostr relays enforce per-event size limits (typically tens to hundreds of kilobytes, relay-dependent and not standardized). SCRUTINY events with large inline diffs — especially three-surface patches modifying lengthy `content` fields — embedded payloads, or numerous `imeta` tags can approach or exceed these limits. An event exceeding a relay's limit is rejected silently; rejection is per-relay, so a multi-relay publication may succeed on some relays and fail on others. An attacker can craft borderline-sized patches to maximize rejection variance, creating gaps in chain completeness across relays — a patch missing on relay A but present on relay B produces divergent canonical views for clients pinned to single relays.
+**1. Problem.** Relays enforce operator-configured per-event size limits. The relay protocol is inherited, not overridden (§3.2). [RL-1] recommends a 64 KB cap and `imeta` above ~30 KB. A root or patch whose inline payload exceeds a relay's limit is not stored there. A root-author patch missing from a client's observed set leaves the chain at the last observed ancestor [RC-5]. Descendants are held [UR-4]. Rejection is per-relay, so a large event can reach some relays and not others. Clients on the dropping relays silently lose the update.
 
-**2. Mitigation.** Spec §4.5 recommends moving payloads larger than ~30 KB to imeta + Blossom. The diff format is text-efficient (unified diff with three lines of context). PoW (MAY) makes oversized publications more expensive to attempt repeatedly. Patch producers SHOULD verify application against the default head before publishing (§5.3); a rejected event is immediately visible to the publisher.
+**2. Mitigation.** §4.6 routes payloads above ~30 KB to NIP-92 `imeta` attachments, keeping event bodies small. [RL-1] states the 64 KB bound. [IM-1] and [IM-4] bind fetched artifacts to the declared `x` hash and warn before unverified display. They govern verification, not acceptance, and the payload then travels over HTTP, not in the event. †A dropped event stays valid but absent. Re-publishing is the only recovery.
 
-**3. Gap.** No normative size recommendation for SCRUTINY events. No client-side advisory warning when a constructed patch approaches likely relay limits. Relay-specific limits are unknown without per-relay probing (NIP-11 `limitation` field, inconsistently supported). Size rejection is silent — the publisher receives no ACK/NACK from the relay confirming storage.
+**3. Gap.** The bound is absent-normative: [RL-1] is a producer should. No rule constrains relay acceptance. Publisher-side detection is absent: rejection is silent and per-relay. †NIP-11 `limitation` advertises limits, but support is inconsistent.
 
-**4. Residual risk: Low.** Operational concern with no direct security-goal compromise. Self-limiting: the publisher knows when publication fails. Rejection variance across relays is bounded by the multi-relay publication strategy.
+**4. Impact: Medium** — G8 degrades for consumers whose relay set drops a large event. The update stays unavailable until re-published.
 
----
+**5. Likelihood: Possible** — events nearing relay limits are a stated design premise of §4.6, and controls are thin: a should-grade bound, no transport guarantee, no acceptance signal.
+
+**6. Residual risk: Medium** — large-event content can silently strand part of the network. Recovery depends on republishing.
 
 #### T-AV-04 — Artifact Hosting Fragility
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Artifact-Targeting Attacker, Hostile Vendor |
-| Assets | A10 Attached artifacts, A7 Canonical views, A4 Patch events |
-| Spec | §4.5, §5.2 attached diffs |
+| Assets | A10 Attached artifacts (imeta), A1 Product events, A2 Metadata events |
+| Goals | G8 Availability, G2 Authenticity, G6 Auditability |
+| Spec | [IM-1], [IM-3], [IM-4]; §4.6 |
 
-**1. Problem.** Imeta-attached artifacts (diffs, SBOMs, certifications, reports) live at external URLs. Three failure modes converge: **URL rot** (domains expire, hosting accounts lapse, servers decommission), **takedown propagation** (Hostile Vendor issues legal demands to Blossom hosts, which comply), and **split-world** (an attacker-controlled host serves different artifact bytes to different clients, each verifying its own SHA-256). For patches whose diff is imeta-attached (the §5.2 fallback path), unavailability is more consequential than for general artifacts: the canonical view cannot be computed past the missing diff. Spec §5.3's HALT behavior does not directly apply here — HALT handles pre-validation failures against a known diff, not missing diffs — but the operational effect is equivalent: the chain cannot proceed beyond the unavailable patch. Clients must surface this as a distinct error annotation.
+**1. Problem.** `imeta` attachments live at external URLs, where three failure modes converge: URL rot, legal takedown, and host compromise. [IM-1] has clients stream the artifact and compare against the signed `x` hash, so verifying clients always see identical bytes. Split-world survives only as attacker-signed events declaring their own `x`, or as retrievals that skip the hash check. A missing or masked artifact degrades G2 and G6 for payload-grade claims like SBOMs and attestations.
 
-**2. Mitigation.** SHA-256 in `imeta` `x` makes the artifact verifiable from any source — mirrors, archives, IPFS, personal caches. The protocol's separation of event from artifact implicitly supports multi-source retrieval. Inline diffs (§5.2 primary lookup path) avoid the attachment fragility problem entirely; attached diffs are a fallback. Multi-relay querying provides event-layer redundancy even when artifact-layer hosting fails.
+**2. Mitigation.** [IM-1] grounds every artifact in the signed `x` hash, verifiable by streaming. [IM-3] allows multiple `url` entries, and "Mirror selection MUST NOT influence the validity decision — only the hash check does." [IM-4] requires a warning before displaying or processing unverified artifacts.
 
-**3. Gap.** No requirement for artifact mirroring, content pinning, or content-addressed storage. No guidance on how clients should handle unreachable artifacts (display warning? hide patch? surface as prose-only?). No expiry or liveness-check mechanism. No standardized fallback URL set to accompany a single `imeta` reference. No multi-host attestation for artifact availability. Artifact durability depends entirely on ecosystem practices (voluntary mirroring, archive services).
+**3. Gap.** Verification is should-level, so it may be skipped. No rule mandates artifact duplication, pinning, or liveness checks. A missing artifact is indistinguishable from an absent one, and durability rests on ecosystem practice†.
 
-**4. Residual risk: Medium.** Structural weakness of any system referencing external mutable hosting. Inline diffs (primary path) are immune. Attached-diff fragility affects the secondary path. Risk increases monotonically with time as URLs rot. Split-world attacks require sustained, targeted host compromise.
+**4. Impact: Medium** — payload-grade claims such as SBOMs and attestations lose availability with their missing artifact (G8). Authenticity (G2) and auditability (G6) of the claim follow.
 
----
+**5. Likelihood: Possible** — Hostile Vendor [B4, M4] and Artifact-Targeting Attacker [B3, M3] have standing means, given a pressured host and a should-level check with a must warning.
 
-#### T-AV-05 — Prose-Only Patch Abuse
+**6. Residual risk: Medium** — warnings curb surprise but cannot force durability, so artifacts stay hostage to hosting goodwill.
+
+#### T-AV-05 — Overlay and No-Op Accumulation
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Spam/DoS Attacker, Compromised Publisher |
-| Assets | A4 Patch events, A6 Canonical chains, A7 Canonical views |
-| Spec | §4.4 prose-only definition |
+| Assets | A4 Patch events, A6 Canonical chains, A1 Product events |
+| Goals | G8 Availability, G6 Auditability |
+| Spec | [PT-8], [N3], [PT-7], [OV-7], [OV-5], [RL-1], [RL-2]; §5.4, §6.1, §7.4 |
 
-**1. Problem.** Prose-only patches — those with neither inline diffs nor imeta-attached diffs (§4.4) — participate fully in tip selection, chain topology, and kind 5 cascade. They form valid NIP-10 reply targets, extend canonical chains, and can become the default head of a fork. A Spam/DoS Attacker publishing prose-only patches at high volume extends a target product's canonical chain indefinitely: each patch adds a step to canonical-view computation, multiplies fork-resolution complexity, and dilutes the semantic value of the chain with non-mutating entries. Legitimate patches get buried under administrative-noise patches. A Compromised Publisher (malicious root author) can abuse prose-only patches to fabricate activity history — a long chain of "updates pending," "administrative revision," or "version statement" patches that look like active maintenance while contributing zero surface changes.
+**1. Problem.** Two accumulation surfaces grow without any content change. [PT-8] and [N3] record every no-op patch in the chain as normal. A root-authority holder or a Compromised Publisher can pad chain length at no cost. [PT-7] lets foreign patches reply to any root. [OV-7] hides untrusted overlays while §7.4 step 5 classifies every foreign patch regardless of trust, so overlays accumulate unseen on a target. Compounds T-AV-02.
 
-**2. Mitigation.** Prose-only patches contribute no changes to canonical surfaces, so they do not corrupt the computed view's content, identifiers, or attachments. They are semantically inert at the surface level; their only effect is topological. Chain computation (§7.4) processes them as valid steps that produce empty state transitions. Root authors control their own chains; a root author padding their chain is expressing sovereignty inefficiency, not breaking integrity.
+**2. Mitigation.** [OV-7] gates visibility: "A foreign patch is visible to the user only if its `pubkey` is in the user's trusted set." [OV-5] exposes classification via the API so downstream tooling can filter overlays. [N3] leaves no-op content unchanged, and [PT-8] records no-op topology only, so canonical bytes never shift.
 
-**3. Gap.** No distinction between mutating and non-mutating patches in chain-length measurement or tip selection. No recommendation that clients visually compress consecutive prose-only patches in UI rendering. No rate-limit or volume guidance for prose-only publication. Chain-length overhead accumulates linearly with each prose-only patch, imposing computation cost without semantic benefit.
+**3. Gap.** No rule caps overlay count per target. [RL-1]'s chain-length bound is a producer rule the adversary ignores. [RL-2] bounds application cost (should), not the accumulated record, so cumulative volume escapes it. Trusted-pubkey set admission via reputation thresholds (§6.1) can admit sybil keys (absent as protocol control), and no rule flags no-op density.
 
-**4. Residual risk: Low.** Prose-only patches cannot corrupt canonical surfaces. Their only impact is chain-length amplification, which is a performance concern, not a data-integrity violation. The structural defense is that roots authors control their own chain length — but a malicious root author is already trusted with their chain's content.
+**4. Impact: Medium** — accumulated no-ops and overlays bury legitimate history and dilute the record, degrading G8 and G6 without breaking any integrity invariant.
 
----
+**5. Likelihood: Possible** — Spam/DoS Attacker [B2, M3] generates sybil keys at scale, the precondition is trusted-set admission or a compromised root key, and no rule caps accumulation (absent).
 
-### §6.4 — Discovery
+**6. Residual risk: Medium** — trusted-pubkey set curation bounds exposure, but the count itself is uncapped and sybil admission paths remain.
 
-#### T-DC-01 — Inconsistent Relay NIP Support
+### §7.4 — Discovery
+
+Discovery — relay behavior and indexer alignment that break finding paths (G5, G6).
+
+#### T-DC-01 — Malicious relay support-claim and query-result manipulation
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Malicious Relay Operator |
-| Assets | A8 Canonical identifiers, A1–A4 All event types |
-| Spec | §8.0 relay queries, §8.3 |
+| Assets | A8 Indexers (`i` tags), A1 Product, A2 Metadata, A3 Binding, A4 Patch, A5 Kind 5 deletion events |
+| Goals | G1, G5, G6 |
+| Spec | [DQ-1], [DQ-2], [DQ-3], [DQ-4]; §8.0, §7.5 |
 
-**1. Problem.** Not all relays support every NIP SCRUTINY depends on. Spec §8.0 scopes discovery to relays supporting NIP-01 `#t`, `#e`, and `#i` filters and requires graceful degradation for optional capabilities, but the core ambiguity persists: a relay that does not support `#i` filtering (NIP-73) returns `[]` for `#i` queries — observationally identical to a relay that supports `#i` but has no matching events. The client cannot distinguish "no matches anywhere" from "relay did not implement the filter." A Malicious Relay Operator exploits this by silently dropping NIP-73 support and returning empty results for all `#i` queries. Users pinned to that relay conclude no events reference their identifier of interest — effectively a discovery blackout. The empty-result ambiguity extends to NIP-09 support: a relay lacking kind 5 storage returns no deletions, producing stale canonical views indistinguishable from genuinely non-deleted chains. NIP-11 server info documents advertise NIP support, but are honor-system — a malicious relay lies about capabilities.
+**1. Problem.** §8.0 assumes `#t`/`#e`/`#i` filter support. NIP-11 advertises it honor-system†. A relay that drops `#i` support (§7.5) returns `[]` or unindexed noise†, indistinguishable from "no matches anywhere" since [DQ-1] only assumes the filter exists. [DQ-3] adds mis-ranked or mis-selected NIP-50 results bearing valid signatures, and [DQ-4] adds marker-blind traversal resolving roles falsely. [DQ-2] names kind 5 storage-omission suppressing deletion visibility.
 
-**2. Mitigation.** Spec §8.0 mandates cross-relay checking: clients MUST cross-check `#i` queries against at least one other relay or local cache. The recommended baseline is ≥3 geographically diverse relays. For critical discovery, clients query all configured relays and union results. Kind 5 fallback: clients cache locally received deletions and apply them during chain construction even if the relay omits them. NIP-11 server info SHOULD be inspected before publishing or querying.
+**2. Mitigation.** Multi-relay cross-reference per §7.5 (class should) is the only declared defense, with [DQ-2]'s periodic kind-5 poll guarding the deletion surface. Search and traversal carry client-side musts: [DQ-3] tag and intent verification, [DQ-4] type-filtering and marker inspection. NIP-11 pre-check is §8.0's NIP-50-scoped hook, a should-level note with no rule behind it†.
 
-**3. Gap.** No wire-protocol-level capability negotiation that returns a definitive "unsupported filter" vs. "empty result" signal. NIP-11 advertised support is unverifiable without out-of-band relay testing. Cross-relay checking imposes round-trip cost and is a SHOULD, not MUST, for non-critical queries. A relay that lies about NIP-73 support and additionally eclipses the client's other relays (T-CE-02) creates a compound discovery failure.
+**3. Gap.** No wire-level signal separates "unsupported filter" from "empty result" (class absent). Cross-relay checking is class should and degrades with narrow relay sets, and eclipse removes even that (T-CE-02). [DQ-3] and [DQ-4] shift detection onto the client at must-class.
 
-**4. Residual risk: Medium.** Mitigated by multi-relay cross-checking per §8.0. Higher for single-relay configurations or narrow relay sets where eclipse (T-CE-02) compounds the ambiguity.
+**4. Impact: High** — Silently wrong discovery degrades G5 and G6 for every relay client, and G1 when deletion surfaces hide behind ambiguity.
 
----
+**5. Likelihood: Likely** — Malicious Relay Operator [B3, M3] (named infrastructure role per A.1, recurring suppression posture per §7.5), no precondition beyond being queried, against should-class or absent defenses.
 
-#### T-DC-02 — WoT Bootstrap Trap
+**6. Residual risk: High** — should-class defenses do not defeat a relay that lies about capabilities, and eclipse erases cross-checking.
 
-| Field | Value |
-|---|---|
-| Adversary | N/A (structural) |
-| Assets | A11 Trust lists, A1–A4 All event types, A12 Pubkey-to-reputation mappings |
-| Spec | §6.1, §7.5 Sybil section |
-
-**1. Problem.** New users arrive with empty trust lists. With no trusted pubkeys, the trust filter excludes everything — the user sees nothing. The user must populate their trust list out-of-band: from documentation, community recommendation, default client list, or follow-chain origination at a known seed pubkey. Each bootstrap vector is an attack surface. Default trust lists are a supply-chain target (T-EC-02). Community recommendations from compromised forums enable injection. Misleading documentation on impostor sites (A9 Infrastructure Impersonator) seeds incorrect trust. The user is maximally vulnerable at the exact moment they have the least information for discrimination — they cannot evaluate a trust source without already having a trust framework.
-
-**2. Mitigation.** Permissionless trust-list curation gives users full agency over their trust decisions. Multiple bootstrap paths exist (documentation, community, defaults, follow chains), so no single compromise is universally effective. The protocol's correctness does not depend on any particular trust source — it works identically regardless of how the trust list was populated. As users accumulate experience with the ecosystem, they can refine and diversify their trust sources.
-
-**3. Gap.** No protocol-level definition of who creates, signs, distributes, updates, or revokes default trust lists. No ceremony for bootstrap. No progressive-trust or graduated-admission mechanism for new users. The trust bootstrap is the phase of maximum vulnerability with minimum protocol-level protection. A poisoned bootstrap trust list (T-EC-02) admits attacker events before the user has any basis for detecting the poison.
-
-**4. Residual risk: High.** Genuine ecosystem-level gap. The protocol's correctness cannot be exercised by a user whose trust list was compromised at bootstrap. No amount of subsequent protocol rigor compensates for a corrupted initial trust state.
-
----
-
-#### T-DC-03 — Identifier Mirror Infidelity
+#### T-DC-02 — Web-of-trust bootstrap trap
 
 | Field | Value |
 |---|---|
-| Adversary | Compromised Publisher, Occasionally Lying Publisher |
-| Assets | A4 Patch events, A8 Canonical identifiers |
-| Spec | §4.4.1 mirroring, §8.3 |
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A11 Trusted-pubkey set, A1 Product events, A2 Metadata events, A3 Binding events, A4 Patch events, A12 Pubkey-to-reputation mappings |
+| Goals | G2, G4, G5 |
+| Spec | no single rule: family TR; see §6.1, §7.5 |
 
-**1. Problem.** Patch events modify the `i` surface through embedded unified diffs (§5.1). Nostr relays index `#i` filters against explicit `i` tags — they do not parse `content`. To make patch-introduced identifiers discoverable, publishers SHOULD mirror changed identifiers as `i` tags on the patch event (§4.4.1). This creates a dual failure mode. **Malicious omission:** a root author compelled to add an unfavorable identifier (e.g., a CVE from a foreign dispute they cherry-picked) constructs the diff correctly but omits the CVE from mirrored `i` tags — the patch applies to the canonical chain, but `#i:cve:...` queries never return it, suppressing discoverability. **Accidental forgetfulness:** a well-intentioned publisher simply forgets to mirror, creating an accidental discoverability gap. Both produce the same outcome: the identifier exists in the canonical view but is invisible to relay-side discovery.
+**1. Problem.** New users arrive with an empty trusted-pubkey set, and §6.1 names its sources: curated allowlist, NIP-02 follow-list expansion, third-party reputation. Each bootstrap vector is an attack surface: defaults are a supply-chain target (T-EC-02) †, compromised forums inject †, impostor sites seed incorrect trust †. The user is most vulnerable at the moment of least information.
 
-**2. Mitigation.** Spec §4.4.1 specifies the publisher's mirroring responsibility and the soft cap of 64 mirrored identifiers. Client responsibility is also specified: when a `#i` query returns a patch, the client MUST follow the NIP-10 `e root` chain to the root event, compute the canonical view, and verify whether the identifier is currently present in the resolved `i` surface. This catches stale references (identifiers added then later removed) but does not catch never-mirrored introductions.
+**2. Mitigation.** Permissionless curation gives users full agency over their trust set. Multiple bootstrap paths exist, so no single compromise is universally effective. The protocol works identically regardless of how the set is populated (§6.1, §7.5).
 
-**3. Gap.** No relay-side enforcement of the mirroring contract. No protocol-level mechanism to detect whether a patch's mirrored `i` tags accurately reflect its diff's `i` surface changes. Client-side reconciliation — fetching all root-and-chain events and computing effective `i` surfaces — is bandwidth-prohibitive at scale and contradicts the protocol's design goal of cheap relay-side discovery. A publisher who consistently omits mirrors for sensitive identifiers creates a persistent, undetectable discoverability gap.
+**3. Gap.** No rule defines who creates, distributes, or revokes a default trusted-pubkey set. No bootstrap ceremony exists (class absent). A poisoned default list admits attacker events before the user can detect the poison (T-EC-02).
 
-**4. Residual risk: Medium.** Discoverability degradation, not integrity loss (the identifier is present in the canonical view). Bounded by ecosystem-level audit tooling and well-implemented clients performing spot-checks. Malicious omission is intentional subversion; accidental omission is a publisher-quality concern.
+**4. Impact: High** — Bootstrap poisoning degrades G2, G4, and G5 for every new user, before any protocol mechanism can engage.
 
----
+**5. Likelihood: Likely** — structural condition probability certain at genesis (every new user passes through bootstrap), controls absent: no rule governs set population or ceremonies.
 
-#### T-DC-04 — Patch-to-Root Resolution Gap
+**6. Residual risk: High** — The protocol's correctness holds regardless of provenance, so no in-protocol defense can compensate for a compromised initial set.
+
+#### T-DC-03 — Indexer Burial in Patched Content
 
 | Field | Value |
 |---|---|
-| Adversary | N/A (structural) |
-| Assets | A8 Canonical identifiers, A4 Patch events |
-| Spec | §8.3 client resolution MUST, §4.4.1 |
+| Type | adversarial |
+| Adversary | Compromised Publisher, Hostile Vendor |
+| Assets | A8 Indexers (`i` tags), A4 Patch events, A6 Canonical chains |
+| Goals | G5 |
+| Spec | [IX-1], [IX-3], [DQ-1], [DQ-3]; §8.1 |
 
-**1. Problem.** When a `#i` query returns a patch event (because the identifier was mirrored per §4.4.1), the client MUST resolve the patch to its root event and verify the identifier's current presence in the canonical view (§8.3). This resolution step is mandatory but non-trivial: it requires fetching the `e root` chain, computing the full canonical view to the default head, and checking the resolved `i` surface. A naive client that stops at "patch returned by `#i`" and displays the identifier as "active" is presenting stale or misleading information. The identifier might have been removed by a later patch, the introducing patch might have been kind 5-deleted, or the root event itself might be retracted — in all cases, the identifier is not present in the current canonical view despite the patch appearing in query results.
+**1. Problem.** Root `i` and `k` tags are immutable, so patches modify `content` only ([IX-3]). A root author patches a security-relevant reference into content without naming it in a root, keeping it in canon but out of discovery. `#i` filters match tags, never content ([DQ-1]; §8.1), and patches carry no `i` tags, so the reference sits in canonical bytes ([RC-2]) while `#i` queries miss it. The miss is indistinguishable from absence, degrading G5.
 
-**2. Mitigation.** Spec §8.3 explicitly mandates the resolution step: follow `e root` chain, compute canonical view, verify identifier presence. The Canonical-view computation (§7.4) handles kind 5 cascade, fork resolution, and HALT behavior — so the resolved state reflects all deletion and invalidation effects. The resolution is defined as a MUST, not SHOULD.
+**2. Mitigation.** [IX-1] tells publishers to tag top-level indexers, and [IX-3]'s honest path is a new root event whose `i` set names the reference. The §8.1 ladder falls back to NIP-50 free-text (step 3) and then full-scan parsing (step 4), NIP-50 relay-optional with client verification per [DQ-3]. No step binds the publisher: each rests on relay support or client initiative.
 
-**3. Gap.** Full canonical-view computation per `#i` query result is expensive — proportional to chain length and diff-application cost. No lazy-evaluation or caching guidance is provided. A client optimizing for responsiveness may skip the resolution step for non-critical display, falling back to the stale-patch hazard described above. The computational cost of resolution grows with ecosystem maturity (longer chains, more patches per product).
+**3. Gap.** No rule compares chain content against the root's `i` set, and relays index tags, not content ([DQ-1]). [IX-1] is a should-level obligation with no enforcement hook. Only full-scan client-side parsing (§8.1) is guaranteed, and detection falls to consumer habit and cross-chain audit.
 
-**4. Residual risk: Medium.** Correctness depends on client implementation of the MUST-level resolution. Well-implemented clients resolve reliably; naive clients present stale state. The structural tension between "cheap relay-side discovery" (design goal) and "expensive client-side resolution" (correctness requirement) is inherent.
+**4. Impact: Medium** — G5 discovery silently omits in-chain findings for indexer-querying consumers while the chain stays authentic and valid.
 
----
+**5. Likelihood: Possible** — Hostile Vendor [B4, M4] (staff and legal apparatus, suppression of unfavorable findings), needing root-author access against a should-class defense ([IX-1]) with no relay-side content hook.
 
-### §6.5 — Censorship
+**6. Residual risk: Medium** — the per-chain gap is persistent and motive-safe, bounded only by NIP-50 uptake and audit discipline.
+
+#### T-DC-05 — Relay-Omission Chain Freeze
+
+| Field | Value |
+|---|---|
+| Type | adversarial |
+| Adversary | Malicious Relay Operator |
+| Assets | A4 Patch events, A6 Canonical chains, A7 Canonical bytes, A9 Binding topology |
+| Goals | G8 Availability, G3 Censorship Resistance |
+| Spec | [UR-1], [UR-2], [UR-3], [UR-4], [BD-6]; §7.5, §7.6 |
+
+**1. Problem.** Withholding events freezes dependent computations: an event sent to one relay may never reach its clients, so the freeze persists. A withheld reply parent keeps a root-author patch out of chain construction and self-fork detection ([UR-4]). A withheld root blocks authorship classification ([UR-2]), and withheld binding endpoints keep a Binding pending [BD-6]. UR-1 makes the freeze spec-compliant, so omission is correct behavior, not a bug ([UR-1]) — delaying or preventing computation, never shortening answer set (vs T-CE-01).
+
+**2. Mitigation.** [UR-2] and [UR-4] require retention and re-evaluation on arrival, so a late event heals the freeze. [UR-1] forbids discarding referencing events and [UR-3] forbids caching a patch as invalid while its root is unobserved. §7.5 counsels multi-relay querying and [DQ-2] adds periodic kind 5 polls, the only recurring re-check.
+
+**3. Gap.** No rule obliges a relay to serve a complete result set or a client to verify one, so completeness is absent. Retention is must-class but awaits an arrival the withholding relay never produces. Pending states stay silent unless surfaced, and any surfacing is † client practice.
+
+**4. Impact: Medium** — Clients of a withholding relay see stale canonical bytes and frozen overlays, degrading G8 and G3 at relay scope.
+
+**5. Likelihood: Possible** — [B3, M3]: B3 by the positional axis, M3 recurring, over a narrow relay set with single-relay publication and should-level guidance.
+
+**6. Residual risk: Medium** — must-class retention cannot deliver a withheld event, and completeness is absent, so omission persists until another relay has it.
+
+### §7.5 — Censorship
+
+Censorship — suppression of valid events at presentation (G3).
 
 #### T-CE-01 — Relay-Level Event Suppression
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Malicious Relay Operator |
-| Assets | A1–A4 All event types, A9 Binding topology, A8 Canonical identifiers |
-| Spec | §7.5 honest-but-curious, §8.0 multi-relay |
+| Assets | A1 Product, A2 Metadata, A3 Binding, A4 Patch, A5 deletion events, A8 Indexers (`i` tags) |
+| Goals | G3, G5, G6 |
+| Spec | [TR-7], [DQ-1], [DQ-2]; §7.5, §8 |
 
-**1. Problem.** A Malicious Relay Operator suppresses specific events — by author pubkey, by `#t` tag combination, by `#i` value, or by event ID. The relay returns filtered result sets that silently omit matching events. To clients querying only that relay, the suppressed events functionally do not exist. spec §7.5 names this directly: "A hostile vendor can pressure relays to drop specific events; clients querying only the pressured relays see a censored graph." The suppression is undetectable by the affected client without cross-referencing against other relays — a client cannot distinguish "relay returned fewer results because it suppressed some" from "relay returned fewer results because fewer events match my filter."
+**1. Problem.** A malicious relay omits matching events from its filter responses (assumed `#t`/`#e`/`#i` set per [DQ-1]). §7.5 names the tactic ("omit results (censorship)") and notes vendors can pressure operators to drop events. The client's observed set shrinks silently, degrading its chains, overlays, and discovery results (G3, G5, G6).
 
-**2. Mitigation.** Multi-relay publication and querying is the design intent: no single relay is trusted with completeness. Spec §8.0 recommends ≥3 geographically diverse relays and mandates cross-relay checking for `#i` queries. The event format contains nothing relay-specific — events are portable and replicable. Blossom-hosted payloads survive relay takedowns, providing artifact-level redundancy at a different infrastructure layer.
+**2. Mitigation.** §7.5 makes the defense operational ("publish widely, query broadly") and trusts no single relay with completeness. Cross-referencing across multiple relays is the should-class recommendation (§7.5), and [DQ-2]'s should-class periodic kind 5 poll covers deletion omission. Blossom payloads survive relay takedowns (§7.5).
 
-**3. Gap.** No transparency mechanism for relaying operator behavior — no way to prove "this relay refused to serve event X." No relay reputation system. No mechanism to detect coordinated suppression across a relay pool. Small relay sets (corporate deployments restricted to specific relays, mobile networks with limited connectivity) enable coordinated censorship. The protocol cannot mandate relay behavior.
+**3. Gap.** No relay transparency or reputation mechanism exists (absent)†. Refusal-to-serve is unprovable, coordinated pool suppression undetectable†. Seam: the censorship hits the presentation and discovery layer ([TR-7]'s territory). Omission against chain-construction inputs belongs to T-DC-05.
 
-**4. Residual risk: Low–Medium.** Low for users with broad, diverse relay sets and active cross-referencing. Medium for constrained-relay-set scenarios (enterprise policy, regional network restrictions).
+**4. Impact: Medium** — the affected user's view is silently wrong (G3, G5, G6), yet events remain retrievable from any honest relay.
 
----
+**5. Likelihood: Possible** — Malicious Relay Operator [B3, M3] (named infrastructure role per A.1, recurring vendor-incentivized suppression per §7.5), costing only configuration against should-class defenses.
+
+**6. Residual risk: Low–Medium** — Low bound: diverse-relay users who cross-reference restore complete views, since suppression affects only its operator's responses. Medium bound: deployments pinned to a narrow relay set (enterprise policy, regional egress) cannot cross-reference, so suppression becomes effective per-user censorship.
 
 #### T-CE-02 — Eclipse Attack on Relay Set
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Network-Level Attacker |
-| Assets | A1–A4 All event types, A9 Binding topology, A7 Canonical views |
-| Spec | §7.5, §8.0 ≥3 relays |
+| Assets | A1 Product, A2 Metadata, A3 Binding, A4 Patch, A5 deletion events, A8 Indexers (`i` tags) |
+| Goals | G3, G5, G6 |
+| Spec | [SIG-1], [TR-7]; §7.5 |
 
-**1. Problem.** A Network-Level Attacker isolates a client to a controlled relay set — by dropping connections to honest relays at the network layer, manipulating DNS resolution for relay hostnames, or being the only available network path (state-level operator, captive corporate gateway). All queries route to attacker-controlled relays. The attacker fabricates a graph view by selective omission: the client sees only events the attacker chooses to surface. Cryptographic verification protects against injected forgeries (unsigned events are rejected), but does not protect against omission — the attacker presents a subset of the real graph as if it were complete. Eclipse differs from T-CE-01 in scope: per-relay suppression targets individual events; eclipse replaces the entire relay set.
+**1. Problem.** Dropped connections, poisoned DNS, or sole egress control leave attacker-controlled relays the only reachable ones. They serve a reduced subset of the real graph that still passes [SIG-1] checks: omission leaves no cryptographic trace. The trust filter runs presentation-time ([TR-7]) over content already censored at intake.
 
-**2. Mitigation.** Cryptographic event verification prevents the attacker from injecting forged events. Relay diversity bounds the eclipse radius — if at least one configured relay has direct connectivity outside the attacker's control, eclipse is partial. Connection-level diversity (multiple ISPs, Tor, VPN routing) reduces single-network-path vulnerability. Out-of-band relay discovery (community-maintained relay lists, cached relay configurations) complicates sustained eclipse.
+**2. Mitigation.** [SIG-1] blocks forged injections (must-class), leaving omission and replay as the channels. Cross-referencing across relays (§7.5, should-class) shrinks the eclipse radius whenever one relay path escapes. Connection diversity (ISPs, Tor, VPN) and out-of-band relay discovery add deployment-layer resistance†.
 
-**3. Gap.** No view-completeness check — a client cannot know it has seen all relevant events. No cross-relay consistency proof. No mechanism to detect "all my relays return suspiciously narrow, identical result sets." Eclipse against a non-technical user is undetectable from inside the protocol. State-level network operators controlling all exit paths can achieve total eclipse.
+**3. Gap.** No view-completeness check or cross-relay consistency proof exists (absent), so a client cannot learn its view is partial. Detection from inside the protocol is impossible under total egress control†. Topology control lies outside the protocol, so resistance rests on deployment choices†.
 
-**4. Residual risk: Low–High.** Low for users with diverse, audited relay sets and out-of-band sanity checks. High for users in adversarial network environments (state-level firewalls, captive corporate networks, regionally-constrained mobile operators).
+**4. Impact: High** — for an eclipsed user, G3, G5, and G6 fail together and silently under fully valid signatures. The wider record is intact.
 
----
+**5. Likelihood: Possible** — Network-Level Attacker [B5, M4] (network-layer control per A.1's test question, captive-gateway-only stays B4, sustained goal-directed eclipse), with positionality and per-victim scope holding it below Likely.
 
-#### T-CE-03 — Economic/Legal Relay Coercion
+**6. Residual risk: Low–High** — Deployment variance per §5 is genuine. Low bound: users with diverse relays and alternate network paths keep one honest reference. High bound: users inside fully controlled egress (state-managed networks, captive gateways) lack protocol-level detection or escape.
 
-| Field | Value |
-|---|---|
-| Adversary | Hostile Vendor |
-| Assets | A1–A4 All event types, A10 Attached artifacts |
-| Spec | §7.5 censorship paragraph |
+### §7.6 — Surveillance
 
-**1. Problem.** A Hostile Vendor exerts economic or legal pressure on relay operators to remove or refuse to serve specific events. Economic pressure takes the form of contractual leverage, direct payments for suppression, or withdrawal of hosting/bandwidth sponsorship. Legal pressure encompasses DMCA notices, cease-and-desist letters, trade-secret claims, and jurisdictional court orders. Because relays are operated by individuals and organizations responsive to legal and financial incentives, a well-resourced vendor can achieve practical suppression across multiple relays simultaneously — especially relays concentrated in the same legal jurisdiction. Unlike T-CE-01 (single-relay suppression), this is a coordinated, multi-relay campaign with sustained pressure.
+Surveillance — query and fetch behavior revealing user interests (G9).
 
-**2. Mitigation.** Multi-relay replication across jurisdictions provides resilience — relays in different legal regimes face different pressure landscapes. Nostr events are portable and can be re-broadcast from any archive. Blossom-hosted artifacts add a separate infrastructure layer with different takedown dynamics. The decentralized architecture means no single legal demand eliminates an event from the entire network.
-
-**3. Gap.** The protocol cannot prevent legal coercion. No mechanism detects coordinated suppression campaigns. No relay reputation or transparency system to identify operators who comply with coercive requests. If the effective relay set serving a particular `#t:scrutiny-fabric` namespace concentrates in a single jurisdiction or under a small number of operators, coordinated coercion becomes feasible. The defense is jurisdictional diversity — an ecosystem property the protocol cannot guarantee.
-
-**4. Residual risk: Medium.** The decentralized design provides structural resilience, but effectiveness depends on relay operator diversity and jurisdictional distribution. Chilling effects on relay operators considering SCRUTINY hosting are real and unmeasured.
-
----
-
-### §6.6 — Surveillance
-
-#### T-SV-01 — Plaintext REQ Filter Leakage
+#### T-SV-01 — REQ filter leakage to relays
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Malicious Relay Operator |
-| Assets | A8 Canonical identifiers, A1–A4 All event types |
-| Spec | NIP-01 (inherited), §7.5 honest-but-curious |
+| Assets | A8 Indexers (`i` tags), A11 Trusted-pubkey set |
+| Goals | G9 Privacy |
+| Spec | [DQ-1], [IX-1], [TR-7]; §8.0, §7.5 |
 
-**1. Problem.** Nostr REQ subscriptions transmit filter parameters in plaintext over TLS to the relay. The relay sees every queried `#i` identifier, every `#e` event ID, every author pubkey filter, and every time-range bound. For a security researcher, a query for `#i:cve:CVE-2024-X` declares interest in that vulnerability — potentially before public disclosure. Aggregated over time, queries reveal research focus, technology stack, customer base, and advisory pipeline. This is inherent to NIP-01's filter model; relays need filter parameters to compute matches. The spec's relay model (§7.5) assumes "honest but curious" — curiosity is permitted by baseline assumption.
+**1. Problem.** Discovery inherits NIP-01 REQ filters per §3.2, and every `#i` indexer, `#e` id, and pubkey a client requests reaches the serving relay as readable plaintext. [DQ-1] fixes `#t:["scrutiny-fabric"]` in each discovery query, and the spec declares relays honest but curious (§7.5), so filters are observable and retainable by baseline. A relay can profile each vulnerability or product indexer queried, often before public disclosure. Named sub-case (absorbed T-SV-02): an organization's `#i` sequence exposes its internal product inventory and post-disclosure response timeline, and author-focused patterns reveal its trusted-pubkey community (A11).
 
-**2. Mitigation.** None at the protocol level. The honest-but-curious baseline is a declared assumption, not a defense. Operational mitigations — Tor/VPN routing, randomized relay selection, broad filters with local post-filtering, query batching — are out of the protocol's scope. Multi-relay querying distributes the leakage surface across operators but does not eliminate it.
+**2. Mitigation.** [IX-1] keeps indexer tagging the publisher-side discovery affordance, and [TR-7] keeps trust filtering a presentation-time, client-side choice. No spec rule conceals REQ content from the serving relay.
 
-**3. Gap.** No private-information-retrieval primitive exists in Nostr. No encrypted-filter scheme. No relay-oblivious query mechanism. The plaintext-filter assumption is foundational to NIP-01's subscription model; any change would be a hard-fork-equivalent protocol change at the Nostr layer. SCRUTINY inherits this limitation in full.
+**3. Gap.** No private-retrieval or encrypted-filter primitive exists in the inherited model, class absent. Relay multiplicity (§7.5, class should) fragments exposure across operators but cannot remove it.
 
-**4. Residual risk: High.** Structural confidentiality leak with no protocol-level remedy. Severity is elevated in security-research contexts where query interests are intrinsically sensitive. Mitigated only by out-of-scope operational discipline.
+**4. Impact: High** — A relay profiles every connected client's security interests, degrading G9 for individuals and organizations alike.
 
----
+**5. Likelihood: Likely** — Malicious Relay Operator [B3, M3] is graded on infrastructure position and recurring-interest posture, with a mere-query precondition and an absent defense class.
 
-#### T-SV-02 — Organizational Query Pattern Exposure
+**6. Residual risk: High** — Without protocol-level concealment, out-of-protocol defenses (anonymous routing, batching, superset queries) are † ecosystem practice.
 
-| Field | Value |
-|---|---|
-| Adversary | Malicious Relay Operator |
-| Assets | A8 Canonical identifiers, A11 Trust lists |
-| Spec | §8 discovery patterns |
-
-**1. Problem.** A specific instance of T-SV-01 with heightened organizational impact. A security team querying SCRUTINY for `#i:cpe:...` identifiers across their internal product inventory leaks that inventory to relay operators. Patterns emerge across time: "queried `cpe:vendor-a:product-1`, then `cpe:vendor-b:product-2`, then `cpe:vendor-c:product-3` from the same client" reveals an organizational technology stack. Query spikes after major CVE announcements map response timelines. Trust-list composition, if observable, reveals which security communities the organization follows. Read-only participation is sufficient for the leak — the user need not publish anything.
-
-**2. Mitigation.** Same as T-SV-01: none at protocol level. Operational defenses include distributed querying across many relays, randomized query batching, superset queries with local filtering. Multi-relay querying fragments the pattern across operators, but a single dominant relay used for all queries consolidates the exposure.
-
-**3. Gap.** No private retrieval primitive. Organizational users face a structural trade-off between ecosystem participation and operational security. The protocol provides no mechanism for anonymous consumption of the graph.
-
-**4. Residual risk: Medium–High.** Lower for individual researchers whose patterns are noise-like within aggregate relay traffic. Higher for organizational deployments where query patterns directly map to vulnerability exposure and technology inventory.
-
----
-
-#### T-SV-03 — Artifact Host Tracking via `imeta` Fetches
+#### T-SV-03 — Artifact-Host Tracking via `imeta` Fetches
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Artifact-Targeting Attacker |
 | Assets | A10 Attached artifacts |
-| Spec | §4.5 imeta + Blossom |
+| Goals | G9 Privacy |
+| Spec | [IM-1], [IM-3], [IM-4]; §4.6 |
 
-**1. Problem.** External `imeta` fetches go directly from the client to the artifact host over a separate connection from the relay WebSocket. The host sees the requesting IP address, User-Agent header, timing, and the specific URL requested. By embedding unique-per-victim or unique-per-distribution-channel URLs in `imeta` references (functionally equivalent to web beacons), an attacker correlates artifact fetches across the user base: who downloaded which finding, when, and from which network location. Unlike relay-level surveillance (T-SV-01), this channel operates outside the Nostr protocol — it is standard HTTPS with all attendant tracking capabilities. The attacker need not operate the artifact host; publishing events whose `imeta` URLs route through tracking infrastructure is sufficient.
+**1. Problem.** An `imeta` fetch leaves the relay channel for an arbitrary host URL over ordinary HTTPS (§4.6). The host observes requester IP, timing, and exact URL. Unique per-reader or per-channel URLs turn each fetch into a web-beacon signal. The attacker operates such a host or publishes events whose URLs route through tracking infrastructure. Across users, fetches reveal who investigates which vulnerable product and when.
 
-**2. Mitigation.** Hash verification (`imeta` `x`) confirms the bytes match the declared hash — protecting content integrity — but does not protect fetch privacy. Operational defenses: proxy fetching through intermediary services, delayed or batched artifact retrieval, disabling automatic remote content loading, and inspecting `imeta` URLs for tracking patterns before fetching. Multi-source artifact retrieval (mirrors) distributes the tracking surface.
+**2. Mitigation.** [IM-1] tells implementations to "verify the `x` hash by streaming the artifact contents and comparing against the declared SHA-256" ([IM-1]), binding bytes only. [IM-3] permits mirror URLs (NIP-92), providing failover across hosts. "Implementations MUST warn before displaying or processing unverified artifacts" ([IM-4]), scoped to integrity. Proxied, delayed, or batched retrieval is practice (†), not protocol.
 
-**3. Gap.** No private artifact retrieval model in the protocol. No anti-tracking guidance in the spec. No standardized proxy-fetch convention for clients. No requirement that artifact hosts avoid tracking. The `imeta` tag carries a single URL; clients fetching by URL expose themselves to whatever tracking the host implements.
+**3. Gap.** No rule addresses what a host learns at fetch time. [IM-1] and [IM-4] defend integrity, classes should and must. [IM-3] mirrors serve availability, class should, with a must limited to hash acceptance. On privacy the defense class is absent. URL inspection and fetch policy is client discretion (†).
 
-**4. Residual risk: High.** A direct privacy leak orthogonal to relay-level surveillance. For security investigators downloading artifacts related to active vulnerabilities, the fetch pattern is highly sensitive. Mitigation is entirely ecosystem-operational.
+**4. Impact: High** — G9 degrades for artifact consumers: a tracking host learns who fetches findings about which products, enabling targeted pressure on readers per fetch.
 
----
+**5. Likelihood: Possible** — a [B3, M3] positional archetype (host-operation axis, recurring motive), one precondition, and no fetch-privacy defense (absent).
 
-### §6.7 — Ecosystem
+**6. Residual risk: High** — the mechanism and the spec are unchanged from the old rating, and byte-integrity rules never intersect the fetch channel, so the leak stands in full.
+
+### §7.7 — Ecosystem
+
+Ecosystem — adoption-scale, corpus, and forward-compatibility exposures.
 
 #### T-EC-01 — Indexer Re-Centralization
 
 | Field | Value |
 |---|---|
-| Adversary | N/A (structural) |
-| Assets | A7 Canonical views, A9 Binding topology, A8 Canonical identifiers |
-| Spec | §7.4 canonical view cost |
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A7 Canonical bytes, A8 Indexers (`i` tags), A9 Binding topology |
+| Goals | G3 Censorship Resistance, G5 Discoverability |
+| Spec | no single rule: family RC; see §7.1, §5.4 |
 
-**1. Problem.** Canonical-view computation (§7.4) involves fetching chains, applying diffs sequentially, resolving forks, handling kind 5 cascade, and materializing surfaces. At modest ecosystem scale this is feasible per-client; at large scale, per-query recomputation becomes prohibitively expensive. This incentivizes centralized indexer services that pre-compute canonical views, maintain identifier indices, and expose query APIs. A dominant indexer becomes a single point of failure (availability), a single point of control (censorship via selective indexing), and a single point of surveillance (query metadata concentration). The protocol's design goal of decentralized, permissionless discovery is undermined by the economic reality that cheap discovery depends on centralized pre-computation.
+**1. Problem.** Canonical bytes are computed strictly from the root event plus the canonical chain ([RC-2]). The determinism check is the most expensive step, scaling with content length times hunk count (§5.4). Non-UI consumers must recompute on every relevant observed-set change ([RC-3]), while UI consumers should ([RC-4]). At ecosystem scale, that recomputation cost pushes consumers toward centralized services that pre-compute canonical bytes and answer queries (†), degrading G5 and G3.
 
-**2. Mitigation.** The data model is open and portable. Events are self-contained and independently verifiable. No proprietary computation is required — any party can reproduce an indexer's output by replaying the protocol from events alone. Multiple independent indexers are technically feasible. Client-local caching and incremental recomputation reduce reliance on external indexers.
+**2. Mitigation.** The data model is open: any party can reproduce a service's output by replaying the protocol from events alone (†). Consumers can bound their own work with configurable ceilings ([RL-2]) and report honest aborts instead of serving stale bytes ([RL-5]).
 
-**3. Gap.** No standard query API for indexer interchangeability — users cannot easily substitute one indexer for another without changing client configuration. No mechanism for a client to verify that an indexer is serving a complete, unfiltered view. No protocol-level incentive for indexer diversity. Economic pressure toward centralization is structural and not addressable at the protocol layer.
+**3. Gap.** No standard query API makes pre-computation services interchangeable (absent). No mechanism lets a client verify that a service serves complete, unfiltered canonical bytes (absent). No protocol-level incentive for service diversity exists, and the cost pressure driving centralization is structural (absent).
 
-**4. Residual risk: Medium.** A well-recognized risk in decentralized systems. The open data model provides theoretical escape from any single indexer, but practical switching costs may be high. Risk grows with ecosystem scale.
+**4. Impact: Medium** — A dominant pre-computation service concentrates discovery behind one failure, censorship, and surveillance point at ecosystem scope, degrading G5 and G3.
 
----
+**5. Likelihood: Possible** — Recomputation cost pressure grows with ecosystem scale (†) × recomputation is must-class for non-UI consumers and should-class for UIs × every counter-control is absent.
 
-#### T-EC-02 — Default Trust List Compromise
+**6. Residual risk: Medium** — The open data model supplies a theoretical escape from any single service, but practical switching costs grow with scale (†).
+
+#### T-EC-02 — Default Trusted-Pubkey Set Compromise
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Infrastructure Impersonator |
-| Assets | A11 Trust lists, A1–A4 All event types, A12 Pubkey-to-reputation mappings |
-| Spec | §6.1, §7.5 bootstrap |
+| Assets | A11 Trusted-pubkey set, A12 Pubkey-to-reputation mappings, A1 Product, A2 Metadata, A3 Binding, A4 Patch events |
+| Goals | G4 Trust Separation, G1 Integrity, G2 Authenticity, G5 Discoverability |
+| Spec | [TR-2]; §6.1, §7.5 |
 
-**1. Problem.** Default trust lists shipped with client software or distributed as bootstrap artifacts are a high-value supply-chain target. An Infrastructure Impersonator distributing tampered client builds or trust-list files injects attacker-controlled pubkeys into every new installation. These keys gain immediate, unexamined trust from each new user. The compromise is comprehensive: every security goal the protocol offers (Integrity, Authenticity, Censorship Resistance, Trust Separation, Discoverability) is simultaneously nullified for the affected user because attacker events pass trust filtering without scrutiny. The user has no basis for detecting the compromise — by definition, their trust framework was seeded by the attacker.
+**1. Problem.** §6.1 permits three trusted-pubkey set sources: a curated allowlist, NIP-02 follow-list expansion, or a third-party reputation source. A controlling adversary seeds the set with its own keys via tampered client builds or shipped defaults († ecosystem supply chain). Each seeded key's events pass admission as trusted ([TR-2]), defeating G4 first and G1, G2, G5 after it. The user's trust judgment is attacker-shaped from the start, leaving correction out-of-band (†).
 
-**2. Mitigation.** Multiple bootstrap paths exist (community recommendations, direct publisher outreach, verified documentation channels) — no single distribution vector is universal. Users can augment and replace default trust lists over time as they develop independent trust judgment. The protocol's correctness does not depend on any specific trust source. Community detection of compromised distributions is possible: users comparing their default trust lists against known-good published lists can identify discrepancies.
+**2. Mitigation.** Multiple bootstrap paths exist in the ecosystem, so no distribution vector serves everyone (†). Users can replace and regrow the set as judgment develops (§6.1, §7.5). Cross-checking a shipped set against community sources can expose seeded keys (†).
 
-**3. Gap.** No protocol-level definition of who creates, signs, distributes, updates, or revokes default trust lists. No signing, versioning, multi-party attestation, or reproducible-build requirement. No mechanism for users to verify the provenance of their default trust list. No ceremony for establishing consensus on the canonical default list.
+**3. Gap.** No rule defines provenance, signing, or versioning for a distributed set (absent). Install-media and shipped-default verification is ecosystem work (†), absent at protocol layer. §7.5's trust-radius expansion warning is should-class prose, not a rule, and never addresses seed compromise.
 
-**4. Residual risk: High.** Compromise of the trust-list distribution channel is a single point of failure for the security of every new user. The protocol's trust model is predicated on user-curated trust — but new users cannot curate what they have no basis to evaluate.
+**4. Impact: High** — An attacker-seeded set makes every trust decision the adversary's, defeating G4 and the G1, G2, G5 guarantees riding on it per installation.
 
----
+**5. Likelihood: Possible** — Infrastructure Impersonator [B3, M3] (mimic distribution is a trusted publication channel per A.1, recurring attempts) × per-channel compromise needed × provenance controls absent.
+
+**6. Residual risk: High** — Exposure lasts until curation replaces the seed: no protocol anchor detects a compromised source, and correction is social (†).
 
 #### T-EC-03 — Kind 1 Namespace Coupling with Relay Policy
 
 | Field | Value |
 |---|---|
-| Adversary | N/A (structural) |
-| Assets | A1–A4 All event types |
-| Spec | §3 all-events-kind-1 design choice |
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A1 Product events, A2 Metadata events, A3 Binding events, A4 Patch events |
+| Goals | G3 Censorship Resistance, G5 Discoverability |
+| Spec | no single rule: family TAG; see §3, §3.2 |
 
-**1. Problem.** All SCRUTINY events use `kind:1` (Nostr short text notes), chosen for maximum relay compatibility. However, `kind:1` is also the transport for social posts, microblogging, and general Nostr chatter. Relays applying aggressive anti-spam heuristics to `kind:1` events — rate limiting, content-length caps, frequency throttling — apply those policies uniformly to SCRUTINY events. A relay that imposes "max 100 kind 1 events per pubkey per hour" throttles a bot publishing 200 SCRUTINY patches equally with a spammer posting 200 replies. Relays may also evolve their `kind:1` handling (deprioritization algorithms, storage-tier rebalancing, filter-index restructuring) without awareness of SCRUTINY's dependency. Nostr protocol evolution — NIP deprecations, new relay behavior requirements for `kind:1` — may break SCRUTINY without any SCRUTINY-specific change.
+**1. Problem.** All SCRUTINY events use `kind:1`, sharing NIP-01's short-text-note space with general Nostr traffic (§3, §3.2). Relays that rate-limit, size-cap, or throttle kind 1 events apply that policy uniformly to SCRUTINY traffic (†). A high-volume SCRUTINY publisher competes with social chatter for the same quota, degrading G3 and G5. Relay handling of kind 1 may also evolve without awareness of SCRUTINY's dependency (†).
 
-**2. Mitigation.** Version tagging (`scrutiny-v053` `t` tag) allows clients to negotiate protocol versions and detect incompatible changes. SCRUTINY-specific `t` tags (`scrutiny-fabric`, `scrutiny-product`, etc.) allow relay-side filtering to isolate SCRUTINY traffic — relays COULD exempt SCRUTINY-tagged events from general kind 1 rate limits if they choose to distinguish them. The protocol's minimal surface (four event types, standard Nostr primitives) reduces the probability of relay incompatibility.
+**2. Mitigation.** The [TAG-1] and [TAG-3] tag set is the filter surface a relay can use to identify SCRUTINY events. Relays may exempt such events from generic kind 1 limits if they choose († relay behavior, not a protocol guarantee). The [TAG-2] version-tag pattern `^scrutiny-v\d+\.\d+\.\d+$` distinguishes SCRUTINY generations for such filtering.
 
-**3. Gap.** No migration path to a dedicated kind number if kind 1 coupling becomes untenable. No compatibility matrix against relay implementations. No mechanism for a relay to advertise "I treat SCRUTINY events differently from social kind 1 events." The relay's sovereign discretion over kind 1 handling cannot be constrained by the protocol. Rate-limiting that is reasonable for social media may be crippling for high-volume SCRUTINY publication use cases.
+**3. Gap.** No migration path to a dedicated kind exists if kind 1 coupling becomes untenable (absent). Relay exemption from generic limits is voluntary, so it is at best may-class and unenforceable by the protocol (†). No mechanism lets a relay advertise SCRUTINY-aware policy handling (absent).
 
-**4. Residual risk: Medium.** External dependency on a rapidly evolving protocol ecosystem. The risk is structural and long-term — kind 1 semantics may drift in ways invisible to the SCRUTINY specification. Practical impact depends on specific relay operator policies.
+**4. Impact: Medium** — Uniform kind 1 policy can throttle or deprioritize all SCRUTINY publication and discovery at affected relays, degrading G3 and G5.
 
----
+**5. Likelihood: Possible** — Kind 1 anti-spam tightening and relay policy drift are plausible over time (†) × no protocol control constrains relay kind-level policy and no accommodation exists.
 
-#### T-EC-04 — AI-Generated False Metadata at Scale
+**6. Residual risk: Medium** — A long-term structural dependency on a shared, evolving namespace, with practical impact varying by relay operator policy (†).
+
+#### T-EC-04 — Automated False Metadata at Scale
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Sybil Amplifier, Compromised Publisher |
-| Assets | A2 Metadata events, A1 Product events, A3 Binding events |
-| Spec | §2 principle 4 (deep semantics require protocol-aware processing) |
+| Assets | A2 Metadata, A1 Product, A3 Binding, A12 Pubkey-to-reputation mappings |
+| Goals | G5 Discoverability, G4 Trust Separation |
+| Spec | [TR-2], [SIG-1]; §3.1, §6.1, §7.5 |
 
-**1. Problem.** The protocol is designed to be machine-processable: events carry sufficient structure for automated agents (including AI agents) to discover, parse, and act on them without human intervention. This creates a symmetry: AI agents that consume protocol data can also produce it. An attacker deploying an LLM pipeline under a trusted key (compromised or socially engineered into trust) produces Metadata events with coherent, technically detailed `content` fields, appropriate canonical identifiers, and plausible attached artifacts (AI-generated PDF reports, fabricated test data). Output is syntactically indistinguishable from human-authored expert analysis. At scale, the volume of plausible output overwhelms community review capacity. The trust model assumes human curation of pubkeys, not human authorship of events — a trusted organization's AI-generated false metadata passes trust filtering with the organization's full credibility weight. The spec's principle 4 positions deep semantics as requiring protocol-aware processing; it does not address AI as a producer.
+**1. Problem.** Automated pipelines mass-produce syntactically valid Products, Metadata, and Bindings that read as expert analysis (†). They sign under an operator's key, so output is indistinguishable from human authorship at the protocol layer (App A crosswalk). Under a trusted or compromised key output passes admission at full credibility ([TR-2]), while sybil farms enter through N-hop expansion (§6.1, §7.5). That volume, at negligible marginal cost (†), overwhelms corroboration and review, degrading G5 and G4's curatorial premise.
 
-**2. Mitigation.** Events are attributable to a pubkey — the publishing organization bears reputational accountability regardless of whether the content was human or AI authored. Trust filtering limits propagation to users who trust the publishing key. Independent corroboration from other trusted sources provides a natural signal: AI-generated findings lacking multi-source corroboration stand in isolation, while legitimate findings attract confirmatory bindings and cross-references.
+**2. Mitigation.** Each event stays attributable to its signing key ([SIG-1]), and the key's operator answers for machine and human output alike (†). Untrusted output stays out of view ([TR-2]), and §7.5 advises warning when trust-radius expansion would admit many unseen pubkeys (should-class prose).
 
-**3. Gap.** No mechanism to distinguish human-authored from AI-generated events within the protocol. No requirement for publishers to disclose AI involvement. No rate-limiting or credibility-weighting that accounts for AI-driven volume. The trust model's binary admission (trusted/untrusted per pubkey) provides no per-event credibility signal. The protocol's machine-processable design admits both human and automated production identically.
+**3. Gap.** No rule distinguishes automated from human production (absent per App A), and no disclosure duty exists (absent). No per-event credibility or rate signal exists beyond binary trust ([TR-2]), and may-class proof-of-work (NIP-13) adds cost without vetting (§3.1).
 
-**4. Residual risk: Medium.** Bounded by trust-filtering and community corroboration norms. Elevated as LLM-generation capability improves and costs decrease. The structural defense is that trust is anchored to pubkeys, not content plausibility — but this defense weakens when trusted organizations deploy AI publishing pipelines without disclosure.
+**4. Impact: Medium** — Output admitted at full credibility, in volume that buries corroboration, degrades discovery quality (G5) and the curatorial premise (G4) per user and ecosystem scope.
 
----
+**5. Likelihood: Likely** — Sybil Amplifier [B2, M3] driving, Compromised Publisher [B1, M3] on the trusted arm × near-zero marginal cost (†) × discrimination absent after admission.
+
+**6. Residual risk: Medium** — Curation and corroboration bound a curated user's exposure, but trusted keys running undisclosed pipelines pass at full weight (†).
 
 #### T-EC-05 — Economic and Social Signal Manipulation
 
 | Field | Value |
 |---|---|
+| Type | adversarial |
 | Adversary | Sybil Amplifier, Spam/DoS Attacker, Occasionally Lying Publisher |
-| Assets | A2 Metadata events, A3 Binding events, A12 Pubkey-to-reputation mappings |
-| Spec | §3.1 (NIP-18, NIP-25, NIP-57) |
+| Assets | A2 Metadata events, A11 Trusted-pubkey set, A12 Pubkey-to-reputation mappings |
+| Goals | G4 Trust Separation, G5 Discoverability |
+| Spec | [TR-2], [TR-7]; §3.1 |
 
-**1. Problem.** The protocol acknowledges NIP-18 (Reposts), NIP-25 (Reactions), and NIP-57 (Lightning Zaps) as optional consumer-side signals (§3.1). These are not required for protocol conformance, but implementations MAY use them for ranking, attention, or importance. This creates attack surfaces:
+**1. Problem.** §3.1 lists NIP-18 reposts, NIP-25 reactions, and NIP-57 zaps as optional ranking, spam-deterrence, or attention signals, none required for conformance. Sybil keys mint reposts or reactions at negligible cost, and funds buy zap receipts, inflating whichever signals a client counts (†). §3.1 names reaction counts a sentiment indicator only, so negative-suppression ranking is client behavior (†). Raw-count ranking elevates attacker content regardless of signaler trust, degrading G5 and G4.
 
-- **Repost brigading (NIP-18):** A Sybil Amplifier or trusted Occasionally Lying Publisher reposts attacker-controlled Metadata events from trusted keys, giving those events amplified visibility. Because reposts are queryable via `#e` filters, a client using repost counts as a ranking signal may surface attacker content higher.
-- **Reaction brigading (NIP-25):** Coordinated negative reactions (`kind: 7`) from Sybil keys suppress legitimate Metadata events in clients that downrank by negative sentiment. Conversely, positive reactions boost attacker content.
-- **Zap manipulation (NIP-57):** A rich attacker uses high-value Lightning Zaps to create economic legitimacy signals. A Metadata event with 10,000 sats in zaps appears more credible to clients using zap counts as economic importance signals, regardless of factual accuracy.
+**2. Mitigation.** The trust perimeter still gates the ranked events ([TR-2]), with filtering held at the presentation edge ([TR-7]). Trust-weighting counts blunts sybil volume but is guidance (†), not a §3.1 rule.
 
-All three signals are orthogonal to the protocol's trust model: they operate on consumer behavior, not publisher authority. A client that naively weights these signals without trust-filtering the signalers creates a bypass around §6's admission rules.
+**3. Gap.** No ranking algorithm or signal-weighting scheme is defined (absent, by design). Raw counting without trust weighting is exposed, and that exposure is a client's choice (†). No rate-limits on signals per target and no coordinated-campaign detection exist (absent).
 
-**2. Mitigation.** Trust filtering is the primary defense: untrusted pubkeys are invisible regardless of their signal volume. For signal aggregation, implementations SHOULD weight reposts, reactions, and zaps by the signaler's trust status — a repost from a trusted key carries weight; a repost from an untrusted key does not. The protocol does not mandate ranking algorithms, but the trust model's admission rules (§6) naturally constrain signal abuse to the user's trust perimeter.
+**4. Impact: Medium** — Attacker-shaped ranking steers discovery of security metadata for clients consuming unweighted signals, degrading G5 and G4 at per-client scope.
 
-**3. Gap.** The protocol deliberately does not define ranking algorithms or signal-weighting schemes. This is a client-layer concern. However, naive clients that count raw signals without trust weighting are directly vulnerable. No protocol-level rate-limiting on reactions, reposts, or zaps per target event. No mechanism to detect coordinated signal campaigns from distributed Sybil keys.
+**5. Likelihood: Possible** — Sybil Amplifier [B2, M3] (mass key generation marks B2, recurring campaigns mark M3) × near-zero per-signal cost × protocol-layer defense absent, client weighting optional (†).
 
-**4. Residual risk: Medium.** Bounded by trust filtering for curated users. Higher in scenarios with wide trust-radius expansion (N-hop WoT) where Sybil keys gain signal visibility. Economic signal manipulation (zaps) is constrained by Lightning Network cost but remains viable for well-funded attackers.
+**6. Residual risk: Medium** — Bounded for curated users by the trust perimeter, rising with N-hop trust expansion and naive signal consumption (†).
 
----
-
-### §6.8 — Protocol Interactions
-
-#### T-PI-01 — Legal Pressure Vectors
+#### T-EC-06 — Opaque Admission Silently Skips Future Safety Semantics
 
 | Field | Value |
 |---|---|
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A1 Product events, A2 Metadata events, A3 Binding events, A4 Patch events, A15 Rendered content |
+| Goals | G1, G2, G6 |
+| Spec | no single rule: family TAG/VER; see §3 |
+
+**1. Problem.** The forward-compatibility contract admits a higher-version event opaquely if it satisfies every v0.8.1 Validity invariant ([VER-2]). Unknown tags are ignored by parsers ([TAG-5]). A future release may exist (hypothetical by construction). An event built on its mechanics then passes every v0.8.1 check while the client never evaluates its added semantics. A hypothetical new tag class† is silently dropped, so the event renders as though fully understood† and consumers see a plain v0.8.1 artifact.
+
+**2. Mitigation.** [VER-3] must-class exclusion renders nothing violating Validity. [TAG-5] keeps unknown tags ignored rather than misparsed, and [VER-1] keeps ordering exact over unbounded fields.
+
+**3. Gap.** No negotiation channel exists (absent) for a publisher to name required semantics. No rule requires surfacing how many unknown tags an opaque admission skipped (absent). [VER-2] is may-class and [VER-4] forbids version-tag-only rejection, so consistent quarantine cannot be mandatory.
+
+**4. Impact: High** — G1, G2, and G6 degrade silently: inventories and audit trails treat un-understood events as understood, diverging irreversibly from publisher intent.
+
+**5. Likelihood: Possible** — the condition is a future release existing, postulated here rather than observed. The §3 forward-compatibility paragraph anticipates coexisting versions but creates none.
+
+**6. Residual risk: Medium–High** — low bound: no future release, no divergence. High bound: each opaque admission misrepresents content no mitigating rule reaches, and divergence is unbounded.
+
+#### T-EC-07 — Conformance Corpus Supply Chain
+
+| Field | Value |
+|---|---|
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A14 Conformance corpus, A7 Canonical bytes |
+| Goals | G1, G6 |
+| Spec | no single rule: family UR; see §7.6, Appendix G |
+
+**1. Problem.** A design decision anchors conformance to a per-release digest-pinned corpus published for two layers: application and validity (G.1). Discovery-layer and §3 event-id serialization vectors are reserved and not yet published, so those layers are uncheckable today (G.1, G.3). For halts, G.3 pins only the halt fact and resulting bytes, so reasons (G.3) and unpinned annotations (G.2) may diverge. Whoever lands a vector-and-digest change re-pins conformant for that release (G.1).
+
+**2. Mitigation.** G.1 pins SHA-256 digests over exact LF-only bytes, so any mutation is loud against the published table. Case names are permanent, never silently redefined (G.2), and where vector and prose disagree, prose governs (Appendix G). Every chain case must hold under any event permutation, asserting corpus-wide confluence ([UR-1], G.3).
+
+**3. Gap.** No rule governs the channel publishing the digests: control is absent, falling to should-class appendix guidance (G.1). A-layer cases presuppose signature verification and never exercise it ([SIG-1], G.3), so that coverage is absent as well. Halt-reason pricing is absent by design (G.3). Why-divergence stays unpriced.
+
+**4. Impact: Medium** — Conformant-but-divergent behavior on uncovered layers, plus unpriced diagnostic divergence, degrades G1 and G6 across implementations.
+
+**5. Likelihood: Likely** — Two uncovered layers times absent channel governance make divergence-under-conformance the standing condition, loud digests curbing only silent drift.
+
+**6. Residual risk: Medium** — The pinned core holds, but two layers stay uncheckable until vectors publish, halt diagnostics remain advisory by design, and release governance stays protocol-external.
+
+### §7.8 — Protocol Interactions
+
+Protocol Interactions — tensions between mechanisms and inherited Nostr semantics.
+
+#### T-PI-01 — Legal Pressure Vector
+
+| Field | Value |
+|---|---|
+| Type | adversarial |
 | Adversary | Hostile Vendor |
-| Assets | A2 Metadata events, A1 Product events, A3 Binding events |
-| Spec | §7.5 censorship paragraph |
+| Assets | A1 Product, A2 Metadata, A3 Binding, A4 Patch, A10 Attached artifacts |
+| Goals | G3, G5 |
+| Spec | [DEL-9], [DEL-10], [DEL-11]; §7.5 |
 
-**1. Problem.** Publishing negative security findings about commercial products triggers multiple legal exposure vectors: DMCA takedown notices (US), trade-secret misappropriation claims, Computer Fraud and Abuse Act (CFAA) allegations, defamation suits, and contractual breach claims. The target may be the publisher (forcing retraction or deterring future publication), the relay operator (forcing event suppression), or the artifact host (forcing payload takedown). Crucially, a coerced kind 5 deletion is indistinguishable from a voluntary one — the protocol has no mechanism for a publisher to signal "I retracted this under duress" without further legal exposure. Other researchers observing litigation against a peer may self-censor, creating a chilling effect that scales beyond the individual case.
+**1. Problem.** Relay operators may face legal or economic pressure from vendors suppressing unfavorable findings (§7.5). A vendor pressures many operators through contracts, sponsorship withdrawal, DMCA takedowns, and defamation or trade-secret suits†, in a coordinated campaign†. Users who query only pressured relays see a censored graph (§7.5). A coerced kind 5 deletion is indistinguishable from a voluntary one, so duress-retraction is invisible (§10).
 
-**2. Mitigation.** Multi-relay replication makes complete suppression difficult even if the original publisher retracts. Kind 5 events are stored alongside originals per relay policy (§10) — retracted content remains auditable. Multi-jurisdictional relay and artifact-host distribution limits the reach of any single legal regime. The protocol's append-only retraction model preserves the original event for forensic purposes.
+**2. Mitigation.** The defense is declared operational — publish widely, query broadly — with multiple-relay querying and cross-referencing recommended (§7.5). [DEL-11] stores deletions alongside originals on SCRUTINY-aware relays, [DEL-9] caches received kind 5s locally, and [DEL-10] surfaces retracted history via a show-deleted-events toggle. Blossom-hosted payloads survive relay takedowns (§7.5).
 
-**3. Gap.** No protocol-level distinction between voluntary and coerced retraction. No whistleblower protection or collective defense mechanism. No safe-harbor framework for relay operators or publishers. The protocol cannot grant legal immunity, and its architectural defenses (replication, distribution) are jurisdictional, not cryptographic. The chilling effect on legitimate security research is real and well-documented.
+**3. Gap.** No rule distinguishes voluntary from coerced retraction (absent), and the deletion controls are must, should, and should ([DEL-9], [DEL-11], [DEL-10]). No campaign-detection mechanism exists (absent)†, §7.5 querying is should-class, and the protocol cannot grant legal immunity. Chilling effects on operators and on researchers watching peers sued are real but unmeasured†.
 
-**4. Residual risk: Medium.** The protocol's replication model provides resilience, not immunity. Effectiveness depends on jurisdictional diversity of relays and hosts — an ecosystem property. The chilling effect is a sociological phenomenon the protocol cannot prevent.
+**4. Impact: High** — a vendor pressuring a user's whole working relay set removes the targeted events from every graph the user can assemble from it (G3, G5).
 
----
+**5. Likelihood: Likely** — Hostile Vendor [B4, M4] by A.1's legal axis and A.2's example, given pressured-set coverage, against must-and-should deletion controls.
 
-#### T-PI-02 — NIP-09 Semantic Tension (Deletion vs. Audit Trail Preservation)
+**6. Residual risk: Medium** — coercion resists rule-level defenses, and only operational diversity of relays, jurisdictions, and archives bounds it (†).
+
+#### T-PI-02 — NIP-09 Deletion Retention Tension
 
 | Field | Value |
 |---|---|
-| Adversary | Malicious Relay Operator |
-| Assets | A5 Kind 5 deletion events, A6 Canonical chains, A7 Canonical views, A4 Patch events |
-| Spec | §10, §7.3 orphaned disputes |
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A4 Patch events, A5 Kind 5 deletion events, A6 Canonical chains |
+| Goals | G6 Auditability |
+| Spec | no single rule: family DEL; see §10, §7.3 |
 
-**1. Problem.** SCRUTINY relies on NIP-09 kind 5 deletions as the sole deletion mechanism (§10). However, NIP-09 semantics and SCRUTINY's audit-trail requirements create tension. NIP-09 states that relays MAY delete the target event entirely — physically removing it — while SCRUTINY's relay policy (§10) RECOMMENDS storing deletion events alongside originals, preserving the audit trail. A relay that honors NIP-09 by physically deleting the target destroys SCRUTINY's auditability: the historical state is irrecoverable from that relay. A relay that stores both preserves auditability but violates a strict reading of NIP-09. Additionally, a kind 5 deletion targeting a patch triggers SCRUTINY's topology cascade (§10): the patch and all its canonical-chain descendants are invalidated. This is a SCRUTINY-specific semantic layered atop a generic Nostr primitive — a generic Nostr client unaware of SCRUTINY sees a simple deletion, not a cascade. Foreign patches that referenced the deleted patch become orphaned annotations per §7.3.
+**1. Problem.** SCRUTINY's audit trail rests on NIP-09 kind 5 deletions, which §3.2 inherits with relay honour made optional. §10 asserts a deleted event still exists on relays and is preserved for the audit trail, yet the guarantee rests on [DEL-11]'s should-level co-store. The kind 5 cascade ([DEL-2], [CHN-2]) and orphaned-overlay α/β rule ([DEL-7], [OV-3]) are SCRUTINY-side semantics generic clients do not compute (†, §2). A relay that honours NIP-09 by discarding the target (†) makes historical state irrecoverable from that relay set.
 
-**2. Mitigation.** The spec's relay policy (§10) explicitly recommends storing deletion events alongside originals. Topology cascade is deterministic — given the same events, every compliant client computes the same cascade outcome. Kind 5 validation (§10) requires verifying pubkey match before applying deletion — the deletion's `pubkey` must match the target event's `pubkey`. Orphaned-dispute handling (§7.3) preserves foreign opinions that referenced now-deleted canonical state, with appropriate warning annotations.
+**2. Mitigation.** [DEL-11] asks SCRUTINY-aware relays to store deletions alongside originals, and [DEL-9] makes clients cache received kind 5s locally. [DEL-10] surfaces deleted events and their descendants through a show-deleted toggle, restoring audit visibility. [DEL-4] preserves root chains, overlays, and Bindings for audit when a root is retracted.
 
-**3. Gap.** Relay behavior is not uniform: some relays physically delete per strict NIP-09, others retain per SCRUTINY recommendation. A client querying a mix of relays sees different deletion states. Generic Nostr clients consuming SCRUTINY events have no awareness of topology cascade semantics. The protocol layers SCRUTINY-specific deletion semantics on a Nostr primitive with different intended semantics — creating an impedance mismatch that manifests as behavioral inconsistency across relay implementations.
+**3. Gap.** Retention across relays is should-class variance, so audit completeness tracks the least deletion-honouring relay a query touches (absent). [DEL-9] and [DEL-10] recover the notice of deletion, never the deleted bytes once a relay has dropped them (†).
 
-**4. Residual risk: Medium.** Audit-trail preservation depends on relay operator compliance with SCRUTINY's retention recommendation, which contradicts strict NIP-09 interpretation. The tension is inherent to repurposing a Nostr primitive beyond its original semantics. Bounded by the spec's explicit relay-policy guidance and multi-relay diversification.
+**4. Impact: Medium** — Deletion of a SCRUTINY event degrades audit completeness wherever relays honour NIP-09 by dropping the target (†) (G6).
 
----
+**5. Likelihood: Possible** — the delete-then-lose condition is a routine kind 5 deletion colliding with a discarding relay, and controls are should-class only.
+
+**6. Residual risk: Medium** — Audit completeness is as strong as the most deletion-honouring relay in the queried set, with no must-level retention rule to lift it (absent).
 
 #### T-PI-03 — Cryptographic Agility Gap
 
 | Field | Value |
 |---|---|
-| Adversary | N/A (structural, long-horizon) |
-| Assets | A1–A5 All event types, A10 Attached artifacts |
-| Spec | §3.1 NIP dependencies |
+| Type | structural-weakness |
+| Adversary | — (structural) |
+| Assets | A1 Product events, A2 Metadata events, A3 Binding events, A4 Patch events, A5 Kind 5 deletion events, A10 Attached artifacts |
+| Goals | G1, G2 |
+| Spec | no single rule: family SIG; see §3.1, §3.2 |
 
-**1. Problem.** Nostr hardcodes secp256k1 for event signatures and SHA-256 for event ID computation (NIP-01). SCRUTINY inherits this dependency without abstraction (§3.1). Under quantum-capable adversaries or major cryptanalytic breakthroughs, historical and live event signatures become forgeable, event IDs become subject to collision attacks, and the entire integrity and authenticity foundation unravels. There is no post-quantum cryptographic (PQC) migration path defined in Nostr or SCRUTINY. Any migration would require a new Nostr event format, new kind numbers, or a parallel signing scheme — all breaking changes to both protocol layers.
+**1. Problem.** SCRUTINY inherits NIP-01's signature scheme and id derivation, and defers to that base layer rather than re-derive semantics (§3.2, [SIG-1]). Every event's Schnorr `sig` and SHA-256 `id` rest on single primitives, so one break forges both across history and live events. No agility layer or alternative-primitive rule exists, and §3.1 lists no post-quantum or hybrid dependency (absent). [SIG-1] hard-pins the current NIP-01 serialization, so migrating primitives is a breaking change for every existing event, while [OTS-1] is audit-only.
 
-**2. Mitigation.** None at the protocol level. The cryptographic primitives are inherited from Nostr without abstraction. The threat is acknowledged as long-horizon: no known practical attacks on secp256k1 or SHA-256 exist today. SCRUTINY's dependency on standard Nostr primitives means any Nostr-level cryptographic migration automatically becomes SCRUTINY's migration path.
+**2. Mitigation.** Any Nostr-level migration of the signature scheme applies to SCRUTINY automatically (§3.2). Within SCRUTINY itself, [SIG-1] is verification-only and single-primitive, giving no alternate signature path. [OTS-1] binds attestations to audit timestamps only, so it records existence but resists no forgery.
 
-**3. Gap.** No cryptographic agility layer. No defined migration path for algorithm transition. No hybrid-signature scheme to ease gradual migration. The protocol's tight coupling to Nostr's cryptographic choices means SCRUTINY cannot independently evolve its cryptographic primitives — it is locked to Nostr's migration pace and decisions.
+**3. Gap.** No algorithm-transition, hybrid-signature, or alternative-primitive rule exists (absent). SCRUTINY is locked to Nostr's migration pace and decisions with no independent agility layer (absent).
 
-**4. Residual risk: Low (near-term) / High (long-term).** No practical attacks exist today. If the protocol is intended to persist across decades — which security metadata inherently requires for long-lived products — quantum migration becomes a concrete planning concern before it becomes a practical attack.
+**4. Impact: High** — A broken primitive forges every event's signature and id, collapsing G1 and G2 across all historical and live data.
 
----
+**5. Likelihood: Very unlikely** — condition probability is negligible today with no practical cryptanalysis, absence-of-controls is total, and the level is dominated by the negligible condition, not the High impact.
 
-#### T-PI-04 — Snapshot Pin Staleness
-
-| Field | Value |
-|---|---|
-| Adversary | Compromised Publisher |
-| Assets | A3 Binding events, A6 Canonical chains, A7 Canonical views |
-| Spec | §4.3 snapshot tags, §10 cascade |
-
-**1. Problem.** Binding events carry optional `root:rev` and `link:rev` snapshot pins — references to specific patch event IDs representing "I evaluated this connection against state X" at binding time (§4.3). If the referenced patch is later kind 5-deleted, retracted, or the chain evolves beyond it, the snapshot pin points to a superseded or withdrawn state. The binding itself remains valid (snapshot pins do not affect binding validity). Clients SHOULD render a warning indicating the referenced state has been withdrawn (§10). However, the binding's relationship assertion was evaluated against a state that no longer exists — a user viewing the binding without seeing the warning or understanding its implications can incorrectly infer that the relationship still holds against the current canonical view. If the referenced patch introduced content that the binding depended upon (e.g., a vulnerability finding linked to a firmware version later removed), the binding becomes semantically stale — its premises dissolved — yet appears structurally intact.
-
-**2. Mitigation.** Spec §10 explicitly addresses snapshot staleness: clients SHOULD render warnings when a snapshot references retracted state. Snapshot pins are informational and not part of a deduplication key (§4.3). The binding author chose the evaluation point; readers can compare the snapshot state against the current canonical view to assess staleness. The protocol does not auto-invalidate bindings whose snapshots become stale — this preserves historical audit context.
-
-**3. Gap.** No automated staleness assessment. No mechanism for a binding author to update snapshot pins without deleting and republishing the entire binding. No protocol-level signaling of "this binding's evaluation premises have changed — re-evaluation recommended." The stale-snapshot binding sits in the graph indefinitely, presenting assertions evaluated against a state the root author has withdrawn. Users unfamiliar with snapshot semantics may miss the warning and treat the binding as current.
-
-**4. Residual risk: Medium.** Semantic staleness, not cryptographic integrity failure. The binding's assertions remain attributable; the staleness is a contextual mismatch between evaluation premises and current state. The client-side warning (SHOULD) bounds the risk for attentive users; inattentive or automated consumption inherits the staleness uncritically.
+**6. Residual risk: Low** — near-horizon the primitives face no practical exposure, and the far-horizon quantum-era forgeability is an unquantified planning concern, not a present-day residual.
 
 ---
 
-## §7 — Residual Risks
+## §8 — Residual Risks
 
-The following limitations are structural consequences of the protocol's design decisions and its inheritance of Nostr's architecture. They cannot be eliminated at the protocol layer and must be addressed by the ecosystem.
+Limitations that follow from the protocol's design decisions and its inheritance of Nostr's architecture. They cannot be eliminated at the protocol layer this version. The ecosystem carries them. Catalog entries already rate their exploitable edges. This section states the structural residue.
 
-### 7.1 Design-Inherent Trade-offs
+### 8.1 Design-inherent trade-offs
 
-**Key compromise with no revocation.** No protocol-level recovery from nsec compromise. This is the single most critical architectural gap, inherited from Nostr (no adopted key-revocation NIP). A compromised high-authority key retains full authority indefinitely — there is no mechanism to invalidate it, delegate to a successor, or broadcast revocation that all clients honor. Recovery is social and asynchronous.
+- **Key compromise without revocation.** A leaked key retains authority indefinitely (T-ID-01). No Nostr-wide revocation primitive exists. Recovery is social and asynchronous.
+- **Self-reported timestamps.** `created_at` is publisher-controlled and informational ([CA-1] is a non-enforced directive). Audit conclusions drawn from bare timestamps inherit T-DI-01's exposure.
+- **Plaintext query exposure.** REQ subscriptions reveal exact client interests to relay operators in cleartext. Nostr offers no private-retrieval primitive inside protocol scope (T-SV-01, boundary assignment in §9).
+- **Artifact-fetch privacy.** Fetching an `imeta` attachment exposes the requester to the hosting server over HTTPS: integrity is hash-protected, privacy is not (T-SV-03).
+- **Observed-set divergence.** Canonical bytes track the event set a client currently observes. There is no set-agreement primitive (T-DI-02).
 
-**Timestamp trust dependency.** `created_at` is self-reported and consumed by fork resolution — the primary ordering primitive for canonical chains. All ordering-dependent logic (default-head selection, first-publisher visibility) is structurally vulnerable to manipulation. OTS (MAY) mitigates but is gated on voluntary adoption with currently low ecosystem uptake.
+### 8.2 Bootstrap vulnerabilities
 
-**Plaintext query privacy.** Nostr REQ subscriptions leak exact client interests in plaintext to relay operators. No private-information-retrieval primitive exists in Nostr. Organizational participants face a structural trade-off between ecosystem participation and operational security. This is inherited from NIP-01 and cannot be addressed without a fundamental Nostr protocol change.
+- **Trust bootstrap.** The trusted-pubkey-set model presumes an established list. Genesis is when the user is least equipped to make trust decisions (T-DC-02, T-EC-02).
+- **View completeness.** Signatures guarantee event integrity but never that a client has seen all relevant events. No decentralized relay mesh without consensus can promise this.
 
-**Artifact-fetch privacy leakage.** External `imeta` retrieval exposes requester identity and interest to artifact hosts over a separate HTTPS channel from the relay connection. Hash verification protects integrity of fetched bytes; nothing protects privacy of the fetch itself. Tracking-beacon-style URLs exploit this channel for surveillance correlation.
+### 8.3 Corpus gaps (structural)
 
-### 7.2 Bootstrap Vulnerabilities
+Spec Appendix G ships application-layer and validity-layer vectors. The discovery-layer and serialization vectors are reserved and not yet published. Until they land, D-layer conformance rests on prose alone. Who verifies TR-2..TR-7 behavior is a test-coverage question, not a spec defect. T-EC-07 rates the supply-chain exposure of the corpus itself.
 
-**Trust bootstrap.** The WoT model is sound at maturity but undefined at genesis. Default trust-list creation, signing, distribution, updating, and revocation are all unspecified. The bootstrap phase — when the user has no basis for trust decisions — is the period of maximum vulnerability with minimum protocol-level protection.
+### 8.4 Deferred mechanisms named but not modeled
 
-**Canonical-view completeness.** The protocol guarantees event integrity (signatures) but not view completeness. A client can never know it has seen all relevant events for a product or identifier. This is inherent to any decentralized, relay-mediated system without a global consensus layer.
+- **Snapshot pins** (spec §11 future work): if shipped, stale pin-to-state references would need the same revision discipline as chains. Not a v0.8.1 mechanism. This line is the only sanctioned mention in this document.
+- **Cherry-pick attribution** (spec §11): deferred with no current mechanism. A future version defines the `cherry-pick` marker. No v0.8.1 threat entry cites it.
+- **Recursive overlays, merge adoption, supersedes tags, confidential metadata, vendor identity lists, metadata-to-metadata Bindings, DVM integration**: all deferred in spec §11. Not modeled here.
 
-**Canonical-view determinism across implementations.** Different clients connected to different relay subsets may compute divergent canonical views from non-identical input patches. Individual event integrity is protected; inter-client state consistency is not guaranteed. This is a consequence of the relay-mediated architecture combined with eventual-consistency publication dynamics.
+### 8.5 Excluded concerns (platform layer)
 
-### 7.3 Excluded Concerns
-
-The following are explicitly excluded from this threat model:
-
-- **Schnorr signature forgery.** Mathematically infeasible under current cryptanalytic knowledge; no known practical attacks on secp256k1 exist.
-- **SHA-256 collision attacks.** Astronomically negligible probability; no known practical SHA-256 collision exists.
-- **Secp256k1 nonce reuse.** Key-management hygiene concern, not a protocol vulnerability. Properly implemented signing libraries prevent nonce reuse.
-- **TLS downgrade and certificate validation.** Transport-layer concerns outside the protocol's scope. SCRUTINY assumes standard TLS for relay connections.
-- **DNS poisoning of relay URLs.** DNS infrastructure concern; mitigated by TLS certificate validation and relay pubkey pinning (where supported).
-- **Compromised developer supply chain.** A compromised client/bot/build-pipeline breaks every protocol-level security assumption simultaneously. The protocol's portability (multiple independent implementations) provides theoretical resilience, but no certification, conformance-testing, or reproducible-build requirement exists. Noted here as an ecosystem-level residual risk.
-
-### 7.4 Surface Normalization Precision
-
-Line-ending normalization (`\r\n` → `\n`), trailing-newline handling, and locale-dependent sorting edge cases (Unicode collation differences across implementations) may produce bytewise-divergent surface serializations from semantically identical events. Consequence: two clients with different `i` surface sort orders produce conflicting diffs during patch application, causing HALT divergence. Current spec §5.1 canonical-form normalization addresses line endings and UTF-8 encoding but does not fully specify Unicode collation order for `i` surface sorting beyond "sorted lexicographically by the full `<prefix>:<value>` string." Implementations disagreeing on byte-level sort order of non-ASCII identifiers produce mutually incompatible canonical views. Risk is bounded to ecosystems where non-ASCII canonical identifiers are prevalent.
+- Schnorr-signature forgery and SHA-256 collision attacks: astronomically infeasible against non-quantum adversaries.
+- Key-management failures (nonce reuse, weak RNG): hygiene questions, not protocol vulnerabilities.
+- TLS downgrade, certificate validation, DNS poisoning: transport and platform concerns.
+- Compromised supply chain of an implementation itself: orthogonal to protocol design. Multiple implementations and the conformance corpus (Appendix G) are the partial answer.
 
 ---
 
-## §8 — Boundary Matrix
+## §9 — Boundary Matrix
 
-| Responsibility | Protocol Layer | Ecosystem / Client Layer |
+Which layer owns each responsibility. "Protocol layer" entries point at rules or sections. "ecosystem layer" entries are duties no spec rule imposes.
+
+| Responsibility | Protocol layer | Ecosystem / client layer |
 |---|---|---|
-| Event integrity (signature verification) | Secp256k1 signatures over SHA-256 event IDs (inherited from NIP-01). Signatures MUST be verified. | — |
-| Event availability | Multi-relay design; portable event format; relay hints in `e` tags | Relay operators; archival practices; community mirroring |
-| Artifact availability (`imeta` files) | SHA-256 hash for integrity verification only | Hosting providers; content-addressed storage; mirror networks; archive services |
-| Trust-list curation | Structure defined (§6.1): pubkey allowlists, WoT expansion rules | Users; client defaults; community governance; default-list signing and distribution |
-| Trust bootstrap | Not addressed — structure exists but genesis is undefined | Client distributors; community seed lists; bootstrapping ceremonies |
-| Content sanitization | Not addressed — `content` is free-form by design (§4) | Client implementations (XSS prevention, markdown rendering, link handling) |
-| Key management and revocation | Not addressed — acknowledged as structural gap (§7.5) | Users; key management tools; social processes for compromise announcement |
-| Identity attestation | Not addressed — permissionless by design (§7.5) | Out-of-band verification; organization websites; third-party key registries; community reputation |
-| Timestamp verifiability | NIP-03 OTS (MAY); `created_at` for fork resolution (§7.2) | OTS adoption; client timestamp anomaly detection |
-| Query privacy | Not addressed — inherited Nostr limitation (plaintext REQ) | Tor/VPN routing; broad filters with local post-filtering; relay selection discipline |
-| Artifact-fetch privacy (`imeta`) | Integrity hash only; no anonymity model | Proxy retrieval; artifact mirroring; anti-tracking fetch policies; URL inspection |
-| Spam and DoS mitigation | Optional PoW (NIP-13, MAY); SCRUTINY `t` tags for filtering | Relay-side rate limiting; client-side trust filtering; community moderation |
-| Kind 5 deletion behavior | Deletion semantics defined (§10) — topology cascade, orphan handling, relay policy | Relay operator compliance with retention recommendation; client implementation of cascade logic |
-| Cryptographic agility | Not addressed — inherited primitives from Nostr | Dependent on Nostr protocol evolution; hybrid-scheme proposals |
-| Identifier squatting defense | Trust filtering; multiple competing events permitted; no authoritative validation | Community-maintained pubkey-to-authority mappings; registry cross-reference tooling |
-| AI-generated content management | Not addressed (§2 principle 4 positions AI as consumer, not producer) | Publisher disclosure norms; community review processes; external verification tools |
-| Client correctness | Computation rules defined (§5.3, §7.4); conformance assumed | Conformance testing; code audits; reproducible builds; multiple independent implementations |
+| Event integrity | `id` + Schnorr signature verified before processing ([SIG-1]) | — |
+| Event availability | Portable event format; relay hints; multiplicity guidance (§7.5) | Relay operators; archival practices; community mirroring |
+| Artifact availability | `x` hash binds content ([IM-1]); mirror URLs ([IM-3]) | Blossom operators; mirror and archive services |
+| Artifact integrity | [IM-1] hash verification, [IM-4] warning duty | Client fetch hygiene |
+| Trusted-pubkey set curation | Structure only (§6.1): allowlist, WoT expansion, reputation threshold | Users; client defaults; community governance; curated default sets |
+| Trust bootstrap | Not addressed: genesis is undefined (§8.2; T-DC-02, T-EC-02) | Client distributors; community seed lists; bootstrap ceremonies |
+| Content sanitization | Not addressed: `content` is free-form by design (T-ID-06) | Renderers: sanitization, link policy, script hygiene |
+| Rendered-content safety | Not addressed (A15: rendered content; T-ID-06) | Client UI review and testing |
+| Key management, revocation | Not addressed; acknowledged structural gap (T-ID-01, §8.1) | Key tooling; social recovery processes |
+| Identity attestation | Not addressed; permissionless by design (§7.5) | Out-of-band verification; key registries |
+| Timestamp claims | OTS may-tier for audit only ([OTS-1]); `created_at` informational (§7.2) | OTS adoption; audit tooling |
+| Query privacy | Not addressed; inherited Nostr limitation (T-SV-01) | Tor/VPN routing; broad filters with local post-filtering |
+| Fetch privacy | Integrity only (T-SV-03) | Proxy retrieval; mirror fetching; anti-tracking policies |
+| Spam deterrence | NIP-13 PoW may-tier (spec §3.1, no minimum); trust gating ([TR-2]) | Relay limits; client discipline; moderation practice |
+| Kind 5 behavior | Semantics defined: cascade, retention guidance, retroactive application (§10) | Relay retention policy; client cascade implementation |
+| Cryptographic agility | Not addressed; inherited from Nostr (T-PI-03) | Tracking Nostr evolution; hybrid-scheme proposals |
+| Indexer legitimacy | Self-asserted; competing events coexist (T-ID-03) | Community registries; authority cross-reference tooling |
+| Signal ranking (reposts, reactions, zaps) | may-tier signals only (spec §3.1) | Ranking hygiene by clients |
+| AI-generated content | Not addressed; indistinguishable from human publication (App A.3) | Disclosure norms; automated review |
+| Client correctness | Rules defined (§5.3, §7); corpus in Appendix G | Conformance testing; audits; reproducible builds |
+| Network-layer interception | Below protocol layer; TLS assumed | Platform and deployment hardening |
 
 ---
 
-## §9 — Summary Table
+## §10 — Summary Table
+
+Canonical mapping of goals and rules. Risk column equals each entry's residual risk.
 
 | ID | Name | Problem | Mitigation | Gap | Risk |
+|---|---|---|---|---|---|---|
+| T-DI-01 | Forged created_at in audit evidence | Signing proves identity, not time; in-window forged timestamps store silently and corrupt audit claims | OTS tamper-resistant attestation (may); CA-1 no-backdate (should); relay windows | CA-1 unenforced; OTS low-adoption; window is ecosystem practice | Low |
+| T-DI-02 | Relay-subset divergence in canonical bytes | Canonical bytes follow the observed event set; heterogeneous coverage yields divergent-but-deterministic state | RC-3 recompute (must, non-UI); RC-4 (should, UI); multi-relay querying | No set-agreement control; divergence persists until events arrive | Medium overall, Low for non-UI |
+| T-DI-03 | Retraction propagation gaps | Relay withholding or detaching a kind 5 deletion leaves clients computing stale canonical bytes or facing context-free retractions | DEL-9 must-class local caching; DEL-8 retroactive application; DEL-11 should co-serving; DQ-2 should polls; multi-relay querying | No completeness guarantee; co-serving and polling rest at should; must-class caching reaches only received deletions | Medium |
+| T-DI-04 | Binding relationship ambiguity | Relationship semantics live in free-form content with no closed vocabulary, so a trusted key's false binding claim is indistinguishable from honest prose at protocol layer | BD-12 trust on verified pubkey; BD-9 delete-and-republish correction; BD-11 render-time duplicate collapse | Verification pins identity only; correction author-driven and non-atomic; truth verification absent | Low–Medium |
+| T-DI-06 | Attached payload integrity in transit | Payload claims are verified only by a should-level hash check, so skip-verification and headless clients ingest served bytes behind a must-level warning that never blocks | IM-1 streaming verification, IM-2 size check, IM-3 hash-first mirror choice, IM-4 warning | Verification is should-class, the warning never blocks, and unverified ingestion stays conforming | Medium |
+| T-DI-07 | Publish-then-delete admission revocation lag | Trusted Binding admits hostile endpoints, then author deletes it; revocation applies only where the kind 5 is observed, so admission persists silently in withheld views | DEL-5 revocation; DEL-9 kind-5 caching; DEL-8 retroactive application; DQ-2 periodic deletion polls | DEL-5 is D-layer (endpoints stay V-valid); DEL-11/DQ-2 should-class; no protocol bound on deletion-to-observation lag | Medium |
+| T-DI-08 | Indefinite self-fork freeze (trusted root key) | A compromised trusted root key forks the chain at any point; chain and tip are undefined and content is frozen while unresolved (SF-1, RC-5) | SF-2 freeze, SF-3 surfacing, SF-4 no-heuristic escape, SF-5 root-key kind 5 resolution (SF-2/3/4 must-class, SF-5 must per §7.2) | No timeout, no alternative resolver; resolution key-locked, re-freeze costs one patch; no key revocation (§7.5) | High |
+| T-DI-09 | Unverified kind 5 honoring cascades canonical chains | Clients skipping DEL-1's pubkey match or SIG-1's id-recomputation honor forged deletions, cascading the victim's chain and reverting content to an ancestor | SIG-1 signature+id verification before processing (kind 5 explicitly); DEL-1 pubkey-match gating; §10 mandatory validation | Both checks must-class; exposure is client non-conformance; no relay-side validation rule; silent per-client failure | Low–Medium |
+| T-ID-01 | Key compromise — no key revocation | A leaked root-author key inherits chain sovereignty; post-compromise events are indistinguishable from genuine ones | OTS strengthens the pre-compromise forensic boundary (may); remedy is social (out-of-band) | No key-revocation mechanism exists in this protocol version | Critical |
+| T-ID-02 | Sybil WoT expansion | N-hop trusted-set expansion admits attacker-placed sybil keys | Warn on large unseen-pubkey admission (§7.5 should); binding admission non-transitive (TR-3) | No sybil-cost rule; WoT scoring out of scope | Medium |
+| T-ID-03 | Indexer squatting | Self-asserted `i` tag claims; no registry validation | Trust filtering gates admission; side-by-side rendering in trusted set (OV-7) | No authority cross-reference or priority; immutability (IX-3) makes claims permanent | Medium |
+| T-ID-04 | Unverifiable identity claims | Anyone can claim any real-world entity in free-form content; admission keys on pubkey alone | Trusted-pubkey curation and signature attribution bound exposure (should/may); no central identity authority is the design point | Pubkey-to-entity binding is absent as a protocol control; bootstrap users face the asymmetry | Low–Medium |
+| T-ID-05 | Author-hint forgery on binding e tags | The advisory author-hint can name a trusted pubkey while the referenced event belongs to an attacker key | Verified pubkey is authoritative for trust (must); pending bindings stay unrendered (must); admission requires a trusted binding author | No rule flags a hint mismatch as a user-facing warning | Low |
+| T-ID-06 | Hostile markup in rendered content | Free-form content renders attacker-shaped UI inside the trusted view via a Compromised Publisher key | OV-7 trust gating at presentation; IM-4 must-class unverified-artifact warning; canonical bytes preserved | Sanitization absent; renderer hygiene is client responsibility | Medium |
+| T-AV-01 | Spam and Graph Pollution | Sybil keys publish valid events at scale; no validity rule rejects them (TR-1), and the flood consumes relay storage, bandwidth, and query responsiveness. | Trust gating at presentation (TR-2, TR-7, OV-7); consumer compute ceilings (RL-2, RL-4); NIP-13 optional with no mandated minimum difficulty (§3.1). | Ceilings are should-class and local (RL-2); size bounds only recommended (RL-1); no per-author rate limit; NIP-13 adoption is operator-set †. | Medium |
+| T-AV-02 | Foreign-overlay and chain-application amplified work | Overlay volume and chain-application cost are adversary-controlled before trust gating; consumer ceilings are optional | RL-2 configurable ceilings; RL-3/OV-9 honest dispositions; RL-4 serving block; RL-5 reporting | Ceilings should-class with no mandated default; ceiling-less consumers unbounded | Medium |
+| T-AV-03 | Event Size Exceeding Relay Limits | Large inline events silently dropped by relays with tighter size limits strand chains for clients on those relays | imeta attachments (§4.6) plus 64 KB producer bound [RL-1] | no normative size cap; silent per-relay rejection; no publisher-side detection | Medium |
+| T-AV-04 | Artifact hosting fragility | URL rot, takedown, and unequal retrieval threaten payload-grade artifacts | Streaming SHA-256 verification (IM-1), multi-url resolution (IM-3), must warn (IM-4) | Verification optional, no pinning or liveness obligation | Medium |
+| T-AV-05 | Overlay and no-op accumulation | No-op padding and untrusted overlays accumulate without a content change | Visibility gating (OV-7), classification exposure (OV-5) | No caps on overlay count or no-op density; RL-1/RL-2 bounds cost not record; sybil admission via §6.1 (absent) | Medium |
+| T-DC-01 | Malicious relay support-claim and query-result manipulation | Relay lies about or drops filter support and returns empty, forged, or malformed results; DQ-3 injection, DQ-4 marker-manipulation, DQ-2 deletion suppression | Multi-relay cross-check (§7.5, class should); DQ-3 verification must; DQ-4 filter/marker must | No wire-level capability signal; cross-check class should, NIP-11 honor-system; eclipse compounds | High |
+| T-DC-02 | Web-of-trust bootstrap trap | New users must populate an empty trusted-pubkey set out-of-band; each vector is an attack surface; defaults are a supply-chain target (T-EC-02) | Permissionless curation; multiple bootstrap paths; protocol correctness independent of provenance (§6.1, §7.5) | No rule governs set distribution or bootstrap ceremonies | High |
+| T-DC-03 | Indexer burial in patched content | Root i set is immutable; a root author buries a security-relevant reference in patched content with no indexer naming it, so #i discovery silently misses it | [IX-1] should-class tag discipline; [IX-3] new-root remedy; NIP-50 fallback per §8.1 with client verification per [DQ-3] | No rule compares chain content to the root's i set; only full-scan parsing is guaranteed | Medium |
+| T-DC-05 | Relay-omission chain freeze | Withheld referenced events leave chain construction, classification, and bindings pending indefinitely | UR-2/UR-4 must-class retention and re-evaluation; UR-1 confluence, UR-3 cache rule; [DQ-2] periodic kind 5 polls; §7.5 multi-relay guidance | No completeness or liveness guarantee; pending states silent without † client surfacing | Medium |
+| T-CE-01 | Relay-level event suppression | Relay omits matching events from #t/#e/#i filter responses, silently censoring the querying user's view | §7.5 operational multiplicity ("publish widely, query broadly"), should-class cross-referencing (§7.5), [DQ-2] kind 5 polls | No relay transparency or reputation (absent)†; coordinated pool suppression undetectable† | Low–Medium |
+| T-CE-02 | Eclipse attack on relay set | Network-level attacker isolates client onto controlled relays serving a reduced but fully signed subgraph | [SIG-1] blocks forged events; §7.5 should-class cross-referencing plus connection diversity bound the eclipse radius | No view-completeness check or cross-relay consistency proof (absent); detection impossible under total egress control | Low–High |
+| T-SV-01 | REQ filter leakage to relays | Inherited NIP-01 REQ filters expose every #i indexer, #e id, and queried pubkey to the serving relay, permitting sender interest profiling; named sub-case (absorbed T-SV-02): organizational inventory and response-timeline exposure | No protocol-level concealment; honest-but-curious baseline declared (§7.5) | No private-retrieval or encrypted-filter primitive in the inherited model | High |
+| T-SV-03 | Artifact-host tracking via imeta fetches | Fetches leave the relay channel for arbitrary hosts, leaking requester IP, timing, and interest; per-reader URLs act as web beacons | [IM-1] binds bytes, [IM-3] mirrors spread fetches, [IM-4] warns on unverified display | No rule covers fetch privacy (class absent); URL policy is client discretion (†) | High |
+| T-EC-01 | Indexer re-centralization | Canonical-bytes derivation cost at scale (RC-2/RC-3) pushes consumers toward centralized pre-computation services | Open data model reproducible from events alone; RL-2 ceilings bound consumer work; RL-5 honest-abort disposition | No interchange API, no completeness verification, no diversity incentive (all absent); pressure structural | Medium |
+| T-EC-02 | Default trusted-pubkey set compromise | Adversary seeds the trust set with its own keys via tampered builds or shipped defaults, making every trust decision attacker's | Bootstrap paths vary (†); users can regrow the set; cross-checking possible (†) | No provenance/signing/versioning rule; provenance controls absent; correction social | High |
+| T-EC-03 | Kind 1 namespace coupling with relay policy | SCRUTINY events share NIP-01 kind 1 space, so generic kind 1 anti-spam and policy evolution apply to all SCRUTINY traffic | TAG-1/TAG-3 tag set is a relay-usable filter surface; TAG-2 version-tag pattern distinguishes generations (exemption voluntary, †) | No dedicated-kind migration path (absent); exemption may-class at best; no relay advertisement mechanism (absent) | Medium |
+| T-EC-04 | Automated false metadata at scale | Operator-run automated pipelines mass-produce plausible metadata under trusted or sybil keys, burying corroboration | SIG-1 attribution to the operator key; TR-2 admission gates; §7.5 expansion warning (should-prose) | No automated/human distinction (App A); no disclosure duty; no per-event credibility signal; NIP-13 PoW may-class | Medium |
+| T-EC-05 | Economic and social signal manipulation | Sybil minting of NIP-18/25 signals and funded NIP-57 zaps inflate whatever clients rank by (§3.1 may-tier signals, non-conformance) | TR-2 trust perimeter still gates ranked events; TR-7 presentation-edge filtering; trust-weighting is † guidance only | No ranking or weighting scheme defined (absent, by design); no per-target rate-limits or campaign detection (absent) | Medium |
+| T-EC-06 | Opaque admission silently skips future safety semantics | A higher-version event V-valid under v0.8.1 rules is admitted opaquely ([VER-2]) while [TAG-5] silently ignores its unknown mechanics; the client renders it as if fully understood | [VER-3] must-class render exclusion; [TAG-5] defined ignore; [VER-1] exact ordering | No negotiation channel; no skip-surfacing rule; [VER-2] may-class prevents mandated quarantine | Medium–High |
+| T-EC-07 | Conformance corpus supply chain | Conformance anchored to per-release digest-pinned corpus covering only application and validity layers; discovery and serialization vectors reserved and not yet published; halt reasons advisory | SHA-256 digest pinning over exact LF bytes (G.1); permanent case names; prose-governs on vector/prose disagreement; UR-1 confluence asserted over corpus | No rule governs corpus release channel; vendored-verification only should-class appendix guidance; two layers and sig-checking untestable today; why-divergence unpriced | Medium |
+| T-PI-01 | Legal pressure vector | Hostile vendor applies legal or economic pressure to otherwise honest relay operators to suppress unfavorable findings; coerced kind 5 deletions are indistinguishable from voluntary | §7.5 operational defense (publish widely, query broadly); [DEL-9] local kind 5 caching; [DEL-10] show-deleted-events toggle; [DEL-11] deletion stored alongside original; Blossom payload survivability | No voluntary/coerced distinction; no campaign detection; no legal immunity; jurisdictional diversity unguaranteed | Medium |
+| T-PI-02 | NIP-09 deletion retention tension | The audit trail rests on NIP-09 kind 5 deletions with relay honour optional, so a discarding relay makes historical state irrecoverable from its set (†) | [DEL-11] co-stores deletions alongside originals; [DEL-9] caches kind 5s locally; [DEL-10] surfaces deleted events; [DEL-4] preserves root chains for audit | Retention is should-class variance, so completeness tracks the least honouring relay; [DEL-9]/[DEL-10] recover the notice, never the deleted bytes (†) | Medium |
+| T-PI-03 | Cryptographic agility gap | Single-primitive Schnorr signatures and SHA-256 ids are inherited from NIP-01 with no agility layer, so one break forges signatures and ids across all events | Any Nostr-level primitive migration applies to SCRUTINY automatically (§3.2); [SIG-1] verification-only; [OTS-1] audit-only | No transition or hybrid rule exists (absent); locked to Nostr's migration pace with no independent agility layer (absent) | Low |
+
+---
+
+## §11 — Recommendations
+
+Ordered by class. "(spec-change)" = an edit to the spec. "(ecosystem)" = deployable without spec change. "(accepted-risk)" = consciously retained.
+
+| Class | Recommendation | Addresses |
+|---|---|---|
+| spec-change | Publish the reserved discovery-layer and serialization conformance vectors (spec App G.1 already reserves them), so D-layer conformance becomes mechanically checkable. | §8.3, T-EC-07 |
+| spec-change | Add a BCP 14 (RFC 2119/8174) keyword-declaration paragraph to the spec header; roughly 300 keyword uses currently rely on convention alone. Queued for v0.8.2 (spec `DECISIONS.md` S1, open). | keyword authority across all entries |
+| spec-change | Add explicit Scope, Conformance, and Normative References clauses; DECISIONS.md records them as implicit in §1, the rule tables, and each rule's Inherits-from column. | peer-review rigor of §1.5 claims |
+| ecosystem | Clients: query multiple relays, cache kind 5 events locally, poll `{kinds:[5], #e:[<id>]}` periodically ([DQ-2]); the spec's own shoulds are the whole defense against omission. | T-CE-01, T-DI-03, T-DC-05 |
+| ecosystem | Publishers of large artifacts: host on multiple Blossom mirrors and list them in one `imeta` ([IM-3]); test fetchability. | T-AV-04 |
+| ecosystem | Client renderers: sanitize `content`; treat rendering as an untrusted-input surface. | T-ID-06 |
+| ecosystem | Operators serving canonical bytes to downstream pipelines: adopt the Appendix G corpus in CI, including the `chain` cases under permutation. | §8.3, T-EC-07 |
+| ecosystem | High-value root authors: maintain key rotation procedures and OTS attestations on important events; post-compromise forensics depend on them. | T-ID-01, T-DI-01 |
+| accepted-risk | Plaintext query exposure (T-SV-01) and artifact-fetch tracking (T-SV-03): inherent to the base layer; mitigations are routing and fetch discipline, §9. | §8.1 |
+| accepted-risk | Key compromise without revocation (T-ID-01): the single highest residual; retained until a Nostr-wide revocation primitive exists. | §8.1 |
+| accepted-risk | Consumer ceilings stay configurable with no mandated default ([RL-2]): spec-legal consumers may set none. | T-AV-02 |
+
+---
+
+## §12 — Sources
+
+1. **SCRUTINY Fabric Protocol Specification v0.8.1** (this repository, `docs/protocol-spec.md`) — primary source. Every mechanism claim in this document anchors to its rule IDs (Appendix F, 142 rules).
+2. **Nostr NIPs** — base tier mandatory per spec §3.1: NIP-01 (event structure, signatures, relay protocol), NIP-09 (kind 5 deletion), NIP-10 (`e` marker threading), NIP-73 (`i` tag format). May-tier per spec §3.1: NIP-03 (OpenTimestamps, audit signal), NIP-13 (proof-of-work), NIP-18 (reposts), NIP-25 (reactions), NIP-57 (zaps). Optional per spec §3.1: NIP-92 (`imeta` attachments). NIP-50 full-text search is relay-optional per spec §8. Two further NIPs are live prose dependencies of this document. NIP-02 follow lists are the web-of-trust substrate behind T-ID-02 and T-DC-02. NIP-11 relay information documents are §8.0's capability pre-check, named in T-DC-01.
+3. **CommonMark §4.5** — fenced code blocks. The patch payload envelope (spec §5.2).
+4. **ETSI TS 102 165-1 V5.3.1 (2025-02)** — clause 6.6.4, Tables 7 ("Motivation levels") and 8 ("Capability levels"). Also Tables 9 ("Mapping of motivation with capability to identify threat level"), 4 ("Summary of likelihood metric"), and 14 ("Occurrence likelihood"). Adopted/adapted/not-adopted scope declared in Appendix A.
+5. **RFC 2119, RFC 8174** — keyword convention this document's header declares.
+6. **ASD-STE100 Issue 9 (January 2025)** — style source for the adopted structural rules. Adopted: descriptive sentences ≤25 words, procedural sentences ≤20, one topic per sentence, one topic per paragraph, no prose semicolons, simple tenses, active voice. The subset binds prose paragraphs and vertical-list items. Tables and diagrams carry structure outside sentence rules. The semicolon separating rule IDs from section anchors is citation apparatus, not prose.
+7. **Nostr MU/MS study** — "Nostr: A Protocol for Censorship Resistant Social Media" (EuroS&P 2025, ePrint 2025/1459). Evidence behind the §3.3 downgraded assumption about client conformance to must-level rules.
+8. **Methodology lineage:** Dolev–Yao adversary modeling as practiced in the GossipSub analysis (IEEE S&P 2024), sigstore's threat documentation, and RFC 9420 (MLS).
+9. **OpenTimestamps** (https://opentimestamps.org/) and **Blossom** — external systems the protocol integrates (spec §3.1, §4.6).
+
+---
+
+## Appendix A — Adversary Capability Bands and Motivation Axis
+
+This appendix defines the grading vocabulary used to rate adversary archetypes (§4) and to argue likelihood in catalog entries (§7). The vocabulary is adapted from ETSI TS 102 165-1 V5.3.1 (2025-02) clause 6.6.4 and Tables 7 and 8. This document does not apply the TVRA method. The exact scope of borrowing is declared in §A.3 so that the claim is checkable against the source. The borrowing scope is checkable against the ETSI source document clause by clause.
+
+### A.1 Capability bands (adapted from TVRA Table 8 "Capability levels")
+
+Bands grade what an archetype has, not what a specific attack requires. Assign the highest band whose threshold the archetype crosses on any axis. The justification line in §4 names the crossing axis. Where two bands differ only on budget, the staff and legal-apparatus axes are the discriminators. Budget is the tie-breaker. (The B2/B4 boundary deliberately handles the ecosystem's most common attacker class. A small vendor with one lawyer and no staff stays B4 by the legal axis. A well-funded hobbyist stays B2 by its absence.)
+
+| Band | Name | Positional access | Resources | Expertise (CC lineage, §A.3) | Sustainment |
 |---|---|---|---|---|---|
-| T-DI-01 | Timestamp manipulation | Self-reported `created_at` enables backdating and fork hijacking via default-head selection | OTS (MAY); tie-break on event ID hash; root author can kind 5-delete unwanted tips | OTS adoption is voluntary; no relay-side rejection of anomalous timestamps; trust in publisher honesty for ordering | High |
-| T-DI-02 | Fork resolution determinism | Different relay subsets produce different visible patch sets, yielding divergent canonical views | Surfacing multiple tips; kind 5 cascade pruning; multi-relay querying | No cross-client consistency verification; determinism holds only within per-client visible patches | Medium |
-| T-DI-03 | Retraction propagation gaps | Kind 5 deletions withheld by relays produce stale canonical views where deleted patches remain applied | Local caching of kind 5 events; multi-relay querying; relay retention recommendation (§10) | No mechanism ensuring kind 5 propagation to all relays; NIP-09 honoring is optional at relay layer | Medium |
-| T-DI-04 | Binding relationship ambiguity | Free-form relationship semantics with advisory hints create mismatch between machine-processing and human interpretation | `content` authoritative over hints; attributable authorship; kind 5 deletion enables correction | No relationship vocabulary validation; retract-and-republish correction is non-atomic | Low–Medium |
-| T-DI-05 | Cherry-pick attribution laundering | Root author adopts foreign diff without crediting source; omitted or falsified `cherry-pick` references | Informational attribution; root author accountable for chain state; forensic diff comparison possible | No enforcement of attribution accuracy; no verifiable link between diff and claimed source | Medium |
-| T-DI-06 | Attached content integrity | Imeta-attached diffs vulnerable to host compromise and split-world attacks; inline diffs are signature-protected | SHA-256 hash verification (MUST); inline diffs as primary path; multi-source retrieval via hash | No artifact mirroring requirement; split-world attacks undetectable without cross-client comparison | Medium |
-| T-ID-01 | Key compromise — no revocation | Stolen nsec grants full chain sovereignty; post-compromise events indistinguishable from legitimate | Social recovery: announce compromise, rotate key, rebuild trust | No protocol-level revocation, rotation, or emergency broadcast mechanism in Nostr or SCRUTINY | Critical |
-| T-ID-02 | Sybil amplification | Thousands of keys placed within WoT expansion radius flood user's view with attacker-controlled events | Trust filtering; SHOULD-level expansion warning; binding admission requires direct author trust | No protocol-level Sybil resistance; no depth weighting; warning is non-normative | Medium |
-| T-ID-03 | Identifier squatting | Self-asserted `i` tags claim authoritative identifiers without validation; first-mover advantage via backdating | Trust filtering; multiple competing events permitted; canonical identifier clustering | No cross-reference with authoritative registries; no priority for legitimate authority keys | Medium |
-| T-ID-04 | Unverifiable identity claims | Any pubkey can claim any real-world identity; protocol delegates verification to out-of-band trust | Permissionless by design; cryptographic attribution permanent; trust lists curated out-of-band | No in-protocol identity binding; new users lack discrimination basis during bootstrap | Low–Medium |
-| T-ID-05 | Author hint forgery | `e` tag author hints may lie about referenced event's pubkey; pre-fetch UI displays misleading attribution | Hint MUST NOT gate admission; actual pubkey used for trust decisions; discrepancy flagged per §4.3 | Pre-fetch optimism window; non-compliant clients may silently accept hints | Low |
-| T-AV-01 | Spam and graph pollution | High-volume valid SCRUTINY events consume relay storage and pollute discovery for permissive-trust users | Trust filtering; PoW (MAY); SCRUTINY-specific `t` tags for relay isolation | PoW unenforced by default; no per-author rate limit; kind 1 namespace shared with social posts | Medium |
-| T-AV-02 | Graph traversal amplification | Pathological topologies (deep chains, extreme fan-out) exhaust client resources during binding traversal | Trust filtering bounds fan-out; cycle detection in Chain computation (§7.4) | No depth/fan-out limits for binding traversal; no mandated resource budgets | High |
-| T-AV-03 | Event size exceeding relay limits | Large patches or embedded payloads rejected by relays with low size caps; per-relay rejection variance | Imeta + Blossom for >30 KB (§4.5); text-efficient diff format; publisher sees immediate rejection | No normative size guidance; relay-specific limits unknown without per-relay probing | Low |
-| T-AV-04 | Artifact hosting fragility | URL rot, takedown propagation, and split-world attacks make imeta-attached artifacts unreliable over time | SHA-256 enables multi-source verification; inline diffs immune (#1 lookup path); multi-relay redundancy | No mirroring/pinning requirement; no fallback URL set; single-source hosting is fragile | Medium |
-| T-AV-05 | Prose-only patch abuse | Non-mutating patches extend chains indefinitely, amplify computation cost without semantic contribution | Prose-only patches contribute zero surface changes; canonical surfaces unaffected | No distinction between mutating/non-mutating patches; chain-length accumulation unbounded | Low |
-| T-DC-01 | Inconsistent relay NIP support | Empty `#i` results indistinguishable from unsupported filter; silent discovery blackout on non-compliant relays | Cross-relay checking mandated for `#i` (§8.0); local caching of deletions; ≥3 relay baseline recommended | No wire-level capability negotiation; NIP-11 advertising is honor-system | Medium |
-| T-DC-02 | WoT bootstrap trap | New users have empty trust lists; every bootstrap vector (defaults, community, docs) is an attack surface | Multiple bootstrap paths; user agency over trust decisions; community diversification | No protocol-level bootstrap ceremony; no signing/versioning for default lists; maximum vulnerability at genesis | High |
-| T-DC-03 | Identifier mirror infidelity | Patches adding identifiers via diff may omit corresponding `i` tags, making additions invisible to `#i` discovery | Publisher mirroring responsibility (§4.4.1); client MUST resolve patches to roots and verify presence | No relay-side enforcement of mirroring; accidental omission or deliberate suppression undetectable | Medium |
-| T-DC-04 | Patch-to-root resolution gap | `#i` matches on patches require expensive canonical-view computation to confirm identifier currency | Client MUST resolve to root and verify (§8.3); canonical-view computation defined in §7.4 | Per-query resolution cost grows with chain length; naive clients may skip resolution | Medium |
-| T-CE-01 | Relay-level event suppression | Relays omit events from filter results; clients on single relay see censored graph | Multi-relay querying; ≥3 relay recommendation; event portability; Blossom artifact redundancy | No relay transparency mechanism; small relay sets enable coordinated censorship | Low–Medium |
-| T-CE-02 | Eclipse attack | Client isolated to attacker-controlled relay set; graph view fabricated by selective omission | Cryptographic event verification (forgery impossible); relay diversity; out-of-band relay discovery | No view-completeness check; undetectable from inside protocol for non-technical users | Low–High |
-| T-CE-03 | Economic/legal relay coercion | Hostile vendor pressures relay operators across jurisdictions to suppress unfavorable findings | Multi-relay replication across jurisdictions; event portability; Blossom separate infrastructure | Cannot prevent legal coercion; jurisdictional concentration enables coordinated pressure | Medium |
-| T-SV-01 | Plaintext REQ filter leakage | Relay operators see exact query parameters, building interest profiles for connected clients | None at protocol level; honest-but-curious baseline declared (§7.5) | No private retrieval in Nostr; plaintext filters foundational to NIP-01 | High |
-| T-SV-02 | Organizational query pattern exposure | Aggregate `#i:cpe:...` queries reveal technology stack and vulnerability response timeline to relays | Same as T-SV-01: operational defenses only | Organizational exposure structural; read-only participation sufficient for leakage | Medium–High |
-| T-SV-03 | Artifact host tracking | Imeta fetches expose requester IP/timing to artifact hosts; tracking URLs enable beacon-style correlation | Hash verification protects content integrity; operational proxy/mirror defenses | No private artifact retrieval; no anti-tracking guidance in spec | High |
-| T-EC-01 | Indexer re-centralization | Canonical-view computation cost incentivizes centralized indexers; dominant indexer becomes single point of failure/control | Open, portable data model; independent reproducibility; multiple indexers feasible | No standard query API for interchangeability; no completeness verification | Medium |
-| T-EC-02 | Default trust list compromise | Tampered default lists inject attacker keys into every new user's trust set, nullifying all security goals | Multiple bootstrap paths; user can refine over time; community detection possible | No signing/versioning/attestation for default lists; no provenance verification for new users | High |
-| T-EC-03 | Kind 1 namespace coupling | Relay rate-limiting and storage policies for kind 1 events affect SCRUTINY uniformly with social posts | Version tagging; SCRUTINY-specific `t` tags for filtering; relays COULD exempt SCRUTINY traffic | No migration path to dedicated kind; relay policy changes affect SCRUTINY without awareness | Medium |
-| T-EC-04 | AI-generated false metadata at scale | LLM pipeline under trusted key produces plausible but false findings indistinguishable from human work | Pubkey accountability; endorsement/corroboration from independent sources as signal | No human/AI distinction; no disclosure requirement; trust model not designed for AI-scale volume | Medium |
-| T-EC-05 | Economic and social signal manipulation | Repost brigading, reaction brigading, and zap manipulation create false importance/sentiment signals around attacker content | Trust filtering bounds signal visibility to trust perimeter; signalers SHOULD be weighted by trust | No protocol-level rate-limiting on signals; naive clients may count raw signals without trust weighting | Medium |
-| T-PI-01 | Legal pressure vectors | DMCA, trade secret, CFAA, defamation claims force retraction or deter publication; coerced deletion indistinguishable from voluntary | Multi-relay/jurisdictional replication; kind 5 retention preserves audit trail | No protocol distinction between voluntary and coerced retraction; no legal immunity | Medium |
-| T-PI-02 | NIP-09 semantic tension | Relays may physically delete per strict NIP-09, destroying SCRUTINY audit trail; cascade semantics lost on generic clients | Relay policy recommends retention (§10); cascade deterministic; orphaned disputes handled (§7.3) | Behavioral inconsistency across relay implementations; impedance mismatch with NIP-09 intent | Medium |
-| T-PI-03 | Cryptographic agility gap | Hardcoded secp256k1 + SHA-256 with no migration path; quantum/Cryptanalytic break would undermine all integrity | None at protocol level; dependent on Nostr protocol evolution | No agility layer; no hybrid-scheme transition plan; SCRUTINY locked to Nostr's cryptographic pace | Low/High |
-| T-PI-04 | Snapshot pin staleness | Bindings referencing retracted or evolved patch states present assertions against withdrawn premises | SHOULD-level staleness warnings (§10); snapshots informational, not in dedup key | No automated staleness assessment; stale bindings persist indefinitely without semantic expiry | Medium |
+| B1 | Opportunistic individual | None. Public relays only. | Stock tooling; below ~10² USD/mo. | Layman to proficient | Hours to days; single burst. |
+| B2 | Committed individual | May self-host one relay or Blossom host. | Custom scripts; up to ~10³ USD/mo; sybil key generation at scale. | Proficient to expert | Days to weeks; returns after failure. |
+| B3 | Positional actor | Holds an infrastructure role: relay operator, Blossom host, indexer service, or organizational signing key. | B2-level resources plus the position itself: control over storage and serving, or a trusted publication channel. | Proficient to expert | Weeks to months; motivated to protect the position. |
+| B4 | Resourced organization | Multiple relays or regions; marketing or legal reach over ecosystem actors. | Any of: staff; ~10⁴ USD/mo and up; retained legal apparatus of any scale. Multi-jurisdiction reach marks the band's upper end. | Expert, in teams | Months to years; campaigns, not incidents. |
+| B5 | Network-scale actor | ISP or state-adjacent network control; can eclipse users from the broad relay set; traffic analysis at line rate. | Sovereign infrastructure. Effects land mostly outside the protocol layer (§9 boundary matrix). | Expert, institutional | Years. |
+
+Test questions for grading an archetype, in order, until one answers yes. (1) Does the archetype observe or control the network layer? That is B5. (2) Does the archetype have staff, legal apparatus, or multi-region infrastructure? That is B4. (3) Does the archetype hold a named infrastructure role? That is B3. (4) Does the archetype have custom tooling or self-hosted infrastructure beyond public relays? That is B2. Otherwise B1.
+
+Note for writers: a likelihood argument may also describe what a specific attack demands (for example, "this attack needs a relay position"). That description belongs in the entry's likelihood segment and uses band vocabulary only as a reference. It does not re-grade the archetype.
+
+### A.2 Motivation axis (adapted from TVRA Table 7 "Motivation levels", labels retained)
+
+| Level | Label (TVRA) | Interpretation for this ecosystem |
+|---|---|---|
+| M1 | Indifferent | No identified interest in this ecosystem; the threat is analysed from capability alone. |
+| M2 | Curious | Opportunistic or exploratory; deterred by attribution risk or moderate friction. |
+| M3 | Interested | Recurring attempts; not deterred by forensic attribution alone, since signing makes every event attributable and deterrence here requires more than that. |
+| M4 | Committed | Goal-directed against the ecosystem's function. Example: a vendor suppressing unfavourable findings about its own product. Persists across friction. |
+| M5 | Focused | Attacking this ecosystem is a primary objective; sustains multi-vector campaigns over years. |
+
+### A.3 Crosswalk (adopted / adapted / not adopted)
+
+| Element (source in V5.3.1) | Treatment | Note |
+|---|---|---|
+| Threat-agent identification as a distinct analysis step (clause 6.6.4) | Adopted | Realised as §4 adversary archetypes in the Dolev-Yao tradition. |
+| Capability bands (Table 8 "Capability levels") | Adapted | TVRA grades capability against numeric attack potential (Basic to Beyond High). A.1 re-anchors bands to protocol-relevant thresholds (position, budget, infrastructure, sustainment). The numeric anchor is dropped. |
+| Motivation axis (Table 7 "Motivation levels"; Annex B) | Adapted | Labels kept verbatim; descriptions rewritten for a permissionless security-metadata ecosystem. |
+| Expertise ladder (layman / proficient / expert, clause 6.6.3.1.3, from Common Criteria CEM:2022 clause B.6) | Adopted | Reused verbatim as an axis in A.1. CC evaluation itself is out of scope. |
+| Capability and motivation combination (Table 9 "Mapping of motivation with capability to identify threat level") | Adapted | Kept only as direction of reasoning: likelihood grows with both. The 5×5 lookup matrix is not used. Likelihood is argued per entry (§5), never looked up. |
+| Likelihood five-label vocabulary (Table 4 "Summary of likelihood metric" and Table 14 "Occurrence likelihood") | Adapted | Labels only: Very unlikely, Unlikely, Possible, Likely, Very likely. The numeric values TVRA attaches to them are dropped. The labels form §7's likelihood scale verbatim. |
+| Numeric attack potential (Table 10 "Attack potential" and Table 11 "Vulnerability rating": weighted summation of Time, Expertise, Knowledge, Opportunity, Equipment) | Not adopted | Requires per-vulnerability factor scoring against a device-like target of evaluation. That model does not fit a permissionless protocol, and the summation is ordinal multiplication, which §5 rejects. |
+| Likelihood lookup and risk arithmetic (Tables 12 to 15: vulnerability-rating lookup, intensity sum, occurrence-likelihood values, Risk = likelihood × impact with Minor/Major/Critical in Table 15) | Not adopted | This document's severity vocabulary (Critical/High/Medium/Low) assigns levels by argument, not by product. |
+| TVRA pro forma (Annex A), countermeasure cost-benefit analysis (clause 6.10, Tables 16 to 20, Annex H), risk-calculation tooling (Annex G), mandated cyclical re-run | Not adopted | Commissioning and assurance apparatus; out of scope for a protocol threat model. |
+| AI/ML threat-agent treatment (Annexes J and K, new in V5.3.1; the motivation-default note under Table 7) | Not adopted | AI agents participate in this protocol only through publisher keys, indistinguishable from human publishers at the protocol layer (§3). No separate AI archetype is warranted at protocol scope. Recorded as an ecosystem consideration for §9. |
+
+Claim to peer review: the crosswalk above is the complete list of TVRA elements considered. Any TVRA concept used elsewhere in this document that is absent from this table is an error to be flagged.
 
 ---
 
-## §10 — Recommendation Matrix
+## Appendix B — Terminology Map
 
-This section is reserved for external security review findings and prioritized remediation recommendations. The matrix structure is provided for completion.
+The previous revision of this threat model pins spec v0.5.3. Several terms changed meaning or were removed across the ten releases since. This map exists for two audiences: readers holding the old document, and any threat entry whose text predates v0.8.1. The rule for drafters: the rewritten document uses only the right-hand terms. Every left-column term is a fingerprint in the gate's I6 check, so the map is mechanically enforced. Dead-tier terms fail the gate once the document pins the current spec version, and warn while the old document is pinned. Three terms are mentions-only and warn in every mode. They can appear in legitimate prose. The set: snapshot pins (the sanctioned §8 residual line), topology cascade (spec vocabulary), and fork resolution (usable only when describing the removed mechanism).
 
-| Priority | Threat(s) | Recommendation | Effort | Impact |
-|---|---|---|---|---|
-| — | — | — | — | — |
-| — | — | — | — | — |
-| — | — | — | — | — |
+| v0.5.3 TM term | v0.8.1 term | Anchor | Note |
+|---|---|---|---|
+| "default head" | **tip** | RC-5 | "Default head" implied a selectable winner among branches. SF-4 forbids heuristic branch selection, so no default anything exists: a tip exists only while no self-fork is unresolved. |
+| "fork resolution (latest `created_at` wins, tie-break event ID)" | mechanism removed | SF-1, SF-2, SF-4, SF-5 | A self-fork freezes the chain at the shared parent (SF-2) until the root author kind-5-deletes one branch (SF-5). Ordering is NIP-10 `e reply` lineage (RC-1), never timestamps. |
+| `created_at` as ordering input | forensic and audit signal only | CA-1, OTS-1 | CA-1 tells publishers not to backdate; nothing enforces it. OTS proofs inform audit and never enter chain construction or tip selection (OTS-1). |
+| "dispute overlay" | **foreign overlay** | §7.3, PT-7, OV-1 to OV-9 | Foreign patches never enter the canonical chain (CHN-3). They render as overlays with states clean, conflict, stale, orphaned, plus `unclassified` under a consumer ceiling (OV-9). |
+| "canonical view (content, i-surfaces, imeta-surfaces)" | **canonical bytes / patched content** | RC-2, §5.3 | The surface coinage is dropped. Indexer (`i`/`k`) tags live only on root events and are immutable (IX-3). `imeta` attachments are payload references (§4.6, IM-1 to IM-5). Canonical bytes = root content plus canonical chain (RC-2). |
+| "three-surface model" | dropped | — | Never a spec concept; folded into the single canonical-bytes definition. |
+| "snapshot pins" | future work, not protocol | spec §11 | Deleted as a mitigation basis anywhere in the catalog (T-PI-04). A one-line residual risk entry in §8 is allowed (D3); the gate's mentions tier tolerates exactly that use. |
+| "imeta-attached diffs" | never existed | PT-3, §4.6 | Patches carry at most one inline-fenced unified diff (PT-3). `imeta` is for Products and Metadata payloads only. |
+| "trust filtering before any processing" | **trust filtering at the presentation edge** | TR-7 | Filtering is presentation-time. Pre-filtering at ingress is a protocol violation (TR-7). The §1b diagram draws the boundary accordingly. |
+| "topology cascade" | **kind 5 cascade** (preferred) | CHN-2, DEL-2, SF-5 | The spec uses both terms (SF-5, DEL-2, and Appendix D say "topology cascade"; CHN-2 introduces "kind 5 cascade"). New prose prefers "kind 5 cascade" and keeps the spec's term only when quoting it. I6 treats this term as a mention, not a defect. |
+| "trust lists / WoT configuration" | **trusted-pubkey set** | §6.1, §7.5 | Matches spec wording; the curation mechanism stays out of scope. |
+| "canonical identifiers", "identifier mirroring" | **indexers (`i` tags), canonical indexer registry** | §9, IR-1 to IR-4, IX-1 to IX-4 | "Mirroring" implied a sync mechanism that does not exist. Registry entries are conventions publishers should include (IX-1). |
+| `scrutiny-v053` | `scrutiny-v0.8.1` (pattern `scrutiny-v\d+\.\d+\.\d+`) | TAG-2 | Version discovery tag. |
+| "cycle detection (§7.4 MUST)" | never specified | §7.4 | The old TM pinned this fabrication to §7.4 (see its line 493: chain traversal "MUST break cycles by excluding the patch with the higher event ID hash"). No such rule exists; traversal is linear by construction (RC-1). |
+| Section-number-only citations | **rule IDs first, sections second** | spec Appendix F | Citation form: `| Spec | [SF-4], [TR-7]; §7.2 |`. IDs are machine-checked against Appendix F (all 142 rule IDs, dashed and undashed families). Section-only citations rot across releases and are forbidden in adversarial entries. Structural-weakness entries may anchor to a rule family plus a section (`no single rule: family SF; see §7.2`), because no single rule carries their claim. NIP references are written unbracketed (`NIP-01`); band and motivation grades may be bracketed (`[B3]`, `[M4]`) and are excluded from the citation check by convention. |
 
----
-
-## §11 — Sources
-
-1. **SCRUTINY Fabric Protocol Specification v0.5.3** — Primary source; all mechanical claims verified against this document.
-2. **NIP-01** — Event structure, signatures, relay protocol (MANDATORY dependency).
-3. **NIP-03** — OpenTimestamps attestations (MAY dependency, §7.2 timestamp verifiability).
-4. **NIP-09** — Event deletion / kind 5 (MANDATORY dependency, §10 deletion and cascade).
-5. **NIP-10** — Text note threading / `e` markers (MANDATORY dependency, chain topology).
-6. **NIP-13** — Proof-of-Work / `nonce` tag (MAY dependency, §3.1 spam deterrence).
-7. **NIP-73** — External content IDs / `i` tag (MANDATORY dependency, canonical identifiers).
-8. **NIP-92** — Media attachments / `imeta` tag (OPTIONAL dependency, artifact hosting).
-9. **ETSI TS 102 165-1** — Telecommunications and Internet converged Services and Protocols; Threat, Vulnerability and Risk Analysis (TVRA). Methodological alignment reference for qualitative risk assessment structure.
-10. **OpenTimestamps** — Bitcoin-anchored timestamp proofs. https://opentimestamps.org/
-11. **Blossom** — Nostr-native content hosting for imeta-referenced artifacts.
-12. **Web beacon / tracking pixel mechanisms** — Background reference for T-SV-03 artifact-host tracking analysis. PETS 2018: "Privacy Implications of Email Tracking."
+Terms intentionally kept, shared with the spec: canonical chain, root author, tip, foreign patch, overlay, annotation, patched content, canonical bytes. Also target state, orphaned overlay, stale overlay, admission (V/A/D layers), and self-fork. Also kept: topology cascade, per the kept-terms line.
