@@ -197,7 +197,7 @@ Assets the catalog reasons about, with the security properties each needs. This 
 
 ## §4: Adversary Archetypes
 
-Eleven capability classes. Archetypes are not mutually exclusive; one actor may combine several. Grades use Appendix A: capability band per A.1's test questions (crossing axis named) and motivation per A.2. An archetype's grade bounds what its members can bring. A specific attack's demands live in each entry's Likelihood segment and never re-grade the archetype.
+Eleven capability classes. Archetypes are not mutually exclusive. One actor may combine several. Grades use Appendix A: capability band per A.1's test questions (crossing axis named) and motivation per A.2. An archetype's grade bounds what its members can bring. A specific attack's demands live in each entry's Likelihood segment and never re-grade the archetype.
 
 | # | Archetype | Grade | Justification |
 |---|---|---|---|
@@ -508,11 +508,11 @@ Data Integrity: content, chains, attachments, and deletion behavior that corrupt
 
 **3. Gap.** CA-1 is a should with no enforcement, so any timestamp inside the window is accepted as published. OpenTimestamps is a may with low adoption, so most events lack tamper-resistant evidence ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1). The window is ecosystem practice, not a rule. It is absent as a protocol control, and no client must flag an implausible timestamp.†
 
-**4. Impact: Low** — the forgery falsifies one evidentiary field, degrading G6 for adjudicators trusting self-reported times. Canonical chains are unaffected.
+**4. Impact: Low**: the forgery falsifies one evidentiary field, degrading G6 for adjudicators trusting self-reported times. Canonical chains are unaffected.
 
-**5. Likelihood: Unlikely** — a Compromised Publisher [B1, M3] needs a contested audit and an OTS-free event, against an unenforced should ([CA-1](protocol-spec.md#rule-CA-1)) and a may-class OTS.
+**5. Likelihood: Unlikely**: a Compromised Publisher [B1, M3] needs a contested audit and an OTS-free event, against an unenforced should ([CA-1](protocol-spec.md#rule-CA-1)) and a may-class OTS.
 
-**6. Residual risk: Low** — the forgery is cheap and persistent. It deceives only adjudicators trusting self-reported times. OTS evidence remains available on demand.
+**6. Residual risk: Low**: the forgery is cheap and persistent. It deceives only adjudicators trusting self-reported times. OTS evidence remains available on demand.
 
 #### T-DI-02: Relay-Subset Divergence in Canonical Bytes
 
@@ -530,11 +530,11 @@ Data Integrity: content, chains, attachments, and deletion behavior that corrupt
 
 **3. Gap.** The recompute duties bind each client to its own observed set ([RC-3](protocol-spec.md#rule-RC-3), [RC-4](protocol-spec.md#rule-RC-4)). Nothing requires the sets to agree. Set agreement is absent. Multi-relay querying is should-class (§7.5). UI recompute is should-class ([RC-4](protocol-spec.md#rule-RC-4)). Divergence persists until the missing event arrives.
 
-**4. Impact: Medium** — While sets differ, users of different clients disagree on a root's current state (G1), and audit claims (G6) contradict.
+**4. Impact: Medium**: While sets differ, users of different clients disagree on a root's current state (G1), and audit claims (G6) contradict.
 
-**5. Likelihood: Likely** — condition probability is high. Out-of-order, late, or absent arrivals are the inherited Nostr model (§3.2). No set-agreement control exists.
+**5. Likelihood: Likely**: condition probability is high. Out-of-order, late, or absent arrivals are the inherited Nostr model (§3.2). No set-agreement control exists.
 
-**6. Residual risk: Medium overall, Low for non-UI** — Non-UI consumers converge on arrival under a must-class recompute duty [RC-3](protocol-spec.md#rule-RC-3). Interactive clients that defer [RC-4](protocol-spec.md#rule-RC-4) can show stale or frozen content until refresh.
+**6. Residual risk: Medium overall, Low for non-UI**: Non-UI consumers converge on arrival under a must-class recompute duty [RC-3](protocol-spec.md#rule-RC-3). Interactive clients that defer [RC-4](protocol-spec.md#rule-RC-4) can show stale or frozen content until refresh.
 
 #### T-DI-03: Retraction Propagation Gaps
 
@@ -546,17 +546,17 @@ Data Integrity: content, chains, attachments, and deletion behavior that corrupt
 | Goals | G1 Integrity, G6 Auditability |
 | Spec | [DEL-2](protocol-spec.md#rule-DEL-2), [DEL-8](protocol-spec.md#rule-DEL-8), [DEL-9](protocol-spec.md#rule-DEL-9), [DEL-11](protocol-spec.md#rule-DEL-11), [DQ-2](protocol-spec.md#rule-DQ-2); §7.4, §8, §10 |
 
-**1. Problem.** Deleting a root-author patch cascades to every canonical descendant ([DEL-2](protocol-spec.md#rule-DEL-2)). The cascade runs only against deletions a client has observed ([DEL-9](protocol-spec.md#rule-DEL-9)). A relay withholding a kind 5 leaves its clients computing stale canonical bytes; one storing the kind 5 without its target surfaces a context-free retraction. A single-relay client sees no split.
+**1. Problem.** Deleting a root-author patch cascades to every canonical descendant ([DEL-2](protocol-spec.md#rule-DEL-2)). The cascade runs only against deletions a client has observed ([DEL-9](protocol-spec.md#rule-DEL-9)). A relay withholding a kind 5 leaves its clients computing stale canonical bytes. A relay storing the kind 5 without its target surfaces a context-free retraction. A single-relay client sees no split.
 
 **2. Mitigation.** Implementations cache locally received kind 5s and apply them even when the queried relay omits them ([DEL-9](protocol-spec.md#rule-DEL-9)). Implementations record a late-target deletion and apply it retroactively on arrival ([DEL-8](protocol-spec.md#rule-DEL-8)). SCRUTINY-aware relays store a kind 5 alongside its target and surface it to SCRUTINY-aware queriers ([DEL-11](protocol-spec.md#rule-DEL-11)). Periodic `{kinds:[5], #e:[<id>]}` polls per cached root, patch, and Binding, plus multi-relay querying, guard against default-result omissions ([DQ-2](protocol-spec.md#rule-DQ-2); §7.5).
 
 **3. Gap.** No rule requires a complete result set or user-side verification, so completeness is absent. [DEL-9](protocol-spec.md#rule-DEL-9) and [DEL-8](protocol-spec.md#rule-DEL-8) caching are must-class but cover only deletions already received. [DEL-11](protocol-spec.md#rule-DEL-11) co-serving and [DQ-2](protocol-spec.md#rule-DQ-2) polling are should-level. A withholding relay can therefore leave stale bytes.
 
-**4. Impact: Medium** — Clients of a withholding relay compute stale canonical bytes, degrading G1 and G6 at relay scope.
+**4. Impact: Medium**: Clients of a withholding relay compute stale canonical bytes, degrading G1 and G6 at relay scope.
 
-**5. Likelihood: Possible** — a Malicious Relay Operator [B3, M3] recurs by position and interest, needing single-relay reliance against should-class checks.
+**5. Likelihood: Possible**: a Malicious Relay Operator [B3, M3] recurs by position and interest, needing single-relay reliance against should-class checks.
 
-**6. Residual risk: Medium** — must-class caching cannot deliver a deletion never received. Completeness stays absent, so stale bytes persist until a should-level check runs.
+**6. Residual risk: Medium**: must-class caching cannot deliver a deletion never received. Completeness stays absent, so stale bytes persist until a should-level check runs.
 
 #### T-DI-04: Binding Relationship Ambiguity
 
@@ -574,11 +574,11 @@ Data Integrity: content, chains, attachments, and deletion behavior that corrupt
 
 **3. Gap.** [BD-12](protocol-spec.md#rule-BD-12) verification is must-class but pins identity only. No rule checks what the claim says. Correction is author-driven and non-atomic. A false Binding stands until the author retracts or a competitor outranks it ([BD-9](protocol-spec.md#rule-BD-9)). Truth verification of relationship claims is absent. Mislabeling stays traceable, yet no rule prevents it.
 
-**4. Impact: Medium** — A trusted key's false relationship claim renders as fact until corrected or out-competed, degrading G1 for readers and G5 for automated classification.
+**4. Impact: Medium**: A trusted key's false relationship claim renders as fact until corrected or out-competed, degrading G1 for readers and G5 for automated classification.
 
-**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] recurs and needs only a key and a trusting consumer. The must-class identity checks never touch claim truth.
+**5. Likelihood: Possible**: a Compromised Publisher [B1, M3] recurs and needs only a key and a trusting consumer. The must-class identity checks never touch claim truth.
 
-**6. Residual risk: Low–Medium** — human readers and audits bound the false claim at Low. Automated consumers that trust rendered edges meet it at Medium.
+**6. Residual risk: Low–Medium**: human readers and audits bound the false claim at Low. Automated consumers that trust rendered edges meet it at Medium.
 
 #### T-DI-06: Attached Payload Integrity in Transit
 
@@ -596,11 +596,11 @@ Data Integrity: content, chains, attachments, and deletion behavior that corrupt
 
 **3. Gap.** Verification stays should-level [IM-1](protocol-spec.md#rule-IM-1). The size check is conditional should [IM-2](protocol-spec.md#rule-IM-2). Mirror neutrality is must-class [IM-3](protocol-spec.md#rule-IM-3). The [IM-4](protocol-spec.md#rule-IM-4) warning is must-class with no block. The warning is presentational. Headless or routine ingestion satisfies it with no human decision and erodes the only guard†. Host rot, takedown, and compromise removal are T-AV-04's scope. This entry covers bytes accepted without the [IM-1](protocol-spec.md#rule-IM-1) check.
 
-**4. Impact: Medium** — A consumer acting on unverified payload bytes may ingest content unrelated to the signed declaration, breaking G1 and G2 for that application.
+**4. Impact: Medium**: A consumer acting on unverified payload bytes may ingest content unrelated to the signed declaration, breaking G1 and G2 for that application.
 
-**5. Likelihood: Possible** — Artifact-Targeting Attacker [B3, M3] holds the serving position. Success needs only a skip-verification or headless client against a should-level check.
+**5. Likelihood: Possible**: Artifact-Targeting Attacker [B3, M3] holds the serving position. Success needs only a skip-verification or headless client against a should-level check.
 
-**6. Residual risk: Medium** — Verifying clients stay sound. Nothing compels the cautious path, so unverified ingestion persists.
+**6. Residual risk: Medium**: Verifying clients stay sound. Nothing compels the cautious path, so unverified ingestion persists.
 
 #### T-DI-07: Publish-Then-Delete Admission Revocation Lag
 
@@ -618,11 +618,11 @@ Data Integrity: content, chains, attachments, and deletion behavior that corrupt
 
 **3. Gap.** DEL-5 sits at the D layer, so revocation reshapes views without invalidating endpoints ([DEL-5](protocol-spec.md#rule-DEL-5); §10). Relay cooperation and polls are should-class ([DEL-11](protocol-spec.md#rule-DEL-11), [DQ-2](protocol-spec.md#rule-DQ-2)). Must-class caching reaches only received deletions ([DEL-9](protocol-spec.md#rule-DEL-9)). No protocol control bounds the deletion-to-observation lag.
 
-**4. Impact: Medium** — hostile endpoints keep rendering under borrowed trust in withheld views until the deletion arrives, degrading G4 Trust Separation for that client.
+**4. Impact: Medium**: hostile endpoints keep rendering under borrowed trust in withheld views until the deletion arrives, degrading G4 Trust Separation for that client.
 
-**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs a key moment plus withheld views, against should-class polls ([DQ-2](protocol-spec.md#rule-DQ-2)) and must-class caching ([DEL-9](protocol-spec.md#rule-DEL-9)).
+**5. Likelihood: Possible**: a Compromised Publisher [B1, M3] needs a key moment plus withheld views, against should-class polls ([DQ-2](protocol-spec.md#rule-DQ-2)) and must-class caching ([DEL-9](protocol-spec.md#rule-DEL-9)).
 
-**6. Residual risk: Medium** — revocation holds wherever clients observe the kind 5. Lag is unbounded, so exposure persists per client until arrival.
+**6. Residual risk: Medium**: revocation holds wherever clients observe the kind 5. Lag is unbounded, so exposure persists per client until arrival.
 
 #### T-DI-08: Indefinite Self-Fork Freeze (Trusted Root Key)
 
@@ -640,11 +640,11 @@ Data Integrity: content, chains, attachments, and deletion behavior that corrupt
 
 **3. Gap.** No timeout bounds an unresolved self-fork: the frozen state may persist forever (absent). No alternative resolver exists: clients honor only the root key's kind 5 ([DEL-1](protocol-spec.md#rule-DEL-1)). The key holder alone unlocks the freeze. Against a malicious holder, the attacker operates that must-class resolution. Re-freezing costs one broadcast patch per cycle (†).
 
-**4. Impact: High** — Users trusting the root key see frozen canonical bytes and a surfaced error for an unbounded period, degrading G8 and G6.
+**4. Impact: High**: Users trusting the root key see frozen canonical bytes and a surfaced error for an unbounded period, degrading G8 and G6.
 
-**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs no infrastructure position and recurs under signature attribution. The driver is trusted-key compromise or vendor malice (T-ID-01). The freeze is must-class, and only the key holder can lift it.
+**5. Likelihood: Possible**: a Compromised Publisher [B1, M3] needs no infrastructure position and recurs under signature attribution. The driver is trusted-key compromise or vendor malice (T-ID-01). The freeze is must-class, and only the key holder can lift it.
 
-**6. Residual risk: High** — No revocation means a re-fork restores the freeze at one patch's cost (†). Social migration is the only remedy (§7.5).
+**6. Residual risk: High**: No revocation means a re-fork restores the freeze at one patch's cost (†). Social migration is the only remedy (§7.5).
 
 #### T-DI-09: Unverified Kind 5 Honoring Cascades Canonical Chains
 
@@ -662,11 +662,11 @@ Data Integrity: content, chains, attachments, and deletion behavior that corrupt
 
 **3. Gap.** Both checks are must-class ([SIG-1](protocol-spec.md#rule-SIG-1), [DEL-1](protocol-spec.md#rule-DEL-1)), so the exposure is clients honoring relay-served deletions unverified†. No rule compels relay-side validation, and relay cooperation stays should-class ([DEL-11](protocol-spec.md#rule-DEL-11)). Affected clients silently render the reverted ancestor as the victim's current state, no error surfaced†.
 
-**4. Impact: Medium** — the victim's chain reverts to its last surviving ancestor for affected clients, degrading G1 Integrity and G5 Discoverability.
+**4. Impact: Medium**: the victim's chain reverts to its last surviving ancestor for affected clients, degrading G1 Integrity and G5 Discoverability.
 
-**5. Likelihood: Possible** — a Malicious Relay Operator [B3, M4] needs one served client skipping either must-class check. Must-rule client conformance is empirically unreliable†.
+**5. Likelihood: Possible**: a Malicious Relay Operator [B3, M4] needs one served client skipping either must-class check. Must-rule client conformance is empirically unreliable†.
 
-**6. Residual risk: Low–Medium** — conformant clients are immune and the forgery stays auditable (lower bound). Non-conformant ones serve that chain as current (upper bound)†.
+**6. Residual risk: Low–Medium**: conformant clients are immune and the forgery stays auditable (lower bound). Non-conformant ones serve that chain as current (upper bound)†.
 
 ### §7.2: Identity
 
@@ -688,11 +688,11 @@ Identity: keys, trust-radius expansion, and self-asserted claims entering the us
 
 **3. Gap.** "There is no key-revocation mechanism in this protocol version" (§7.5). The forensic boundary is may-class: OpenTimestamps proofs are optional, and ecosystem adoption is currently low ([OTS-1](protocol-spec.md#rule-OTS-1); §3.1). The social remedy is absent as a protocol control, so completeness depends on reaching every trusting party.
 
-**4. Impact: Critical** — G1, G2, and G4 break for every party trusting the leaked key, with no in-protocol recovery path (§7.5).
+**4. Impact: Critical**: G1, G2, and G4 break for every party trusting the leaked key, with no in-protocol recovery path (§7.5).
 
-**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs only stock tooling. Custody failures are routine. No defense class exists (absent).
+**5. Likelihood: Possible**: a Compromised Publisher [B1, M3] needs only stock tooling. Custody failures are routine. No defense class exists (absent).
 
-**6. Residual risk: Critical** — carried from v0.5.3. §7.5 states the sovereignty inheritance, forensic asymmetry, and absent revocation, keeping this the model's most severe threat.
+**6. Residual risk: Critical**: carried from v0.5.3. §7.5 states the sovereignty inheritance, forensic asymmetry, and absent revocation, keeping this the model's most severe threat.
 
 #### T-ID-02: Sybil Amplification Through WoT Expansion
 
@@ -710,11 +710,11 @@ Identity: keys, trust-radius expansion, and self-asserted claims entering the us
 
 **3. Gap.** No protocol-level sybil-cost rule exists. §6.1 leaves expansion depth, scoring, and curation out of scope (control absent). The expansion warning is a should clients may omit. Unweighted expansion flattens trust distance: a key three hops out counts the same as a direct follow.
 
-**4. Impact: Medium** — sybil admission pollutes every event surface (A1–A4), eroding G4 per-user and diluting G5, proportional to expansion depth.
+**4. Impact: Medium**: sybil admission pollutes every event surface (A1–A4), eroding G4 per-user and diluting G5, proportional to expansion depth.
 
-**5. Likelihood: Likely** — the Sybil Amplifier [B2, M3] runs sybil key generation at scale for days to weeks. It needs no position and faces a should-level, possibly absent, warning.
+**5. Likelihood: Likely**: the Sybil Amplifier [B2, M3] runs sybil key generation at scale for days to weeks. It needs no position and faces a should-level, possibly absent, warning.
 
-**6. Residual risk: Medium** — bounded by trusted-set discipline and warning uptake. Irreducible while the trust model stays permissionless.
+**6. Residual risk: Medium**: bounded by trusted-set discipline and warning uptake. Irreducible while the trust model stays permissionless.
 
 #### T-ID-03: Indexer Squatting
 
@@ -732,11 +732,11 @@ Identity: keys, trust-radius expansion, and self-asserted claims entering the us
 
 **3. Gap.** Registry cross-reference is absent. No rule checks an indexer against its issuing authority, and no conflict detection or authority priority exists. IX-1's should does not bind squatters. The asymmetry (cheap squatting, costly defense) favors the squatter while trusted-pubkey sets are sparse during bootstrap.
 
-**4. Impact: Medium** — diluted `#i` discovery (G5) and side-by-side noise with legitimate metadata, per-user, worst during bootstrap.
+**4. Impact: Medium**: diluted `#i` discovery (G5) and side-by-side noise with legitimate metadata, per-user, worst during bootstrap.
 
-**5. Likelihood: Possible** — the Identifier Squatter [B1, M2] needs only stock tooling. Trusted-set admission gates damage. Attribution risk deters a curious-motivation actor.
+**5. Likelihood: Possible**: the Identifier Squatter [B1, M2] needs only stock tooling. Trusted-set admission gates damage. Attribution risk deters a curious-motivation actor.
 
-**6. Residual risk: Medium** — bounded by trusted-set curation. Declines as authoritative keys gain wide trust.
+**6. Residual risk: Medium**: bounded by trusted-set curation. Declines as authoritative keys gain wide trust.
 
 #### T-ID-04: Unverifiable Identity Claims
 
@@ -754,11 +754,11 @@ Identity: keys, trust-radius expansion, and self-asserted claims entering the us
 
 **3. Gap.** Pubkey-to-entity binding is absent as a protocol control. The trust mechanism itself is out of scope (§7.5). Curation is practice-only†. Users on unverified defaults have no in-protocol basis for discriminating keys (compounds T-EC-02). Squatting is free while authorities must defend every claim†.
 
-**4. Impact: Medium** — an admitted impostor degrades G2 Authenticity and G4 Trust Separation for every user admitting the key.
+**4. Impact: Medium**: an admitted impostor degrades G2 Authenticity and G4 Trust Separation for every user admitting the key.
 
-**5. Likelihood: Possible** — an Identifier Squatter [B1, M2] or Compromised Publisher [B1, M3] needs only prose and a new key against an absent defense class.
+**5. Likelihood: Possible**: an Identifier Squatter [B1, M2] or Compromised Publisher [B1, M3] needs only prose and a new key against an absent defense class.
 
-**6. Residual risk: Low–Medium** — Low for out-of-band verified trusted-pubkey sets ([TR-2](protocol-spec.md#rule-TR-2); §7.5). Medium upper bound covers bootstrap users and unverified defaults (compounds T-EC-02).
+**6. Residual risk: Low–Medium**: Low for out-of-band verified trusted-pubkey sets ([TR-2](protocol-spec.md#rule-TR-2); §7.5). Medium upper bound covers bootstrap users and unverified defaults (compounds T-EC-02).
 
 #### T-ID-05: Author-Hint Forgery on Binding `e` Tags
 
@@ -776,11 +776,11 @@ Identity: keys, trust-radius expansion, and self-asserted claims entering the us
 
 **3. Gap.** No rule flags a hint mismatch as a user-facing warning (defense class absent). The hint is structurally unverifiable until the endpoint arrives. BD-6 plus BD-12 protect only compliant consumers†. Hint-faithful renderers propagate the misattribution†.
 
-**4. Impact: Low** — G2 Authenticity degrades only where a consumer violates BD-12 or renders pending content. Compliant consumers see true authorship.
+**4. Impact: Low**: G2 Authenticity degrades only where a consumer violates BD-12 or renders pending content. Compliant consumers see true authorship.
 
-**5. Likelihood: Possible** — a Compromised Publisher [B1, M3] needs only a crafted tag. Deception lands where a client trusts hints against a must-class rule†.
+**5. Likelihood: Possible**: a Compromised Publisher [B1, M3] needs only a crafted tag. Deception lands where a client trusts hints against a must-class rule†.
 
-**6. Residual risk: Low** — Compliant consumers are immune. The residual surface is non-compliant renderer behavior with must-class anchors†.
+**6. Residual risk: Low**: Compliant consumers are immune. The residual surface is non-compliant renderer behavior with must-class anchors†.
 
 #### T-ID-06: Hostile Markup in Rendered Content
 
@@ -798,11 +798,11 @@ Identity: keys, trust-radius expansion, and self-asserted claims entering the us
 
 **3. Gap.** Sanitization is absent as a protocol control, and no rule governs content rendering. §3.2's base-layer inheritance covers event structure and the patch envelope, not prose presentation. IM-4 covers artifact verification, never markup structure ([IM-4](protocol-spec.md#rule-IM-4)). Neutralizing hostile markup is client responsibility†. Exposure tracks each renderer's hygiene.
 
-**4. Impact: Medium** — Trusted, signed content renders as attacker-controlled UI, degrading G4 Trust Separation for every client that renders without sanitizing.
+**4. Impact: Medium**: Trusted, signed content renders as attacker-controlled UI, degrading G4 Trust Separation for every client that renders without sanitizing.
 
-**5. Likelihood: Possible** — A Compromised Publisher [B1, M3] already holds a trusted publication channel. The remaining preconditions are unsanitized rich rendering† and an absent defense class.
+**5. Likelihood: Possible**: A Compromised Publisher [B1, M3] already holds a trusted publication channel. The remaining preconditions are unsanitized rich rendering† and an absent defense class.
 
-**6. Residual risk: Medium** — Bounded by trust-gate placement and client hygiene†, while portions of the trusted view stay attacker-shaped.
+**6. Residual risk: Medium**: Bounded by trust-gate placement and client hygiene†, while portions of the trusted view stay attacker-shaped.
 
 ### §7.3: Availability
 
@@ -824,11 +824,11 @@ Availability: inflation, exhaustion, and hosting fragility that degrade compute 
 
 **3. Gap.** [RL-2](protocol-spec.md#rule-RL-2)'s should-class ceilings cover patch-application work only. Plain event volume escapes them. No per-author rate limit exists. The §5.4 size bounds are only recommended ([RL-1](protocol-spec.md#rule-RL-1)). †Shared kind 1 namespace invites generic relay anti-spam throttling.
 
-**4. Impact: Medium** — query/storage availability degrades (G8) and discovery dilutes (G5) until trust filtering dismisses it. Curated views via [TR-2](protocol-spec.md#rule-TR-2), [OV-7](protocol-spec.md#rule-OV-7) are largely protected.
+**4. Impact: Medium**: query/storage availability degrades (G8) and discovery dilutes (G5) until trust filtering dismisses it. Curated views via [TR-2](protocol-spec.md#rule-TR-2), [OV-7](protocol-spec.md#rule-OV-7) are largely protected.
 
-**5. Likelihood: Likely** — [B2, M3] generates sybil keys at scale with near-zero preconditions, against should-class recommended bounds ([RL-1](protocol-spec.md#rule-RL-1)) and operator-dependent PoW (NIP-13).
+**5. Likelihood: Likely**: [B2, M3] generates sybil keys at scale with near-zero preconditions, against should-class recommended bounds ([RL-1](protocol-spec.md#rule-RL-1)) and operator-dependent PoW (NIP-13).
 
-**6. Residual risk: Medium** — the curated view survives. Relay storage, query availability, and discovery quality degrade with volume until operators adopt bounds and rate limits.
+**6. Residual risk: Medium**: the curated view survives. Relay storage, query availability, and discovery quality degrade with volume until operators adopt bounds and rate limits.
 
 #### T-AV-02: Foreign-Overlay and Chain-Application Amplified Work
 
@@ -846,11 +846,11 @@ Availability: inflation, exhaustion, and hosting fragility that degrade compute 
 
 **3. Gap.** [RL-2](protocol-spec.md#rule-RL-2) and the ceiling guards carry no mandated default. A spec-legal consumer may therefore set none.
 
-**4. Impact: High** — a ceiling-less client can spend unbounded work on one root's chain and overlays, degrading G8 for that user. Effects stay local to ceiling-less consumers.
+**4. Impact: High**: a ceiling-less client can spend unbounded work on one root's chain and overlays, degrading G8 for that user. Effects stay local to ceiling-less consumers.
 
-**5. Likelihood: Possible** — the Spam/DoS Attacker [B2, M3] generates sybil keys at scale. The precondition is only a ceiling-less consumer. The defense class is should ([RL-2](protocol-spec.md#rule-RL-2)).
+**5. Likelihood: Possible**: the Spam/DoS Attacker [B2, M3] generates sybil keys at scale. The precondition is only a ceiling-less consumer. The defense class is should ([RL-2](protocol-spec.md#rule-RL-2)).
 
-**6. Residual risk: Medium** — certain for ceiling-less consumers under floods, bounded once ceilings apply.
+**6. Residual risk: Medium**: certain for ceiling-less consumers under floods, bounded once ceilings apply.
 
 #### T-AV-03: Event Size Exceeding Relay Limits
 
@@ -868,11 +868,11 @@ Availability: inflation, exhaustion, and hosting fragility that degrade compute 
 
 **3. Gap.** The bound is absent-normative: [RL-1](protocol-spec.md#rule-RL-1) is a producer should. No rule constrains relay acceptance. Publisher-side detection is absent: rejection is silent and per-relay. †NIP-11 `limitation` advertises limits, but support is inconsistent.
 
-**4. Impact: Medium** — G8 degrades for consumers whose relay set drops a large event. The update stays unavailable until re-published.
+**4. Impact: Medium**: G8 degrades for consumers whose relay set drops a large event. The update stays unavailable until re-published.
 
-**5. Likelihood: Possible** — Events nearing relay limits are a stated design premise of §4.6. Controls are thin: a should-grade bound, no transport guarantee, no acceptance signal.
+**5. Likelihood: Possible**: Events nearing relay limits are a stated design premise of §4.6. Controls are thin: a should-grade bound, no transport guarantee, no acceptance signal.
 
-**6. Residual risk: Medium** — large-event content can silently strand part of the network. Recovery depends on republishing.
+**6. Residual risk: Medium**: large-event content can silently strand part of the network. Recovery depends on republishing.
 
 #### T-AV-04: Artifact Hosting Fragility
 
@@ -890,11 +890,11 @@ Availability: inflation, exhaustion, and hosting fragility that degrade compute 
 
 **3. Gap.** Verification is should-level, so it may be skipped. No rule mandates artifact duplication, pinning, or liveness checks. A missing artifact is indistinguishable from an absent one. Durability rests on ecosystem practice†.
 
-**4. Impact: Medium** — payload-grade claims such as SBOMs and attestations lose availability with their missing artifact (G8). Authenticity (G2) and auditability (G6) of the claim follow.
+**4. Impact: Medium**: payload-grade claims such as SBOMs and attestations lose availability with their missing artifact (G8). Authenticity (G2) and auditability (G6) of the claim follow.
 
-**5. Likelihood: Possible** — Hostile Vendor [B4, M4] and Artifact-Targeting Attacker [B3, M3] have standing means, given a pressured host and a should-level check with a must warning.
+**5. Likelihood: Possible**: Hostile Vendor [B4, M4] and Artifact-Targeting Attacker [B3, M3] have standing means, given a pressured host and a should-level check with a must warning.
 
-**6. Residual risk: Medium** — Warnings curb surprise but cannot force durability. Artifacts stay hostage to hosting goodwill.
+**6. Residual risk: Medium**: Warnings curb surprise but cannot force durability. Artifacts stay hostage to hosting goodwill.
 
 #### T-AV-05: Overlay and No-Op Accumulation
 
@@ -912,11 +912,11 @@ Availability: inflation, exhaustion, and hosting fragility that degrade compute 
 
 **3. Gap.** No rule caps overlay count per target. [RL-1](protocol-spec.md#rule-RL-1)'s chain-length bound is a producer rule the adversary ignores. [RL-2](protocol-spec.md#rule-RL-2) bounds application cost (should), not the accumulated record. Cumulative volume escapes it. Trusted-pubkey set admission via reputation thresholds (§6.1) can admit sybil keys (absent as protocol control). No rule flags no-op density.
 
-**4. Impact: Medium** — accumulated no-ops and overlays bury legitimate history and dilute the record, degrading G8 and G6 without breaking any integrity invariant.
+**4. Impact: Medium**: accumulated no-ops and overlays bury legitimate history and dilute the record, degrading G8 and G6 without breaking any integrity invariant.
 
-**5. Likelihood: Possible** — Spam/DoS Attacker [B2, M3] generates sybil keys at scale. The precondition is trusted-set admission or a compromised root key. No rule caps accumulation (absent).
+**5. Likelihood: Possible**: Spam/DoS Attacker [B2, M3] generates sybil keys at scale. The precondition is trusted-set admission or a compromised root key. No rule caps accumulation (absent).
 
-**6. Residual risk: Medium** — Trusted-pubkey set curation bounds exposure. The count itself is uncapped. Sybil admission paths remain.
+**6. Residual risk: Medium**: Trusted-pubkey set curation bounds exposure. The count itself is uncapped. Sybil admission paths remain.
 
 ### §7.4: Discovery
 
@@ -938,11 +938,11 @@ Discovery: relay behavior and indexer alignment that break finding paths (G5, G6
 
 **3. Gap.** No wire-level signal separates "unsupported filter" from "empty result" (class absent). Cross-relay checking is class should and degrades with narrow relay sets, and eclipse removes even that (T-CE-02). [DQ-3](protocol-spec.md#rule-DQ-3) and [DQ-4](protocol-spec.md#rule-DQ-4) shift detection onto the client at must-class.
 
-**4. Impact: High** — Silently wrong discovery degrades G5 and G6 for every relay client, and G1 when deletion surfaces hide behind ambiguity.
+**4. Impact: High**: Silently wrong discovery degrades G5 and G6 for every relay client, and G1 when deletion surfaces hide behind ambiguity.
 
-**5. Likelihood: Likely** — Malicious Relay Operator [B3, M3] (named infrastructure role per A.1, recurring suppression posture per §7.5), no precondition beyond being queried, against should-class or absent defenses.
+**5. Likelihood: Likely**: Malicious Relay Operator [B3, M3] (named infrastructure role per A.1, recurring suppression posture per §7.5), no precondition beyond being queried, against should-class or absent defenses.
 
-**6. Residual risk: High** — should-class defenses do not defeat a relay that lies about capabilities, and eclipse erases cross-checking.
+**6. Residual risk: High**: should-class defenses do not defeat a relay that lies about capabilities, and eclipse erases cross-checking.
 
 #### T-DC-02: Web-of-trust bootstrap trap
 
@@ -960,11 +960,11 @@ Discovery: relay behavior and indexer alignment that break finding paths (G5, G6
 
 **3. Gap.** No rule defines who creates, distributes, or revokes a default trusted-pubkey set. No bootstrap ceremony exists (class absent). A poisoned default list admits attacker events before the user can detect the poison (T-EC-02).
 
-**4. Impact: High** — Bootstrap poisoning degrades G2, G4, and G5 for every new user, before any protocol mechanism can engage.
+**4. Impact: High**: Bootstrap poisoning degrades G2, G4, and G5 for every new user, before any protocol mechanism can engage.
 
-**5. Likelihood: Likely** — structural condition probability certain at genesis (every new user passes through bootstrap), controls absent: no rule governs set population or ceremonies.
+**5. Likelihood: Likely**: structural condition probability certain at genesis (every new user passes through bootstrap), controls absent: no rule governs set population or ceremonies.
 
-**6. Residual risk: High** — The protocol's correctness holds regardless of provenance, so no in-protocol defense can compensate for a compromised initial set.
+**6. Residual risk: High**: The protocol's correctness holds regardless of provenance, so no in-protocol defense can compensate for a compromised initial set.
 
 #### T-DC-03: Indexer Burial in Patched Content
 
@@ -982,11 +982,11 @@ Discovery: relay behavior and indexer alignment that break finding paths (G5, G6
 
 **3. Gap.** No rule compares chain content against the root's `i` set, and relays index tags, not content ([DQ-1](protocol-spec.md#rule-DQ-1)). [IX-1](protocol-spec.md#rule-IX-1) is a should-level obligation with no enforcement hook. Only full-scan client-side parsing (§8.1) is guaranteed, and detection falls to consumer habit and cross-chain audit.
 
-**4. Impact: Medium** — G5 discovery silently omits in-chain findings for indexer-querying consumers while the chain stays authentic and valid.
+**4. Impact: Medium**: G5 discovery silently omits in-chain findings for indexer-querying consumers while the chain stays authentic and valid.
 
-**5. Likelihood: Possible** — Hostile Vendor [B4, M4] (staff and legal apparatus, suppression of unfavorable findings), needing root-author access against a should-class defense ([IX-1](protocol-spec.md#rule-IX-1)) with no relay-side content hook.
+**5. Likelihood: Possible**: Hostile Vendor [B4, M4] (staff and legal apparatus, suppression of unfavorable findings), needing root-author access against a should-class defense ([IX-1](protocol-spec.md#rule-IX-1)) with no relay-side content hook.
 
-**6. Residual risk: Medium** — the per-chain gap is persistent and motive-safe, bounded only by NIP-50 uptake and audit discipline.
+**6. Residual risk: Medium**: the per-chain gap is persistent and motive-safe, bounded only by NIP-50 uptake and audit discipline.
 
 #### T-DC-05: Relay-Omission Chain Freeze
 
@@ -1004,11 +1004,11 @@ Discovery: relay behavior and indexer alignment that break finding paths (G5, G6
 
 **3. Gap.** No rule obliges a relay to serve a complete result set or a client to verify one, so completeness is absent. Retention is must-class but awaits an arrival the withholding relay never produces. Pending states stay silent unless surfaced, and any surfacing is † client practice.
 
-**4. Impact: Medium** — Clients of a withholding relay see stale canonical bytes and frozen overlays, degrading G8 and G3 at relay scope.
+**4. Impact: Medium**: Clients of a withholding relay see stale canonical bytes and frozen overlays, degrading G8 and G3 at relay scope.
 
-**5. Likelihood: Possible** — [B3, M3]: B3 by the positional axis, M3 recurring, over a narrow relay set with single-relay publication and should-level guidance.
+**5. Likelihood: Possible**: [B3, M3]: B3 by the positional axis, M3 recurring, over a narrow relay set with single-relay publication and should-level guidance.
 
-**6. Residual risk: Medium** — must-class retention cannot deliver a withheld event, and completeness is absent, so omission persists until another relay has it.
+**6. Residual risk: Medium**: must-class retention cannot deliver a withheld event, and completeness is absent, so omission persists until another relay has it.
 
 ### §7.5: Censorship
 
@@ -1030,11 +1030,11 @@ Censorship: suppression of valid events at presentation (G3).
 
 **3. Gap.** No relay transparency or reputation mechanism exists (absent)†. Refusal-to-serve is unprovable, coordinated pool suppression undetectable†. Seam: the censorship hits the presentation and discovery layer ([TR-7](protocol-spec.md#rule-TR-7)'s territory). Omission against chain-construction inputs belongs to T-DC-05.
 
-**4. Impact: Medium** — the affected user's view is silently wrong (G3, G5, G6), yet events remain retrievable from any honest relay.
+**4. Impact: Medium**: the affected user's view is silently wrong (G3, G5, G6), yet events remain retrievable from any honest relay.
 
-**5. Likelihood: Possible** — Malicious Relay Operator [B3, M3] (named infrastructure role per A.1, recurring vendor-incentivized suppression per §7.5), costing only configuration against should-class defenses.
+**5. Likelihood: Possible**: Malicious Relay Operator [B3, M3] (named infrastructure role per A.1, recurring vendor-incentivized suppression per §7.5), costing only configuration against should-class defenses.
 
-**6. Residual risk: Low–Medium** — Low bound: diverse-relay users who cross-reference restore complete views, since suppression affects only its operator's responses. Medium bound: deployments pinned to a narrow relay set (enterprise policy, regional egress) cannot cross-reference, so suppression becomes effective per-user censorship.
+**6. Residual risk: Low–Medium**: Low bound: diverse-relay users who cross-reference restore complete views, since suppression affects only its operator's responses. Medium bound: deployments pinned to a narrow relay set (enterprise policy, regional egress) cannot cross-reference, so suppression becomes effective per-user censorship.
 
 #### T-CE-02: Eclipse Attack on Relay Set
 
@@ -1052,11 +1052,11 @@ Censorship: suppression of valid events at presentation (G3).
 
 **3. Gap.** No view-completeness check or cross-relay consistency proof exists (absent), so a client cannot learn its view is partial. Detection from inside the protocol is impossible under total egress control†. Topology control lies outside the protocol, so resistance rests on deployment choices†.
 
-**4. Impact: High** — for an eclipsed user, G3, G5, and G6 fail together and silently under fully valid signatures. The wider record is intact.
+**4. Impact: High**: for an eclipsed user, G3, G5, and G6 fail together and silently under fully valid signatures. The wider record is intact.
 
-**5. Likelihood: Possible** — Network-Level Attacker [B5, M4] (network-layer control per A.1's test question, captive-gateway-only stays B4, sustained goal-directed eclipse), with positionality and per-victim scope holding it below Likely.
+**5. Likelihood: Possible**: Network-Level Attacker [B5, M4] (network-layer control per A.1's test question, captive-gateway-only stays B4, sustained goal-directed eclipse), with positionality and per-victim scope holding it below Likely.
 
-**6. Residual risk: Low–High** — Deployment variance per §5 is genuine. Low bound: users with diverse relays and alternate network paths keep one honest reference. High bound: users inside fully controlled egress (state-managed networks, captive gateways) lack protocol-level detection or escape.
+**6. Residual risk: Low–High**: Deployment variance per §5 is genuine. Low bound: users with diverse relays and alternate network paths keep one honest reference. High bound: users inside fully controlled egress (state-managed networks, captive gateways) lack protocol-level detection or escape.
 
 ### §7.6: Surveillance
 
@@ -1078,11 +1078,11 @@ Surveillance: query and fetch behavior revealing user interests (G9).
 
 **3. Gap.** No private-retrieval or encrypted-filter primitive exists in the inherited model, class absent. Relay multiplicity (§7.5, class should) fragments exposure across operators but cannot remove it.
 
-**4. Impact: High** — A relay profiles every connected client's security interests, degrading G9 for individuals and organizations alike.
+**4. Impact: High**: A relay profiles every connected client's security interests, degrading G9 for individuals and organizations alike.
 
-**5. Likelihood: Likely** — Malicious Relay Operator [B3, M3] is graded on infrastructure position and recurring-interest posture, with a mere-query precondition and an absent defense class.
+**5. Likelihood: Likely**: Malicious Relay Operator [B3, M3] is graded on infrastructure position and recurring-interest posture, with a mere-query precondition and an absent defense class.
 
-**6. Residual risk: High** — Without protocol-level concealment, out-of-protocol defenses (anonymous routing, batching, superset queries) are † ecosystem practice.
+**6. Residual risk: High**: Without protocol-level concealment, out-of-protocol defenses (anonymous routing, batching, superset queries) are † ecosystem practice.
 
 #### T-SV-03: Artifact-Host Tracking via `imeta` Fetches
 
@@ -1100,11 +1100,11 @@ Surveillance: query and fetch behavior revealing user interests (G9).
 
 **3. Gap.** No rule addresses what a host learns at fetch time. [IM-1](protocol-spec.md#rule-IM-1) and [IM-4](protocol-spec.md#rule-IM-4) defend integrity, classes should and must. [IM-3](protocol-spec.md#rule-IM-3) mirrors serve availability, class should, with a must limited to hash acceptance. On privacy the defense class is absent. URL inspection and fetch policy is client discretion (†).
 
-**4. Impact: High** — G9 degrades for artifact consumers: a tracking host learns who fetches findings about which products, enabling targeted pressure on readers per fetch.
+**4. Impact: High**: G9 degrades for artifact consumers: a tracking host learns who fetches findings about which products, enabling targeted pressure on readers per fetch.
 
-**5. Likelihood: Possible** — a [B3, M3] positional archetype (host-operation axis, recurring motive), one precondition, and no fetch-privacy defense (absent).
+**5. Likelihood: Possible**: a [B3, M3] positional archetype (host-operation axis, recurring motive), one precondition, and no fetch-privacy defense (absent).
 
-**6. Residual risk: High** — the mechanism and the spec are unchanged from the old rating, and byte-integrity rules never intersect the fetch channel, so the leak stands in full.
+**6. Residual risk: High**: the mechanism and the spec are unchanged from the old rating, and byte-integrity rules never intersect the fetch channel, so the leak stands in full.
 
 ### §7.7: Ecosystem
 
@@ -1126,11 +1126,11 @@ Ecosystem: adoption-scale, corpus, and forward-compatibility exposures.
 
 **3. Gap.** No standard query API makes pre-computation services interchangeable (absent). No mechanism lets a client verify that a service serves complete, unfiltered canonical bytes (absent). No protocol-level incentive for service diversity exists, and the cost pressure driving centralization is structural (absent).
 
-**4. Impact: Medium** — A dominant pre-computation service concentrates discovery behind one failure, censorship, and surveillance point at ecosystem scope, degrading G5 and G3.
+**4. Impact: Medium**: A dominant pre-computation service concentrates discovery behind one failure, censorship, and surveillance point at ecosystem scope, degrading G5 and G3.
 
-**5. Likelihood: Possible** — Recomputation cost pressure grows with ecosystem scale (†) × recomputation is must-class for non-UI consumers and should-class for UIs × every counter-control is absent.
+**5. Likelihood: Possible**: Recomputation cost pressure grows with ecosystem scale (†) × recomputation is must-class for non-UI consumers and should-class for UIs × every counter-control is absent.
 
-**6. Residual risk: Medium** — The open data model supplies a theoretical escape from any single service, but practical switching costs grow with scale (†).
+**6. Residual risk: Medium**: The open data model supplies a theoretical escape from any single service, but practical switching costs grow with scale (†).
 
 #### T-EC-02: Default Trusted-Pubkey Set Compromise
 
@@ -1148,11 +1148,11 @@ Ecosystem: adoption-scale, corpus, and forward-compatibility exposures.
 
 **3. Gap.** No rule defines provenance, signing, or versioning for a distributed set (absent). Install-media and shipped-default verification is ecosystem work (†), absent at protocol layer. §7.5's trust-radius expansion warning is should-class prose, not a rule, and never addresses seed compromise.
 
-**4. Impact: High** — An attacker-seeded set makes every trust decision the adversary's, defeating G4 and the G1, G2, G5 guarantees riding on it per installation.
+**4. Impact: High**: An attacker-seeded set makes every trust decision the adversary's, defeating G4 and the G1, G2, G5 guarantees riding on it per installation.
 
-**5. Likelihood: Possible** — Infrastructure Impersonator [B3, M3] (mimic distribution is a trusted publication channel per A.1, recurring attempts) × per-channel compromise needed × provenance controls absent.
+**5. Likelihood: Possible**: Infrastructure Impersonator [B3, M3] (mimic distribution is a trusted publication channel per A.1, recurring attempts) × per-channel compromise needed × provenance controls absent.
 
-**6. Residual risk: High** — Exposure lasts until curation replaces the seed: no protocol anchor detects a compromised source, and correction is social (†).
+**6. Residual risk: High**: Exposure lasts until curation replaces the seed: no protocol anchor detects a compromised source, and correction is social (†).
 
 #### T-EC-03: Kind 1 Namespace Coupling with Relay Policy
 
@@ -1170,11 +1170,11 @@ Ecosystem: adoption-scale, corpus, and forward-compatibility exposures.
 
 **3. Gap.** No migration path to a dedicated kind exists if kind 1 coupling becomes untenable (absent). Relay exemption from generic limits is voluntary, so it is at best may-class and unenforceable by the protocol (†). No mechanism lets a relay advertise SCRUTINY-aware policy handling (absent).
 
-**4. Impact: Medium** — Uniform kind 1 policy can throttle or deprioritize all SCRUTINY publication and discovery at affected relays, degrading G3 and G5.
+**4. Impact: Medium**: Uniform kind 1 policy can throttle or deprioritize all SCRUTINY publication and discovery at affected relays, degrading G3 and G5.
 
-**5. Likelihood: Possible** — Kind 1 anti-spam tightening and relay policy drift are plausible over time (†) × no protocol control constrains relay kind-level policy and no accommodation exists.
+**5. Likelihood: Possible**: Kind 1 anti-spam tightening and relay policy drift are plausible over time (†) × no protocol control constrains relay kind-level policy and no accommodation exists.
 
-**6. Residual risk: Medium** — A long-term structural dependency on a shared, evolving namespace, with practical impact varying by relay operator policy (†).
+**6. Residual risk: Medium**: A long-term structural dependency on a shared, evolving namespace, with practical impact varying by relay operator policy (†).
 
 #### T-EC-04: Automated False Metadata at Scale
 
@@ -1192,11 +1192,11 @@ Ecosystem: adoption-scale, corpus, and forward-compatibility exposures.
 
 **3. Gap.** No rule distinguishes automated from human production (absent per App A), and no disclosure duty exists (absent). No per-event credibility or rate signal exists beyond binary trust ([TR-2](protocol-spec.md#rule-TR-2)), and may-class proof-of-work (NIP-13) adds cost without vetting (§3.1).
 
-**4. Impact: Medium** — Output admitted at full credibility, in volume that buries corroboration, degrades discovery quality (G5) and the curatorial premise (G4) per user and ecosystem scope.
+**4. Impact: Medium**: Output admitted at full credibility, in volume that buries corroboration, degrades discovery quality (G5) and the curatorial premise (G4) per user and ecosystem scope.
 
-**5. Likelihood: Likely** — Sybil Amplifier [B2, M3] driving, Compromised Publisher [B1, M3] on the trusted arm × near-zero marginal cost (†) × discrimination absent after admission.
+**5. Likelihood: Likely**: Sybil Amplifier [B2, M3] driving, Compromised Publisher [B1, M3] on the trusted arm × near-zero marginal cost (†) × discrimination absent after admission.
 
-**6. Residual risk: Medium** — Curation and corroboration bound a curated user's exposure, but trusted keys running undisclosed pipelines pass at full weight (†).
+**6. Residual risk: Medium**: Curation and corroboration bound a curated user's exposure, but trusted keys running undisclosed pipelines pass at full weight (†).
 
 #### T-EC-05: Economic and Social Signal Manipulation
 
@@ -1214,11 +1214,11 @@ Ecosystem: adoption-scale, corpus, and forward-compatibility exposures.
 
 **3. Gap.** No ranking algorithm or signal-weighting scheme is defined (absent, by design). Raw counting without trust weighting is exposed, and that exposure is a client's choice (†). No rate-limits on signals per target and no coordinated-campaign detection exist (absent).
 
-**4. Impact: Medium** — Attacker-shaped ranking steers discovery of security metadata for clients consuming unweighted signals, degrading G5 and G4 at per-client scope.
+**4. Impact: Medium**: Attacker-shaped ranking steers discovery of security metadata for clients consuming unweighted signals, degrading G5 and G4 at per-client scope.
 
-**5. Likelihood: Possible** — Sybil Amplifier [B2, M3] (mass key generation marks B2, recurring campaigns mark M3) × near-zero per-signal cost × protocol-layer defense absent, client weighting optional (†).
+**5. Likelihood: Possible**: Sybil Amplifier [B2, M3] (mass key generation marks B2, recurring campaigns mark M3) × near-zero per-signal cost × protocol-layer defense absent, client weighting optional (†).
 
-**6. Residual risk: Medium** — Bounded for curated users by the trust perimeter, rising with N-hop trust expansion and naive signal consumption (†).
+**6. Residual risk: Medium**: Bounded for curated users by the trust perimeter, rising with N-hop trust expansion and naive signal consumption (†).
 
 #### T-EC-06: Opaque Admission Silently Skips Future Safety Semantics
 
@@ -1236,11 +1236,11 @@ Ecosystem: adoption-scale, corpus, and forward-compatibility exposures.
 
 **3. Gap.** No negotiation channel exists (absent) for a publisher to name required semantics. No rule requires surfacing how many unknown tags an opaque admission skipped (absent). [VER-2](protocol-spec.md#rule-VER-2) is may-class and [VER-4](protocol-spec.md#rule-VER-4) forbids version-tag-only rejection, so consistent quarantine cannot be mandatory.
 
-**4. Impact: High** — G1, G2, and G6 degrade silently: inventories and audit trails treat events the client never evaluated as understood, diverging irreversibly from publisher intent.
+**4. Impact: High**: G1, G2, and G6 degrade silently: inventories and audit trails treat events the client never evaluated as understood, diverging irreversibly from publisher intent.
 
-**5. Likelihood: Possible** — the condition is a future release existing, postulated here rather than observed. The §3 forward-compatibility paragraph anticipates coexisting versions but creates none.
+**5. Likelihood: Possible**: the condition is a future release existing, postulated here rather than observed. The §3 forward-compatibility paragraph anticipates coexisting versions but creates none.
 
-**6. Residual risk: Medium–High** — low bound: no future release, no divergence. High bound: each opaque admission misrepresents content no mitigating rule reaches, and divergence is unbounded.
+**6. Residual risk: Medium–High**: low bound: no future release, no divergence. High bound: each opaque admission misrepresents content no mitigating rule reaches, and divergence is unbounded.
 
 #### T-EC-07: Conformance Corpus Supply Chain
 
@@ -1258,11 +1258,11 @@ Ecosystem: adoption-scale, corpus, and forward-compatibility exposures.
 
 **3. Gap.** No rule governs the channel publishing the digests: control is absent, falling to should-class appendix guidance (G.1). A-layer cases presuppose signature verification and never exercise it ([SIG-1](protocol-spec.md#rule-SIG-1), G.3), so that coverage is absent as well. Halt-reason pricing is absent by design (G.3), so why-divergence stays unpriced.
 
-**4. Impact: Medium** — Conformant-but-divergent behavior on uncovered layers, plus unpriced diagnostic divergence, degrades G1 and G6 across implementations.
+**4. Impact: Medium**: Conformant-but-divergent behavior on uncovered layers, plus unpriced diagnostic divergence, degrades G1 and G6 across implementations.
 
-**5. Likelihood: Likely** — Two uncovered layers times absent channel governance make divergence-under-conformance the standing condition, loud digests curbing only silent drift.
+**5. Likelihood: Likely**: Two uncovered layers times absent channel governance make divergence-under-conformance the standing condition, loud digests curbing only silent drift.
 
-**6. Residual risk: Medium** — The pinned core holds, but two layers stay uncheckable until vectors publish, halt diagnostics remain advisory by design, and release governance stays protocol-external.
+**6. Residual risk: Medium**: The pinned core holds, but two layers stay uncheckable until vectors publish, halt diagnostics remain advisory by design, and release governance stays protocol-external.
 
 ### §7.8: Protocol Interactions
 
@@ -1284,11 +1284,11 @@ Protocol Interactions: tensions between mechanisms and inherited Nostr semantics
 
 **3. Gap.** No rule distinguishes voluntary from coerced retraction (absent), and the deletion controls are must, should, and should ([DEL-9](protocol-spec.md#rule-DEL-9), [DEL-11](protocol-spec.md#rule-DEL-11), [DEL-10](protocol-spec.md#rule-DEL-10)). No campaign-detection mechanism exists (absent)†, §7.5 querying is should-class, and the protocol cannot grant legal immunity. Chilling effects on operators and on researchers watching peers sued are real but unmeasured†.
 
-**4. Impact: High** — a vendor pressuring a user's whole working relay set removes the targeted events from every graph the user can assemble from it (G3, G5).
+**4. Impact: High**: a vendor pressuring a user's whole working relay set removes the targeted events from every graph the user can assemble from it (G3, G5).
 
-**5. Likelihood: Likely** — Hostile Vendor [B4, M4] by A.1's legal axis and A.2's example, given pressured-set coverage, against must-and-should deletion controls.
+**5. Likelihood: Likely**: Hostile Vendor [B4, M4] by A.1's legal axis and A.2's example, given pressured-set coverage, against must-and-should deletion controls.
 
-**6. Residual risk: Medium** — coercion resists rule-level defenses, and only operational diversity of relays, jurisdictions, and archives bounds it (†).
+**6. Residual risk: Medium**: coercion resists rule-level defenses, and only operational diversity of relays, jurisdictions, and archives bounds it (†).
 
 #### T-PI-02: NIP-09 Deletion Retention Tension
 
@@ -1306,11 +1306,11 @@ Protocol Interactions: tensions between mechanisms and inherited Nostr semantics
 
 **3. Gap.** Retention across relays is should-class variance, so audit completeness tracks the least deletion-honouring relay a query touches (absent). [DEL-9](protocol-spec.md#rule-DEL-9) and [DEL-10](protocol-spec.md#rule-DEL-10) recover the notice of deletion, never the deleted bytes once a relay has dropped them (†).
 
-**4. Impact: Medium** — Deletion of a SCRUTINY event degrades audit completeness wherever relays honour NIP-09 by dropping the target (†) (G6).
+**4. Impact: Medium**: Deletion of a SCRUTINY event degrades audit completeness wherever relays honour NIP-09 by dropping the target (†) (G6).
 
-**5. Likelihood: Possible** — the delete-then-lose condition is a routine kind 5 deletion colliding with a discarding relay, and controls are should-class only.
+**5. Likelihood: Possible**: the delete-then-lose condition is a routine kind 5 deletion colliding with a discarding relay, and controls are should-class only.
 
-**6. Residual risk: Medium** — Audit completeness is as strong as the most deletion-honouring relay in the queried set, with no must-level retention rule to lift it (absent).
+**6. Residual risk: Medium**: Audit completeness is as strong as the most deletion-honouring relay in the queried set, with no must-level retention rule to lift it (absent).
 
 #### T-PI-03: Cryptographic Agility Gap
 
@@ -1328,11 +1328,11 @@ Protocol Interactions: tensions between mechanisms and inherited Nostr semantics
 
 **3. Gap.** No algorithm-transition, hybrid-signature, or alternative-primitive rule exists (absent). SCRUTINY is locked to Nostr's migration pace and decisions with no independent agility layer (absent).
 
-**4. Impact: High** — A broken primitive forges every event's signature and id, collapsing G1 and G2 across all historical and live data.
+**4. Impact: High**: A broken primitive forges every event's signature and id, collapsing G1 and G2 across all historical and live data.
 
-**5. Likelihood: Very unlikely** — condition probability is negligible today with no practical cryptanalysis, absence-of-controls is total, and the negligible condition dominates the level, not the High impact.
+**5. Likelihood: Very unlikely**: condition probability is negligible today with no practical cryptanalysis, absence-of-controls is total, and the negligible condition dominates the level, not the High impact.
 
-**6. Residual risk: Low** — near-horizon the primitives face no practical exposure, and the far-horizon quantum-era forgeability is an unquantified planning concern, not a present-day residual.
+**6. Residual risk: Low**: near-horizon the primitives face no practical exposure, and the far-horizon quantum-era forgeability is an unquantified planning concern, not a present-day residual.
 
 ---
 
