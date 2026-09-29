@@ -65,7 +65,7 @@ Trust is entirely the user's: each user maintains a set of trusted pubkeys, and 
 | Document | Contents |
 |---|---|
 | [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.8.1. Event types, diff format, trust admission, chain and overlay resolution, discovery patterns, indexer registry, and a flat registry of every normative rule (Appendix F) |
-| [docs/threat-model.md](docs/threat-model.md) | Threat model: adversary capabilities, per-threat risk ratings, and residual risk |
+| [docs/threat-model.md](docs/threat-model.md) | Threat model: adversary capabilities, per-threat risk ratings (see the [§10 summary table](docs/threat-model.md#10-summary-table)), and residual risk |
 
 The specification is the only normative source. Appendix F assigns every normative rule a stable mnemonic ID (`BD-3`, `T1`, `DEL-7`, …) so implementations and conformance tests can cite rules precisely.
 

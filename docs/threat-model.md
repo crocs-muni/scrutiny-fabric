@@ -4,7 +4,7 @@
 **Document status:** Draft for security review  
 **Methodology:** Adversary-model-based, in the Dolev–Yao tradition of numbered capability classes. Adversary grading adapts ETSI TS 102 165-1 V5.3.1 capability bands and the motivation axis (Appendix A, explicitly scoped). Risk ratings are ordinal-with-rationale (§5). Ratings use no ordinal arithmetic. Validation targets protocol-spec v0.8.1. Every mechanism claim cite-checks against rule IDs in spec Appendix F.
 
-**Keyword declaration.** The key words MUST, SHOULD, and MAY and their negations appear in this document in uppercase ONLY inside verbatim quotations. The permitted quotations are protocol-spec rules anchored by rule ID, protocol-spec prose anchored by section, and the previous revision quoted as evidence in Appendix B. All analysis and guidance in this document uses lowercase modal verbs. When an uppercase keyword appears, it belongs to the quoted source, not to this document. This declaration follows the RFC 2119 and RFC 8174 convention of reserving capitals for formal obligation.
+**Keyword declaration.** The key words MUST, SHOULD, and MAY and their negations appear in this document in uppercase ONLY inside verbatim quotations. The permitted quotations are protocol-spec rules anchored by rule ID, protocol-spec prose anchored by section, and the previous revision quoted as evidence in Appendix B. All analysis and guidance in this document uses lowercase modal verbs. When an uppercase keyword appears, it belongs to the quoted source, not to this document. This declaration follows the [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119) and [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174) convention of reserving capitals for formal obligation.
 
 **Marker legend.** `†` marks TM-side guidance or implementation-behavior observations that no spec rule requires. Everything not marked `†` anchors to a protocol-spec rule ID or to common-knowledge infrastructure behavior.
 
@@ -34,7 +34,7 @@ This document threat-models the SCRUTINY Fabric protocol v0.8.1: a security-meta
 - Key generation, storage, and operational key hygiene.
 - Transport-layer security: TLS downgrade, certificate validation, DNS poisoning. These are platform concerns (§8 excluded-concerns list).
 - Legal and regulatory compliance, except where legal pressure directly enters the threat model (T-PI-01).
-- Ranking and aggregation of optional social signals (NIP-13, NIP-18, NIP-25, NIP-57): the spec marks all four as may-tier (spec §3.1). Their interpretation is client-layer.
+- Ranking and aggregation of optional social signals ([NIP-13](https://github.com/nostr-protocol/nips/blob/master/13.md), [NIP-18](https://github.com/nostr-protocol/nips/blob/master/18.md), [NIP-25](https://github.com/nostr-protocol/nips/blob/master/25.md), [NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md)): the spec marks all four as may-tier (spec §3.1). Their interpretation is client-layer.
 - AI-agent interpretation of event contents. AI agents participate only through publisher keys and are indistinguishable from human publishers at the protocol layer (Appendix A.3).
 
 ### 1.3 Method
@@ -132,7 +132,7 @@ Every interface where attacker-shaped input crosses a trust boundary or changes 
 - **Real-world identity binding.** Any key may claim any identity because key generation is permissionless (spec §1). Verification is delegated out-of-band.
 - **Key revocation.** No mechanism exists in this protocol version. Recovery after compromise is social (T-ID-01, §8).
 - **Relay incentive and penalty mechanisms.** Honest service is an operational assumption, not an enforced property.
-- **Confidential metadata.** Deferred (spec §11: NIP-44 encrypted variants).
+- **Confidential metadata.** Deferred (spec §11: [NIP-44](https://github.com/nostr-protocol/nips/blob/master/44.md) encrypted variants).
 - **Recursive overlays and merge adoption.** Deferred (spec §11). V0.8.1 renders overlays only.
 - **Cherry-pick attribution and state anchoring for Bindings.** Both deferred in spec §11. No v0.8.1 mechanism exists to model.
 
@@ -148,7 +148,7 @@ Fixes the actor model from spec §7.5 and states the assumptions the rest of thi
 
 **Relays** store and serve events, apply `#t`/`#e`/`#i` filters, and propagate publications. The baseline is honest-but-curious. Relays may also omit results, serve stale data, drop filter support, or stop answering. The defense is multiplicity: query multiple relays, cache locally, cross-reference (spec §7.5). No relay is trusted with completeness.
 
-**Users** maintain a trusted-pubkey set: manual allowlist, NIP-02 web-of-trust expansion, or a reputation-source threshold. The curation mechanism is out of protocol scope (spec §6.1). The set's existence is a hard protocol requirement. Untrusted, unreachable events leave the user's view through a presentation-time filter, never through pre-filtering of computation.
+**Users** maintain a trusted-pubkey set: manual allowlist, [NIP-02](https://github.com/nostr-protocol/nips/blob/master/02.md) web-of-trust expansion, or a reputation-source threshold. The curation mechanism is out of protocol scope (spec §6.1). The set's existence is a hard protocol requirement. Untrusted, unreachable events leave the user's view through a presentation-time filter, never through pre-filtering of computation.
 
 ### 3.2 Derived trust properties
 
@@ -163,9 +163,9 @@ Fixes the actor model from spec §7.5 and states the assumptions the rest of thi
 2. Consumers perform SIG-1's id+signature verification before processing every event. This is load-bearing: T-DI-09 is the failure mode.
 3. At least one honest, non-coerced relay exists in each user's configured set during normal operation.
 4. Publishers control their own private keys until a compromise is analyzed as a named threat (T-ID-01).
-5. The Nostr base layers remain stable within the evaluation horizon. Base layers per spec §3.1: NIP-01, NIP-09, NIP-10, NIP-73, CommonMark §4.5. May-tier layers per spec §3.1: NIP-03, NIP-13, NIP-18, NIP-25, NIP-57. NIP-50 search per spec §8. NIP-92 `imeta` is optional per spec §3.1.
+5. The Nostr base layers remain stable within the evaluation horizon. Base layers per spec §3.1: [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md), [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md), [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md), [NIP-73](https://github.com/nostr-protocol/nips/blob/master/73.md), CommonMark §4.5. May-tier layers per spec §3.1: [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md), [NIP-13](https://github.com/nostr-protocol/nips/blob/master/13.md), [NIP-18](https://github.com/nostr-protocol/nips/blob/master/18.md), [NIP-25](https://github.com/nostr-protocol/nips/blob/master/25.md), [NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md). [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md) search per spec §8. [NIP-92](https://github.com/nostr-protocol/nips/blob/master/92.md) `imeta` is optional per spec §3.1.
 
-**Downgraded assumption.** Earlier revisions assumed clients correctly implement all must-level spec rules. Empirical work on the Nostr client ecosystem (Nostr MU/MS, EuroS&P 2025) shows major clients skip signature and id verification, among other gaps. This document therefore treats client-side must-level obligations as honored only where a conformance check exists (spec Appendix G). It rates "client skips the check" as an exploitable class (T-DI-09, T-EC-06).
+**Downgraded assumption.** Earlier revisions assumed clients correctly implement all must-level spec rules. Empirical work on the Nostr client ecosystem shows major clients skip signature and id verification, among other gaps. Source: "Not in The Prophecies: Practical Attacks on Nostr" ([ePrint 2025/1459](https://eprint.iacr.org/2025/1459)). This document therefore treats client-side must-level obligations as honored only where a conformance check exists (spec Appendix G). It rates "client skips the check" as an exploitable class (T-DI-09, T-EC-06).
 
 ---
 
@@ -704,7 +704,7 @@ Identity: keys, trust-radius expansion, and self-asserted claims entering the us
 | Goals | G4 Trust Separation, G5 Discoverability |
 | Spec | [TR-2](protocol-spec.md#rule-TR-2), [TR-3](protocol-spec.md#rule-TR-3); §6.1, §7.5 |
 
-**1. Problem.** The protocol delegates sybil resistance to the user's web-of-trust (§7.5). A curated allowlist admits only explicitly trusted pubkeys. An N-hop expansion via NIP-02 follow lists admits any key a trusted key follows. An attacker generating keys at scale then needs one placement inside the radius: bought follows, follow-back exchanges, or one compromised minor account. Each admitted key may publish valid events of every type ([TR-2](protocol-spec.md#rule-TR-2) admits all-or-nothing). The flood erodes trust separation (G4) and discovery value (G5).
+**1. Problem.** The protocol delegates sybil resistance to the user's web-of-trust (§7.5). A curated allowlist admits only explicitly trusted pubkeys. An N-hop expansion via [NIP-02](https://github.com/nostr-protocol/nips/blob/master/02.md) follow lists admits any key a trusted key follows. An attacker generating keys at scale then needs one placement inside the radius: bought follows, follow-back exchanges, or one compromised minor account. Each admitted key may publish valid events of every type ([TR-2](protocol-spec.md#rule-TR-2) admits all-or-nothing). The flood erodes trust separation (G4) and discovery value (G5).
 
 **2. Mitigation.** Binding admission does not widen: users admit a Binding only when they trust its own author. Trust does not flow through endpoints ([TR-3](protocol-spec.md#rule-TR-3)). §7.5 sets a should defense: "Implementations SHOULD warn when trust-radius expansion would admit a large number of previously unseen pubkeys."
 
@@ -726,7 +726,7 @@ Identity: keys, trust-radius expansion, and self-asserted claims entering the us
 | Goals | G5 Discoverability |
 | Spec | [IX-1](protocol-spec.md#rule-IX-1), [IR-2](protocol-spec.md#rule-IR-2), [IX-3](protocol-spec.md#rule-IX-3); §9 |
 
-**1. Problem.** `i` tag values are self-asserted. Nothing validates a claimed `cve:` or `cpe:` indexer against MITRE or the NIST dictionary. §9 records only a format convention: "Value is the source authority's canonical form, preserved verbatim" ([IR-2](protocol-spec.md#rule-IR-2)). IX-1's inclusion guidance is a should, not a registry check. A squatter claims a known indexer early. Its standing rests on real publication time. No surface rewards a backdate. Chains ignore `created_at` ([RC-1](protocol-spec.md#rule-RC-1), [SF-4](protocol-spec.md#rule-SF-4)). Indexer queries fix no result ordering (§8.1). NIP-50 ranks by relevance, and NIP-01 paginates newest-first. Root indexers are immutable ([IX-3](protocol-spec.md#rule-IX-3)), so the claim persists. The attack degrades discovery within the user's trust perimeter (G5).
+**1. Problem.** `i` tag values are self-asserted. Nothing validates a claimed `cve:` or `cpe:` indexer against MITRE or the NIST dictionary. §9 records only a format convention: "Value is the source authority's canonical form, preserved verbatim" ([IR-2](protocol-spec.md#rule-IR-2)). IX-1's inclusion guidance is a should, not a registry check. A squatter claims a known indexer early. Its standing rests on real publication time. No surface rewards a backdate. Chains ignore `created_at` ([RC-1](protocol-spec.md#rule-RC-1), [SF-4](protocol-spec.md#rule-SF-4)). Indexer queries fix no result ordering (§8.1). [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md) ranks by relevance, and [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) paginates newest-first. Root indexers are immutable ([IX-3](protocol-spec.md#rule-IX-3)), so the claim persists. The attack degrades discovery within the user's trust perimeter (G5).
 
 **2. Mitigation.** Squatter events reach a curated view only through trusted or Binding-reachable keys. Competing claims render side by side inside the user's trusted set ([OV-7](protocol-spec.md#rule-OV-7); §7.5). Authoritative keys outrank squatters by curation alone.
 
@@ -820,7 +820,7 @@ Availability: inflation, exhaustion, and hosting fragility that degrade compute 
 
 **1. Problem.** A Spam/DoS Attacker generates valid events no validity rule rejects. V-valid events must not be turned away by A or D rules ([TR-1](protocol-spec.md#rule-TR-1)). §7.5 names the shape: sybil keys flood fake Products, Metadata, and Bindings that relays store. The flood consumes storage, bandwidth, and query responsiveness. This degrades G8 and dilutes G5 until presentation filtering dismisses it.
 
-**2. Mitigation.** Trust gating is structural. [TR-2](protocol-spec.md#rule-TR-2) admits only trusted pubkeys or trusted-Binding reachability. [OV-7](protocol-spec.md#rule-OV-7) shows foreign overlays only to the trusted set. [TR-7](protocol-spec.md#rule-TR-7) keeps the flood out of any curated view at presentation. Patch-carrying floods hit [RL-2](protocol-spec.md#rule-RL-2)'s work ceilings and [RL-4](protocol-spec.md#rule-RL-4)'s serving block (compounds T-AV-02). A plain event flood reaches neither. NIP-13 Proof-of-Work is optional with no minimum difficulty (§3.1). †relay adoption is operator-set.
+**2. Mitigation.** Trust gating is structural. [TR-2](protocol-spec.md#rule-TR-2) admits only trusted pubkeys or trusted-Binding reachability. [OV-7](protocol-spec.md#rule-OV-7) shows foreign overlays only to the trusted set. [TR-7](protocol-spec.md#rule-TR-7) keeps the flood out of any curated view at presentation. Patch-carrying floods hit [RL-2](protocol-spec.md#rule-RL-2)'s work ceilings and [RL-4](protocol-spec.md#rule-RL-4)'s serving block (compounds T-AV-02). A plain event flood reaches neither. [NIP-13](https://github.com/nostr-protocol/nips/blob/master/13.md) Proof-of-Work is optional with no minimum difficulty (§3.1). †relay adoption is operator-set.
 
 **3. Gap.** [RL-2](protocol-spec.md#rule-RL-2)'s should-class ceilings cover patch-application work only. Plain event volume escapes them. No per-author rate limit exists. The §5.4 size bounds are only recommended ([RL-1](protocol-spec.md#rule-RL-1)). †Shared kind 1 namespace invites generic relay anti-spam throttling.
 
@@ -864,9 +864,9 @@ Availability: inflation, exhaustion, and hosting fragility that degrade compute 
 
 **1. Problem.** Relays enforce operator-configured per-event size limits. The relay protocol is inherited, not overridden (§3.2). [RL-1](protocol-spec.md#rule-RL-1) recommends a 64 KB cap and `imeta` above ~30 KB. A root or patch whose inline payload exceeds a relay's limit is not stored there. When a root-author patch is missing from a client's observed set, the chain stays at the last observed ancestor [RC-5](protocol-spec.md#rule-RC-5). Descendants are held [UR-4](protocol-spec.md#rule-UR-4). Rejection is per-relay, so a large event can reach some relays and not others. Clients on the dropping relays silently lose the update.
 
-**2. Mitigation.** §4.6 routes payloads above ~30 KB to NIP-92 `imeta` attachments, keeping event bodies small. [RL-1](protocol-spec.md#rule-RL-1) states the 64 KB bound. [IM-1](protocol-spec.md#rule-IM-1) and [IM-4](protocol-spec.md#rule-IM-4) bind fetched artifacts to the declared `x` hash and warn before unverified display. They govern verification, not acceptance. The payload then travels over HTTP, not in the event. †A dropped event stays valid but absent. Re-publishing is the only recovery.
+**2. Mitigation.** §4.6 routes payloads above ~30 KB to [NIP-92](https://github.com/nostr-protocol/nips/blob/master/92.md) `imeta` attachments, keeping event bodies small. [RL-1](protocol-spec.md#rule-RL-1) states the 64 KB bound. [IM-1](protocol-spec.md#rule-IM-1) and [IM-4](protocol-spec.md#rule-IM-4) bind fetched artifacts to the declared `x` hash and warn before unverified display. They govern verification, not acceptance. The payload then travels over HTTP, not in the event. †A dropped event stays valid but absent. Re-publishing is the only recovery.
 
-**3. Gap.** The bound is absent-normative: [RL-1](protocol-spec.md#rule-RL-1) is a producer should. No rule constrains relay acceptance. Publisher-side detection is absent: rejection is silent and per-relay. †NIP-11 `limitation` advertises limits, but support is inconsistent.
+**3. Gap.** The bound is absent-normative: [RL-1](protocol-spec.md#rule-RL-1) is a producer should. No rule constrains relay acceptance. Publisher-side detection is absent: rejection is silent and per-relay. †[NIP-11](https://github.com/nostr-protocol/nips/blob/master/11.md) `limitation` advertises limits, but support is inconsistent.
 
 **4. Impact: Medium**: G8 degrades for consumers whose relay set drops a large event. The update stays unavailable until re-published.
 
@@ -1208,7 +1208,7 @@ Ecosystem: adoption-scale, corpus, and forward-compatibility exposures.
 | Goals | G4 Trust Separation, G5 Discoverability |
 | Spec | [TR-2](protocol-spec.md#rule-TR-2), [TR-7](protocol-spec.md#rule-TR-7); §3.1 |
 
-**1. Problem.** §3.1 lists NIP-18 reposts, NIP-25 reactions, and NIP-57 zaps as optional ranking, spam-deterrence, or attention signals, none required for conformance. Sybil keys mint reposts or reactions at negligible cost, and funds buy zap receipts, inflating whichever signals a client counts (†). §3.1 names reaction counts a sentiment indicator only, so negative-suppression ranking is client behavior (†). Raw-count ranking elevates attacker content regardless of signaler trust, degrading G5 and G4.
+**1. Problem.** §3.1 lists [NIP-18](https://github.com/nostr-protocol/nips/blob/master/18.md) reposts, [NIP-25](https://github.com/nostr-protocol/nips/blob/master/25.md) reactions, and [NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md) zaps as optional ranking, spam-deterrence, or attention signals, none required for conformance. Sybil keys mint reposts or reactions at negligible cost, and funds buy zap receipts, inflating whichever signals a client counts (†). §3.1 names reaction counts a sentiment indicator only, so negative-suppression ranking is client behavior (†). Raw-count ranking elevates attacker content regardless of signaler trust, degrading G5 and G4.
 
 **2. Mitigation.** The trust perimeter still gates the ranked events ([TR-2](protocol-spec.md#rule-TR-2)), with filtering held at the presentation edge ([TR-7](protocol-spec.md#rule-TR-7)). Trust-weighting counts blunts sybil volume but is guidance (†), not a §3.1 rule.
 
@@ -1290,7 +1290,7 @@ Protocol Interactions: tensions between mechanisms and inherited Nostr semantics
 
 **6. Residual risk: Medium**: coercion resists rule-level defenses, and only operational diversity of relays, jurisdictions, and archives bounds it (†).
 
-#### T-PI-02: NIP-09 Deletion Retention Tension
+#### T-PI-02: [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) Deletion Retention Tension
 
 | Field | Value |
 |---|---|
@@ -1471,14 +1471,14 @@ Ordered by class. "(spec-change)" = an edit to the spec. "(ecosystem)" = deploya
 ## §12: Sources
 
 1. **SCRUTINY Fabric Protocol Specification v0.8.1** (this repository, `docs/protocol-spec.md`): primary source. Every mechanism claim in this document anchors to its rule IDs (Appendix F, 142 rules).
-2. **Nostr NIPs**, base tier mandatory per spec §3.1. Base tier: NIP-01 (event structure, signatures, relay protocol). NIP-09 (kind 5 deletion). NIP-10 (`e` marker threading). NIP-73 (`i` tag format). May-tier per spec §3.1: NIP-03 (OpenTimestamps, audit signal), NIP-13 (proof-of-work), NIP-18 (reposts), NIP-25 (reactions), NIP-57 (zaps). Optional per spec §3.1: NIP-92 (`imeta` attachments). NIP-50 full-text search is relay-optional per spec §8. Two further NIPs are live prose dependencies of this document. NIP-02 follow lists are the web-of-trust substrate behind T-ID-02 and T-DC-02. NIP-11 relay information documents are §8.0's capability pre-check, named in T-DC-01.
-3. **CommonMark §4.5**: fenced code blocks. The patch payload envelope (spec §5.2).
-4. **ETSI TS 102 165-1 V5.3.1 (2025-02)**: clause 6.6.4, Tables 7 ("Motivation levels") and 8 ("Capability levels"). Also Tables 9 ("Mapping of motivation with capability to identify threat level"), 4 ("Summary of likelihood metric"), and 14 ("Occurrence likelihood"). Adopted/adapted/not-adopted scope declared in Appendix A.
-5. **RFC 2119, RFC 8174**: keyword convention this document's header declares.
-6. **ASD-STE100 Issue 9 (January 2025)**: style source for the adopted structural rules. Adopted: descriptive sentences ≤25 words, procedural sentences ≤20, one topic per sentence, one topic per paragraph, no prose semicolons, simple tenses, active voice. The subset binds prose paragraphs and vertical-list items. Tables and diagrams carry structure outside sentence rules. The semicolon separating rule IDs from section anchors is citation apparatus, not prose. The same applies to the rating-line factor chains in segments 4 to 6: archetype grade, band and motivation justification, condition and defense factors. The template requires these chains in one auditable line. Their length is apparatus, not prose.
-7. **Nostr MU/MS study**: "Nostr: A Protocol for Censorship Resistant Social Media" (EuroS&P 2025, ePrint 2025/1459). Evidence behind the §3.3 downgraded assumption about client conformance to must-level rules.
+2. **Nostr NIPs**, base tier mandatory per spec §3.1. Base tier: [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) (event structure, signatures, relay protocol). [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) (kind 5 deletion). [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md) (`e` marker threading). [NIP-73](https://github.com/nostr-protocol/nips/blob/master/73.md) (`i` tag format). May-tier per spec §3.1: [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) (OpenTimestamps, audit signal), [NIP-13](https://github.com/nostr-protocol/nips/blob/master/13.md) (proof-of-work), [NIP-18](https://github.com/nostr-protocol/nips/blob/master/18.md) (reposts), [NIP-25](https://github.com/nostr-protocol/nips/blob/master/25.md) (reactions), [NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md) (zaps). Optional per spec §3.1: [NIP-92](https://github.com/nostr-protocol/nips/blob/master/92.md) (`imeta` attachments). [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md) full-text search is relay-optional per spec §8. Two further NIPs are live prose dependencies of this document. [NIP-02](https://github.com/nostr-protocol/nips/blob/master/02.md) follow lists are the web-of-trust substrate behind T-ID-02 and T-DC-02. [NIP-11](https://github.com/nostr-protocol/nips/blob/master/11.md) relay information documents are §8.0's capability pre-check, named in T-DC-01.
+3. **[CommonMark §4.5](https://spec.commonmark.org/current/#fenced-code-blocks)**: fenced code blocks. The patch payload envelope (spec §5.2).
+4. **[ETSI TS 102 165-1 V5.3.1 (2025-02)](https://www.etsi.org/deliver/etsi_ts/102100_102199/102165/05.03.01_600s/102165v050301p.pdf)**: clause 6.6.4, Tables 7 ("Motivation levels") and 8 ("Capability levels"). Also Tables 9 ("Mapping of motivation with capability to identify threat level"), 4 ("Summary of likelihood metric"), and 14 ("Occurrence likelihood"). Adopted/adapted/not-adopted scope declared in Appendix A.
+5. **[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174)**: keyword convention this document's header declares.
+6. **[ASD-STE100 Issue 9 (January 2025)](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)**: style source for the adopted structural rules. Adopted: descriptive sentences ≤25 words, procedural sentences ≤20, one topic per sentence, one topic per paragraph, no prose semicolons, simple tenses, active voice. The subset binds prose paragraphs and vertical-list items. Tables and diagrams carry structure outside sentence rules. The semicolon separating rule IDs from section anchors is citation apparatus, not prose. The same applies to the rating-line factor chains in segments 4 to 6: archetype grade, band and motivation justification, condition and defense factors. The template requires these chains in one auditable line. Their length is apparatus, not prose.
+7. **Nostr client-conformance study**: "Not in The Prophecies: Practical Attacks on Nostr" ([ePrint 2025/1459](https://eprint.iacr.org/2025/1459)). Evidence behind the §3.3 downgraded assumption about client conformance to must-level rules.
 8. **Methodology lineage:** Dolev–Yao adversary modeling as practiced in the GossipSub analysis (IEEE S&P 2024), sigstore's threat documentation, and RFC 9420 (MLS).
-9. **OpenTimestamps** (https://opentimestamps.org/) and **Blossom**: external systems the protocol integrates (spec §3.1, §4.6).
+9. **[OpenTimestamps](https://opentimestamps.org/)** and **[Blossom](https://github.com/hzrd149/blossom-server)**: external systems the protocol integrates (spec §3.1, §4.6).
 
 ---
 

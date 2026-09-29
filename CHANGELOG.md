@@ -7,12 +7,12 @@ as it does lives inline in the spec, next to that rule. Cross-cutting rationale 
 
 ## v0.8.1
 
-- **E3 clarified (F18, issue #37).** "Closing fence ≥ opening-fence length" could be read as
+- **E3 clarified (F18, [issue #37](https://github.com/crocs-muni/scrutiny-fabric/issues/37)).** "Closing fence ≥ opening-fence length" could be read as
   requiring a closing fence to exist — stricter than the CommonMark §4.5 model, where an unclosed
   block runs to end of document and is still a code block. E3 constrains the closing fence's
   length only when one exists; an unclosed block's payload runs to the end of `content`. See E3,
   E5, PB-2, §5.2.
-- **RL-2 amended (F12, issue #30).** "Bytes compared" was itself a unit an adversary optimises
+- **RL-2 amended (F12, [issue #30](https://github.com/crocs-muni/scrutiny-fabric/issues/30)).** "Bytes compared" was itself a unit an adversary optimises
   against: T1's uniqueness scan costs `|content| × |pattern|` element comparisons regardless of
   the bytes those elements carry, so a hunk whose match pattern is empty lines ran a full-length
   scan at zero billed bytes. The total-work ceiling now charges a per-line floor — no less than

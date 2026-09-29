@@ -27,7 +27,7 @@ SCRUTINY Fabric is that graph layer. It does NOT redefine SBOM or vulnerability 
 
 ### Design principles
 
-1. **Stay Nostr-native.** Every construct maps to existing NIPs (NIP-10 threading, NIP-73 external IDs, NIP-92 imeta, NIP-09 deletion). No invented machinery where Nostr already has an answer.
+1. **Stay Nostr-native.** Every construct maps to existing NIPs ([NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md) threading, [NIP-73](https://github.com/nostr-protocol/nips/blob/master/73.md) external IDs, [NIP-92](https://github.com/nostr-protocol/nips/blob/master/92.md) imeta, [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) deletion). No invented machinery where Nostr already has an answer.
 2. **Render gracefully in generic Nostr clients.** Products and Metadata read as text posts; Bindings appear as threaded references.
 3. **Deep semantics require SCRUTINY-aware processing.** Graph views, diff application, chain computation, and patched content computation require a protocol-aware implementation.
 4. **Cheap relay queries for the common case; deeper queries require local processing.** Canonical indexers (`i` tags) make "all events about CVE-X" a 1-millisecond relay filter. Anything fancier — "all Infineon products," "all SBOMs containing log4j" — requires local content parsing.
@@ -67,7 +67,7 @@ Tag-name convention: SCRUTINY uses kebab-case (`scrutiny-fabric`, `scrutiny-prod
 
 **Forward-compatibility.** Unknown tags MUST be ignored by parsers. An event carrying a higher version tag than the implementation's own (e.g., a v0.8.1 implementation encountering `scrutiny-v0.8.2`) MAY be admitted opaquely — i.e., admitted to local storage and discoverable — provided that the event still satisfies every Validity invariant of this specification (§6.0). An event carrying a higher version tag that violates a v0.8.1 Validity invariant (e.g., a new event-type `t` tag that this specification does not recognise, producing zero recognised event-type tags) MUST be treated as an unknown event type and MUST NOT be rendered as a Product, Metadata, Binding, or Patch. Implementations MUST NOT reject higher-version events *solely* because of the version tag.
 
-**Signature and identifier verification.** Before processing any event, implementations MUST verify both that its `sig` is a valid Schnorr signature for its `pubkey` over its `id`, and that its `id` equals the SHA-256 of its NIP-01 canonical serialization. Verifying the signature alone is insufficient: the signature commits to the `id`, so an event whose `content` or `tags` were altered while retaining the original `id` and `sig` still passes a signature-only check.
+**Signature and identifier verification.** Before processing any event, implementations MUST verify both that its `sig` is a valid Schnorr signature for its `pubkey` over its `id`, and that its `id` equals the SHA-256 of its [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) canonical serialization. Verifying the signature alone is insufficient: the signature commits to the `id`, so an event whose `content` or `tags` were altered while retaining the original `id` and `sig` still passes a signature-only check.
 
 This applies to **every event an implementation consumes**, including kind 5 deletions (§10) and kind 1040 attestations (§3.1) — not only events carrying a `scrutiny-fabric` tag. An unverified deletion is indistinguishable from a forged one, and honouring a forged deletion removes canonical history (§10 DEL-2). Relays are not trusted to have performed either check (§7.5). An event failing either check MUST NOT be processed or rendered.
 
@@ -91,35 +91,35 @@ SCRUTINY Fabric depends on the following NIPs from the Nostr protocol ecosystem:
 
 | NIP | Purpose | Requirement |
 |---|---|---|
-| NIP-01 | Event structure, signatures, relay protocol | **MANDATORY** — base protocol |
-| NIP-03 | OpenTimestamps attestations (kind:1040) for timestamp verifiability | **MAY** — audit signal only |
-| NIP-09 | Event deletion (kind:5) | **MANDATORY** — deletion events, per §10 |
-| NIP-10 | Text note threading (`e root`, `e reply` markers) | **MANDATORY** — chain topology, binding endpoints |
-| NIP-13 | Proof-of-Work (`nonce` tag) for spam deterrence | **MAY** — see signals below |
-| NIP-18 | Reposts (kinds 6/16) | **MAY** — see signals below |
-| NIP-25 | Reactions (kind 7) | **MAY** — see signals below |
-| NIP-57 | Lightning Zaps (kind 9735) | **MAY** — see signals below |
-| NIP-73 | External content IDs (`i` tag format) | **MANDATORY** — `#i` relay indexing; SCRUTINY defines its own prefix registry (§9) using NIP-73's `<prefix>:<value>` convention |
-| NIP-92 | Media attachments (`imeta` tag) | **OPTIONAL** — payload attachments, per §4.6 |
+| [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) | Event structure, signatures, relay protocol | **MANDATORY** — base protocol |
+| [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) | OpenTimestamps attestations (kind:1040) for timestamp verifiability | **MAY** — audit signal only |
+| [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) | Event deletion (kind:5) | **MANDATORY** — deletion events, per §10 |
+| [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md) | Text note threading (`e root`, `e reply` markers) | **MANDATORY** — chain topology, binding endpoints |
+| [NIP-13](https://github.com/nostr-protocol/nips/blob/master/13.md) | Proof-of-Work (`nonce` tag) for spam deterrence | **MAY** — see signals below |
+| [NIP-18](https://github.com/nostr-protocol/nips/blob/master/18.md) | Reposts (kinds 6/16) | **MAY** — see signals below |
+| [NIP-25](https://github.com/nostr-protocol/nips/blob/master/25.md) | Reactions (kind 7) | **MAY** — see signals below |
+| [NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md) | Lightning Zaps (kind 9735) | **MAY** — see signals below |
+| [NIP-73](https://github.com/nostr-protocol/nips/blob/master/73.md) | External content IDs (`i` tag format) | **MANDATORY** — `#i` relay indexing; SCRUTINY defines its own prefix registry (§9) using NIP-73's `<prefix>:<value>` convention |
+| [NIP-92](https://github.com/nostr-protocol/nips/blob/master/92.md) | Media attachments (`imeta` tag) | **OPTIONAL** — payload attachments, per §4.6 |
 | CommonMark §4.5 | Fenced code blocks | **MANDATORY** — patch payload envelope, per §5.2 |
 
-SCRUTINY uses `i` tags with `#i` relay indexing (enabled by NIP-01's single-letter tag indexing convention). The `i` tag format is modeled on NIP-73's `<prefix>:<value>` convention and pairs each `i` tag with a corresponding `k` tag indicating the prefix kind. SCRUTINY defines its own prefix registry (§9) rather than using NIP-73's predefined types (ISBN, DOI, ISAN, etc.), which are media-oriented and unsuitable for security indexers.
+SCRUTINY uses `i` tags with `#i` relay indexing (enabled by NIP-01's single-letter tag indexing convention). The `i` tag format is modeled on [NIP-73](https://github.com/nostr-protocol/nips/blob/master/73.md)'s `<prefix>:<value>` convention and pairs each `i` tag with a corresponding `k` tag indicating the prefix kind. SCRUTINY defines its own prefix registry (§9) rather than using NIP-73's predefined types (ISBN, DOI, ISAN, etc.), which are media-oriented and unsuitable for security indexers.
 
 #### Optional publisher and consumer signals (MAY)
 
 The following NIPs provide auxiliary signals that implementations MAY use for ranking, spam deterrence, or attention economics. None are required for protocol conformance. Each operates on a distinct axis:
 
-**NIP-13 (Proof-of-Work).** Publisher-side computational cost signal. Anti-spam at publication time. Publishers MAY include a `nonce` tag with committed difficulty. Relays supporting NIP-11 MAY advertise PoW requirements via `min_pow_difficulty`; publishers SHOULD inspect relay info documents before publishing and match or exceed any advertised minimum. No minimum difficulty is mandated.
+**[NIP-13](https://github.com/nostr-protocol/nips/blob/master/13.md) (Proof-of-Work).** Publisher-side computational cost signal. Anti-spam at publication time. Publishers MAY include a `nonce` tag with committed difficulty. Relays supporting [NIP-11](https://github.com/nostr-protocol/nips/blob/master/11.md) MAY advertise PoW requirements via `min_pow_difficulty`; publishers SHOULD inspect relay info documents before publishing and match or exceed any advertised minimum. No minimum difficulty is mandated.
 
-**NIP-18 (Reposts).** Consumer-side distribution signal. Repost events (`kind: 6/16`) referencing SCRUTINY events signal amplification intent. Queryable via `{"kinds": [6], "#e": ["<event-id>"]}`. Implementations MAY use repost counts as an attention signal.
+**[NIP-18](https://github.com/nostr-protocol/nips/blob/master/18.md) (Reposts).** Consumer-side distribution signal. Repost events (`kind: 6/16`) referencing SCRUTINY events signal amplification intent. Queryable via `{"kinds": [6], "#e": ["<event-id>"]}`. Implementations MAY use repost counts as an attention signal.
 
-**NIP-25 (Reactions).** Consumer-side sentiment signal. Reaction events (`kind: 7`) provide lightweight feedback. Queryable via `{"kinds": [7], "#e": ["<event-id>"]}`. Implementations MAY use reaction counts as a sentiment indicator.
+**[NIP-25](https://github.com/nostr-protocol/nips/blob/master/25.md) (Reactions).** Consumer-side sentiment signal. Reaction events (`kind: 7`) provide lightweight feedback. Queryable via `{"kinds": [7], "#e": ["<event-id>"]}`. Implementations MAY use reaction counts as a sentiment indicator.
 
-**NIP-57 (Lightning Zaps).** Consumer-side economic endorsement signal. Zap receipts (`kind: 9735`) provide verifiable payment proof referencing the zapped event. Queryable via `{"kinds": [9735], "#e": ["<event-id>"]}`. Implementations MAY use zap counts as an economic importance signal.
+**[NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md) (Lightning Zaps).** Consumer-side economic endorsement signal. Zap receipts (`kind: 9735`) provide verifiable payment proof referencing the zapped event. Queryable via `{"kinds": [9735], "#e": ["<event-id>"]}`. Implementations MAY use zap counts as an economic importance signal.
 
-#### NIP-03 OpenTimestamps (MAY)
+#### [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) OpenTimestamps (MAY)
 
-Publishers MAY attach NIP-03 OpenTimestamps attestations (kind:1040) to any SCRUTINY event. A kind:1040 attestation references its target event via an `e` tag and contains a base64-encoded `.ots` file with at least one Bitcoin-confirmed attestation in its `content`. OTS proofs provide tamper-resistant evidence of an event's existence at or before a given Bitcoin block — useful for audit, forensic analysis of pre/post key-compromise events (§7.5), and disputes about timestamp authenticity. OTS proofs do NOT act as a tiebreaker between competing patches; the protocol has no `created_at`-based tip selection (see §7.2). NIP-03 adoption in the Nostr ecosystem is currently low. OTS attestations are an audit signal only: consumers MUST NOT use OTS-derived timestamps in canonical-chain construction, overlay classification, or self-fork resolution.
+[OpenTimestamps](https://opentimestamps.org/) anchors data in the Bitcoin blockchain. Publishers MAY attach NIP-03 OpenTimestamps attestations (kind:1040) to any SCRUTINY event. A kind:1040 attestation references its target event via an `e` tag and contains a base64-encoded `.ots` file with at least one Bitcoin-confirmed attestation in its `content`. OTS proofs provide tamper-resistant evidence of an event's existence at or before a given Bitcoin block — useful for audit, forensic analysis of pre/post key-compromise events (§7.5), and disputes about timestamp authenticity. OTS proofs do NOT act as a tiebreaker between competing patches; the protocol has no `created_at`-based tip selection (see §7.2). NIP-03 adoption in the Nostr ecosystem is currently low. OTS attestations are an audit signal only: consumers MUST NOT use OTS-derived timestamps in canonical-chain construction, overlay classification, or self-fork resolution.
 
 ### 3.2 Relationship to base layers — inherited semantics
 
@@ -134,7 +134,7 @@ SCRUTINY is a thin layer on top of Nostr and CommonMark. Behaviour in the follow
 | Fenced code block parsing, info strings, variable-length fences | CommonMark §4.5 | The patch payload envelope is a CommonMark §4.5 fenced code block; lookup, fence-length matching, and payload byte boundary are CommonMark's responsibility (§5.2). |
 | Eventual consistency under a multi-relay mesh | Nostr operational model | Events arrive out of order, late, or never; SCRUTINY-specific classifications (canonical bytes, overlay state, self-fork detection) MUST be re-evaluated when the observed event set changes (§7.1). |
 
-Where the base layer offers a normative choice (e.g., NIP-09 allows but does not require relays to honour deletions; CommonMark allows tilde or backtick fences), SCRUTINY may restrict the choice further in the relevant section; such restrictions are explicitly marked as SCRUTINY-specific.
+Where the base layer offers a normative choice (e.g., [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) allows but does not require relays to honour deletions; CommonMark allows tilde or backtick fences), SCRUTINY may restrict the choice further in the relevant section; such restrictions are explicitly marked as SCRUTINY-specific.
 
 ---
 
@@ -290,7 +290,7 @@ Bindings are immutable signed assertions. Third parties who believe a binding is
 
 **Note on `e` tag filtering:** Because both endpoints use `e` tags, the metadata-first traversal `{"#e": ["<metadata-event-id>"]}` fetches all events referencing the metadata. Results MUST be filtered for \`scrutiny-binding\` \`t\` tags, and the \`e\` tag markers (\`root\` vs \`link\`) inspected to determine whether the metadata is the anchor or the linked endpoint.
 
-**Note on author hint.** The `<author_pk>` in `e` tags follows NIP-10's marked e-tag format and is used for outbox-model event discovery: when a relay hint does not resolve, the referenced pubkey's write relays are searched to locate the event. It is advisory — trust decisions MUST be based on the actual event pubkey, verified from the Nostr event signature, never the hint. A mismatch between the hint and the actual event's pubkey does not invalidate the binding.
+**Note on author hint.** The `<author_pk>` in `e` tags follows [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md)'s marked e-tag format and is used for outbox-model event discovery: when a relay hint does not resolve, the referenced pubkey's write relays are searched to locate the event. It is advisory — trust decisions MUST be based on the actual event pubkey, verified from the Nostr event signature, never the hint. A mismatch between the hint and the actual event's pubkey does not invalidate the binding.
 
 **Mini-example:**
 
@@ -330,7 +330,7 @@ Bindings are immutable signed assertions. Third parties who believe a binding is
 
 A Patch is a NIP-10 reply to a Product, Metadata, or another Patch. It carries at most one unified diff that proposes a change to the target's `content`. Patches form chains; the chain is what evolves the content of a Product or Metadata over time — `i` tags and `imeta` attachments are immutable after root publication. Patch ordering within a chain is determined by NIP-10 `e reply` markers (parent → child lineage), NOT by `created_at` timestamps.
 
-Patches are append-only: a patch can only be published as a child of an existing event via NIP-10 `e reply`. Patches cannot be inserted between two existing patches, nor can their parent pointer be changed after publication (Nostr events are cryptographically immutable). The only way to remove a patch is kind 5 deletion (§10), and only the patch's own author can delete it (NIP-09).
+Patches are append-only: a patch can only be published as a child of an existing event via NIP-10 `e reply`. Patches cannot be inserted between two existing patches, nor can their parent pointer be changed after publication (Nostr events are cryptographically immutable). The only way to remove a patch is kind 5 deletion (§10), and only the patch's own author can delete it ([NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md)).
 
 A patch event MUST carry zero or one fenced `diff` / `patch` code block. If multiple fenced `diff` / `patch` blocks appear in a patch event's `content`, only the first (in appearance order) is the patch payload; subsequent blocks are ignored (treated as prose). This rule defends against confusion where a renderer-quoted example accidentally appears as a second block.
 
@@ -406,7 +406,7 @@ Without this discipline, the discovery layer's value collapses — relay-side qu
 
 ### 4.6 Payload attachments (imeta + Blossom)
 
-For payloads larger than ~30 KB (to stay below typical relay event-size limits), use NIP-92 `imeta` tags pointing to files stored on Blossom (or any other Nostr-friendly content host) with explicit MIME type and SHA-256 hash:
+[Blossom](https://github.com/hzrd149/blossom-server) is a Nostr-native file-hosting protocol. For payloads larger than ~30 KB (to stay below typical relay event-size limits), use [NIP-92](https://github.com/nostr-protocol/nips/blob/master/92.md) `imeta` tags pointing to files stored on Blossom (or any other Nostr-friendly content host) with explicit MIME type and SHA-256 hash:
 
 ```json
 [
@@ -561,13 +561,56 @@ diff --git a/content b/content
 
 To compute the **patched content** of a Product or Metadata at the chain tip:
 
-1. Build the canonical chain: walk root-author patches (those whose `pubkey` equals the root event's `pubkey`) by following NIP-10 `e reply` markers from the root forward, applying kind 5 cascade per §10. A patch whose `e root` has not been observed cannot be classified as root-author or foreign and is held per §7.6 (UR-2). A root-author patch whose own `e reply` target has not been observed takes no position in the walk either; it is held per §7.6 (UR-4) until the target arrives.
+1. Build the canonical chain: walk root-author patches (those whose `pubkey` equals the root event's `pubkey`) by following [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md) `e reply` markers from the root forward, applying kind 5 cascade per §10. A patch whose `e root` has not been observed cannot be classified as root-author or foreign and is held per §7.6 (UR-2). A root-author patch whose own `e reply` target has not been observed takes no position in the walk either; it is held per §7.6 (UR-4) until the target arrives.
 2. Take the root event's `content` as the starting state.
 3. For each root-author patch in chain order, **pre-validate** the patch payload by attempting to apply it against the current content in a temporary workspace (consistent with `git apply --check` and `jsdiff.applyPatch`'s default behaviour, subject to the determinism requirement below). No-op patches — both prose-only and header-only fenced blocks (§5.2) — skip pre-validation and produce no changes.
 4. If pre-validation succeeds, apply the payload to the content and proceed.
 5. **If pre-validation fails, HALT further application.** The patched content is the state after the last successfully applied patch (or the root state, if the first patch is invalid). No later patches are applied, even if they might themselves be individually valid. HALT is reevaluated whenever the chain topology changes — most commonly when the invalid patch is kind 5 deleted by its author (§10), removing it from the chain. A root-self-fork (§7.2) is a separate freeze condition; where both conditions are live, **canonical bytes freeze at whichever point is earlier in chain order** (SF-7).
 6. Implementations MUST surface an invalid patch as a **protocol error annotation**, including the event ID, author, and the failure.
 7. After the last patch applies, the result is the patched content.
+
+Figure 1 summarizes this procedure.
+
+```mermaid
+flowchart TD
+    SET(["Observed event set — recompute on every change<br/>(RC-3; confluent: UR-1)"]):::proc
+    SIG["Verify sig over id; id over canonical bytes (SIG-1)"]:::proc
+    DROP["Not processed"]:::dead
+    WALK["Chain walk: root → root-author patches via NIP-10 e reply;<br/>kind-5 cascade (CHN-1, CHN-2); foreign excluded (CHN-3)"]:::proc
+    HOLD["Held: e reply target unobserved — retained, no position,<br/>re-evaluated on arrival (UR-4)"]:::held
+    REJ["Not admitted: observed e root fails typing (PT-10, PT-11)"]:::dead
+    FP["Freeze point: shared parent of forked patches (SF-2, SF-6)"]:::freeze
+    PRE["Pre-validate patch i vs current content (T1-T3; no-ops skip)"]:::proc
+    CEIL["Aborted under a ceiling (RL-5): not HALT (RL-3),<br/>not resolved; never canonical (RL-4)"]:::ceil
+    HALT["HALT: frozen at last applied patch (H1); annotated (H2);<br/>nothing applied past a HALT (SF-7)"]:::freeze
+    FORK["Self-fork: chain undefined (SF-1); frozen at shared parent (SF-2, SF-6)"]:::freeze
+    RES(["Resolved: patched content; tip per RC-5"]):::ok
+
+    SET --> SIG
+    SIG -->|fail| DROP
+    SIG -->|pass| WALK
+    WALK -->|e reply unobserved| HOLD
+    HOLD -.->|target arrives| WALK
+    WALK -->|observed e root mis-typed| REJ
+    WALK -->|self-fork (SF-1)| FP
+    WALK -->|no fork; next patch| PRE
+    FP -->|patches before shared parent still apply| PRE
+    PRE -->|work ceiling reached (RL-2)| CEIL
+    PRE -->|pre-validation fails| HALT
+    PRE -->|applies; next patch| PRE
+    PRE -->|next patch forked; stop (SF-1, SF-2)| FORK
+    PRE -->|chain exhausted| RES
+
+    classDef proc fill:#fff,stroke:#333,stroke-width:1.5px,color:#000
+    classDef held fill:#EAF3FB,stroke:#56B4E9,stroke-width:1.5px,color:#000
+    classDef freeze fill:#FDF0E7,stroke:#D55E00,stroke-width:1.5px,color:#000
+    classDef ceil fill:#FDF6E3,stroke:#E69F00,stroke-width:1.5px,color:#000
+    classDef ok fill:#EBF5F0,stroke:#009E73,stroke-width:1.5px,color:#000
+    classDef dead fill:#F5F5F5,stroke:#999,stroke-width:1.5px,color:#000
+```
+
+**Figure 1 — Canonical-chain walk and apply pipeline for a single root's Product or Metadata.** Boxes cite the rule IDs that make them load-bearing; edge labels give the condition under which the transition is taken. *Not admitted* (PT-11) and *not processed* (SIG-1) terminate only the offending event's participation — the walk continues with the remaining admitted events. *Aborted under a ceiling* (RL-5) is neither HALT nor resolved; it is the chain-side counterpart of the overlays' *unclassified* (OV-9), and abandoned content is never served as canonical (RL-4). Where a self-fork and a HALT are both live, canonical bytes freeze at whichever point is earlier in chain order (SF-7); a fork downstream of a HALT is never evaluated but is still surfaced (SF-3). The whole pipeline re-runs whenever the observed set changes (RC-3), so every terminal state is a re-evaluation, not a verdict.
+
 
 The determinism, HALT, and chain-building rules for the procedure above:
 
@@ -682,7 +725,7 @@ This layering is permissive in the Postel sense at the A and D layers: unknown t
 Each user maintains a set of trusted Nostr pubkeys. The set may be:
 
 - A direct allowlist (manually curated).
-- An N-hop expansion via NIP-02 follow lists (web-of-trust).
+- An N-hop expansion via [NIP-02](https://github.com/nostr-protocol/nips/blob/master/02.md) follow lists (web-of-trust).
 - A scoring threshold from another reputation source.
 
 The mechanism is out of scope for this specification. The protocol assumes only that implementations can classify any pubkey as trusted or untrusted.
@@ -733,7 +776,7 @@ Chain admission through bindings is not a transitive trust leak — it is a **co
 ### 7.1 Root author & canonical chain
 
 - **Root author:** the `pubkey` of the root Product or Metadata event. The root author is sovereign over the canonical chain.
-- **Canonical chain:** the linear sequence of patch events whose `pubkey` equals the root event's `pubkey`, threaded by NIP-10 `e reply` markers from the root forward.
+- **Canonical chain:** the linear sequence of patch events whose `pubkey` equals the root event's `pubkey`, threaded by [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md) `e reply` markers from the root forward.
 - **Tip:** the last event in the canonical chain — the last patch where the chain carries patches, and **the root event itself where it carries none**. A chain with no patches is not a chain without a tip: it consists of the root alone, and the root is therefore its current head. While an unresolved self-fork leaves the canonical chain undefined (SF-1), the tip is undefined with it.
 
 The canonical chain is what the root author is "currently saying" about their Product or Metadata. The root author extends the chain by publishing a new patch whose `e reply` points at the current tip. A correctly-behaving root author publishes a strictly linear chain — exactly one root-author patch per parent.
@@ -769,7 +812,7 @@ A **root self-fork** is the situation where two or more root-author patches repl
 | Interaction with HALT | A self-fork and a HALT (§5.3 H1) are independent freeze conditions and both can be live at once. Canonical bytes freeze at whichever point is **earlier in chain order** (SF-7). Every condition found is still surfaced: a fork that lost the race is reported per SF-3 even though it did not determine the content. |
 | Foreign overlays during a self-fork | Continue to render against their `e reply` target as defined in §7.3. The self-fork only freezes the canonical content; it does not gate overlay processing. |
 
-Root-author tip selection between competing patches is not part of this protocol. `created_at` is informational; NIP-03 OpenTimestamps (§3.1) provide audit-grade timestamp evidence but do not act as a tiebreaker.
+Root-author tip selection between competing patches is not part of this protocol. `created_at` is informational; [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) OpenTimestamps (§3.1) provide audit-grade timestamp evidence but do not act as a tiebreaker.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -840,11 +883,11 @@ A standalone "effective view" event type is not defined; the patched content is 
 
 SCRUTINY operates on a public Nostr relay mesh with three actor types. Everything that follows in this specification derives from these assumptions — they are stated here so every admission rule, chain resolution procedure, and discovery pattern can be evaluated against a declared threat baseline.
 
-**Publishers** (root authors, foreign annotators, binding creators) sign every event with their Nostr key. Cryptography guarantees: nobody else can produce a valid signature for a publisher's pubkey; nobody can modify a signed event without invalidating the signature; nobody can delete another publisher's event (NIP-09 pubkey check). Publishers cannot be prevented from setting an arbitrary `created_at` — signing proves identity, not time (CA-1 directs publishers not to backdate; nothing enforces it cryptographically). Root authors are sovereign over their own canonical chains: they extend the chain with their own patches and resolve self-forks via kind 5 deletion. Foreign authors cannot overwrite canonical content; their patches are always rendered as overlays. Any pubkey can create Binding edges — trust controls which edges are visible, not whether they exist.
+**Publishers** (root authors, foreign annotators, binding creators) sign every event with their Nostr key. Cryptography guarantees: nobody else can produce a valid signature for a publisher's pubkey; nobody can modify a signed event without invalidating the signature; nobody can delete another publisher's event ([NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) pubkey check). Publishers cannot be prevented from setting an arbitrary `created_at` — signing proves identity, not time (CA-1 directs publishers not to backdate; nothing enforces it cryptographically). Root authors are sovereign over their own canonical chains: they extend the chain with their own patches and resolve self-forks via kind 5 deletion. Foreign authors cannot overwrite canonical content; their patches are always rendered as overlays. Any pubkey can create Binding edges — trust controls which edges are visible, not whether they exist.
 
-**Relays** store and serve events, apply filters (`#t`, `#e`, `#i`), and relay new events among peers. They are assumed **honest but curious** in the steady state: a well-behaved relay returns matching events and propagates publications to peers. Relays MAY be malicious: they can omit results (censorship), serve stale data, drop NIP-specific filter support (`#i`, NIP-50), or degrade into total non-response. The protocol's defense against relay malice is multiplicity: query multiple relays, cache results locally, cross-reference. No single relay is trusted with completeness. Relay operators MAY also face external pressure (legal, economic) from vendors seeking to suppress unfavorable findings.
+**Relays** store and serve events, apply filters (`#t`, `#e`, `#i`), and relay new events among peers. They are assumed **honest but curious** in the steady state: a well-behaved relay returns matching events and propagates publications to peers. Relays MAY be malicious: they can omit results (censorship), serve stale data, drop NIP-specific filter support (`#i`, [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md)), or degrade into total non-response. The protocol's defense against relay malice is multiplicity: query multiple relays, cache results locally, cross-reference. No single relay is trusted with completeness. Relay operators MAY also face external pressure (legal, economic) from vendors seeking to suppress unfavorable findings.
 
-**Users** maintain a trusted-pubkey set — an allowlist of Nostr identities whose attestations they accept. This set may be manually curated, bootstrapped via NIP-02 follow lists (web-of-trust), or derived from a third-party reputation source. The trust mechanism itself is out of scope, but its existence is a hard protocol requirement: untrusted, unreachable events are excluded from the user's view. That exclusion is a presentation-time filter applied to the results of chain and overlay computation, never a pre-filter on what the implementation computes (§6.2, TR-7). Implementations SHOULD query multiple relays and cross-reference results to mitigate relay censorship.
+**Users** maintain a trusted-pubkey set — an allowlist of Nostr identities whose attestations they accept. This set may be manually curated, bootstrapped via [NIP-02](https://github.com/nostr-protocol/nips/blob/master/02.md) follow lists (web-of-trust), or derived from a third-party reputation source. The trust mechanism itself is out of scope, but its existence is a hard protocol requirement: untrusted, unreachable events are excluded from the user's view. That exclusion is a presentation-time filter applied to the results of chain and overlay computation, never a pre-filter on what the implementation computes (§6.2, TR-7). Implementations SHOULD query multiple relays and cross-reference results to mitigate relay censorship.
 
 **Sybil resistance** is delegated to the user's web-of-trust. An attacker who generates thousands of Nostr keys can flood the network with fake Products, Metadata, and Bindings. These are syntactically valid and relay-storable. They enter a user's view only if the attacker's keys fall within the user's trust radius (direct trust or N-hop expansion). A web-of-trust with wide N-hop expansion weakens Sybil resistance proportionally; a tightly curated allowlist strengthens it. Implementations SHOULD warn when trust-radius expansion would admit a large number of previously unseen pubkeys.
 
@@ -877,7 +920,7 @@ Under the eventual-consistency model of §3.2, an event may be observed before t
 
 ### 8.0 Assumptions
 
-All queries assume relays supporting NIP-01 `#t`, `#e`, and `#i` filters. Every SCRUTINY event carries `#t:["scrutiny-fabric"]`, so this filter is included in all discovery queries to exclude non-SCRUTINY events. NIP-50 `search` support is optional — clients SHOULD check NIP-11 relay info documents before relying on free-text search.
+All queries assume relays supporting [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) `#t`, `#e`, and `#i` filters. Every SCRUTINY event carries `#t:["scrutiny-fabric"]`, so this filter is included in all discovery queries to exclude non-SCRUTINY events. [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md) `search` support is optional — clients SHOULD check [NIP-11](https://github.com/nostr-protocol/nips/blob/master/11.md) relay info documents before relying on free-text search.
 
 ### 8.1 Discovery Flow — Finding Events by What They Are
 
@@ -947,7 +990,7 @@ Client inspects `e` tag markers to identify `root` endpoints (the product anchor
 {"kinds": [5], "#e": ["<event-id>"]}
 ```
 
-Returns NIP-09 kind 5 events that target `<event-id>`. Kind 5 events do not carry a `scrutiny-fabric` `t` tag (per §3.2 inherited NIP-09 semantics), so `#t` filtering is not applicable here; the query is by kind + `#e`. Per §10, each returned deletion is honoured only if its `pubkey` matches the target event's `pubkey`. Clients SHOULD issue this query for every chain root, every patch, and every Binding they cache, both at first sight and periodically thereafter, to guard against relays that store deletions but omit them from default filter results. Bindings are included because a Binding's retraction revokes the admission it conferred (§10, DEL-5); a client that never polls for Binding deletions goes on showing a de-admitted endpoint indefinitely.
+Returns [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) kind 5 events that target `<event-id>`. Kind 5 events do not carry a `scrutiny-fabric` `t` tag (per §3.2 inherited NIP-09 semantics), so `#t` filtering is not applicable here; the query is by kind + `#e`. Per §10, each returned deletion is honoured only if its `pubkey` matches the target event's `pubkey`. Clients SHOULD issue this query for every chain root, every patch, and every Binding they cache, both at first sight and periodically thereafter, to guard against relays that store deletions but omit them from default filter results. Bindings are included because a Binding's retraction revokes the admission it conferred (§10, DEL-5); a client that never polls for Binding deletions goes on showing a de-admitted endpoint indefinitely.
 
 ### 8.3 Unsupported Query Types
 
@@ -976,12 +1019,12 @@ The `k` tag accompanying each `i` tag indicates the prefix kind. It uses the sam
 
 | Prefix | `k` tag | Source | Example |
 |---|---|---|---|
-| `cve` | `cve` | MITRE CVE | `cve:CVE-2017-15361` |
-| `cwe` | `cwe` | MITRE CWE | `cwe:CWE-310` |
-| `cpe` | `cpe` | NIST CPE 2.3 | `cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*` |
-| `purl` | `purl` | Package URL | `purl:pkg:maven/org.apache/log4j-core@2.14.1` |
-| `cc` | `cc` | Common Criteria | `cc:BSI-DSZ-CC-0814-2012` |
-| `fips` | `fips` | FIPS 140 | `fips:140-3-4321` |
+| `cve` | `cve` | [MITRE CVE](https://www.cve.org/) | `cve:CVE-2017-15361` |
+| `cwe` | `cwe` | [MITRE CWE](https://cwe.mitre.org/) | `cwe:CWE-310` |
+| `cpe` | `cpe` | [NIST CPE 2.3](https://nvd.nist.gov/products/cpe) | `cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*` |
+| `purl` | `purl` | [Package URL](https://github.com/package-url/purl-spec) | `purl:pkg:maven/org.apache/log4j-core@2.14.1` |
+| `cc` | `cc` | [Common Criteria](https://www.commoncriteriaportal.org/) | `cc:BSI-DSZ-CC-0814-2012` |
+| `fips` | `fips` | [FIPS 140](https://csrc.nist.gov/projects/cryptographic-module-validation-program) | `fips:140-3-4321` |
 | `fcc-id` | `fcc-id` | FCC equipment | `fcc-id:2AHKT-T2` |
 | `swid` | `swid` | SWID tag | `swid:tag-id` |
 | `gtin` | `gtin` | GS1 GTIN | `gtin:00012345678905` |
@@ -992,7 +1035,7 @@ The `k` tag accompanying each `i` tag indicates the prefix kind. It uses the sam
 - Value is the source authority's canonical form, preserved verbatim (case, punctuation, separators all as the issuing body writes them).
 - Parsers split on the **first** `:` only; values containing colons (e.g., `cpe:2.3:...`) work transparently.
 - Unknown prefixes are valid; parsers pass them through and treat them as opaque indexers.
-- The event SHOULD carry at least one `k` tag for each distinct prefix kind present in its `i` tags (PR-4, MD-4 — normative there, not restated here). Producers MAY emit one `k` per `i` tag (matches NIP-73's published examples); consumers MUST treat the `k` collection as a set keyed by value. The relay-side `#k:<prefix>` filter therefore returns events that carry *any* `i` tag with that prefix. Because the kind is derivable from the `i` value's prefix, a missing `k` tag reduces discoverability via the `#k` relay filter but does not affect validity.
+- The event SHOULD carry at least one `k` tag for each distinct prefix kind present in its `i` tags (PR-4, MD-4 — normative there, not restated here). Producers MAY emit one `k` per `i` tag (matches [NIP-73](https://github.com/nostr-protocol/nips/blob/master/73.md)'s published examples); consumers MUST treat the `k` collection as a set keyed by value. The relay-side `#k:<prefix>` filter therefore returns events that carry *any* `i` tag with that prefix. Because the kind is derivable from the `i` value's prefix, a missing `k` tag reduces discoverability via the `#k` relay filter but does not affect validity.
 
 The registry above is a baseline; SCRUTINY does not mandate a closed set. New prefixes emerge as needed; the convention is "lowercase prefix, authority-canonical value."
 
@@ -1007,7 +1050,7 @@ The registry above is a baseline; SCRUTINY does not mandate a closed set. New pr
 
 ## 10. Kind 5 deletion
 
-SCRUTINY uses NIP-09 kind 5 deletion events. There is no SCRUTINY-specific retraction event.
+SCRUTINY uses [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) kind 5 deletion events. There is no SCRUTINY-specific retraction event.
 
 NIP-09 fundamentals apply: a kind 5 deletion is honored only when its `pubkey` matches the target event's `pubkey`. Foreign actors cannot delete each other's events.
 
@@ -1072,12 +1115,12 @@ The α/β rule applies symmetrically to overlays whose targets simply have not y
 - **Merges & overlay adoption.** Planned, exact form TBD. The current spec forbids root-author patches that reply to foreign patches (§7.3); a future version may define explicit adoption semantics (a root-author patch that machine-references a foreign overlay it incorporates). Related: a future version may define a merge primitive that lets a foreign author propose a rebased overlay against a newer canonical tip.
 - **Recursive overlays (overlay-to-overlay reply).** The current spec restricts foreign patches to replying at the root event or a root-author patch only (§7.3). A future version may define a `reply-to-comment` style overlay chain, with rules for classification and visibility when the parent overlay itself is in a non-clean state.
 - **Supersedes tag for root-patch redo.** Currently a root author who wants to replace a just-published patch must kind 5 delete it and republish — two events for one intent. A future version may define a `supersedes` tag that lets a root author atomically replace a prior patch.
-- **Confidential metadata.** NIP-44 encrypted variants for embargoed disclosures (coordinated CVE).
-- **Vendor identity discovery.** NIP-51 list events for "Products by vendor X" and similar curation primitives.
+- **Confidential metadata.** [NIP-44](https://github.com/nostr-protocol/nips/blob/master/44.md) encrypted variants for embargoed disclosures (coordinated CVE).
+- **Vendor identity discovery.** [NIP-51](https://github.com/nostr-protocol/nips/blob/master/51.md) list events for "Products by vendor X" and similar curation primitives.
 - **Metadata-to-Metadata binding.** The current spec restricts Bindings to Product↔Metadata only (§4.3). A future version may permit Metadata↔Metadata edges for derived findings, supplementing relationships, or cross-advisory references.
 - **Cherry-pick.** Attribution of diffs adopted from other patches. Includes machine-readable source references (`e` tags with marker `cherry-pick`) and optional cryptographic verification of the adopted diff's fidelity to the source. Deferred until ecosystem usage provides design requirements.
 - **Snapshot pins.** State anchoring for bindings (`root:rev` / `link:rev` markers pointing to specific patch event IDs). Enables binding authors to record "evaluated against state X" with verified state anchoring, providing stronger historical audit context than `created_at` correlation alone.
-- **Data Vending Machine integration.** NIP-90 job requests for SCRUTINY-derived computations (e.g., "summarize all CVE metadata bound to product X as a PDF"). Would require a reserved job-request kind and output MIME-type convention. Deferred until at least one DVM provider expresses interest.
+- **Data Vending Machine integration.** [NIP-90](https://github.com/nostr-protocol/nips/blob/master/90.md) job requests for SCRUTINY-derived computations (e.g., "summarize all CVE metadata bound to product X as a PDF"). Would require a reserved job-request kind and output MIME-type convention. Deferred until at least one DVM provider expresses interest.
 
 ---
 
@@ -1129,7 +1172,7 @@ Concepts borrowed from git, mapped to SCRUTINY:
 ## Appendix C — Glossary
 
 - **Root author:** pubkey of the root Product or Metadata event. Sovereign authority over the canonical chain.
-- **Canonical chain:** the strictly linear sequence of patch events authored by the root author, threaded by NIP-10 `e reply` markers from the root to the tip.
+- **Canonical chain:** the strictly linear sequence of patch events authored by the root author, threaded by [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md) `e reply` markers from the root to the tip.
 - **Tip:** the last event in the canonical chain — the last patch, or the root event itself where the chain carries no patches (RC-5). Undefined while a self-fork is unresolved.
 - **Root self-fork:** invalid state in which two or more root-author patches share an `e reply` target. The chain is undefined until the root author kind-5-deletes one branch (§7.2).
 - **Patch:** a `scrutiny-patch` event carrying zero or one fenced unified-diff payload.
@@ -1224,7 +1267,7 @@ After this binding is admitted (per §6), users trusting the researcher (or who 
 
 ### D.4 Root-author patch (`ddd444`)
 
-The vendor publishes a patch updating the Product's description with firmware revision information. The patch replies to the root via NIP-10 `e reply`.
+The vendor publishes a patch updating the Product's description with firmware revision information. The patch replies to the root via [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md) `e reply`.
 
 ```json
 {
@@ -1270,7 +1313,7 @@ An auditor objects to the firmware-revision wording, asserting the chip was actu
 
 ### D.6 Kind 5 deletion (`fff666`)
 
-The vendor decides the firmware-revision wording in `ddd444` was misleading and retracts it. They publish a NIP-09 deletion targeting `ddd444`.
+The vendor decides the firmware-revision wording in `ddd444` was misleading and retracts it. They publish a [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) deletion targeting `ddd444`.
 
 ```json
 {
