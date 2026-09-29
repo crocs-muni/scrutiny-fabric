@@ -342,7 +342,7 @@ Ratings are ordinal-with-rationale. No formulas, no multiplication of levels, no
 ### 5.1 Impact (severity vocabulary)
 
 | Level | Definition |
-|---|---|---|
+|---|---|
 | Critical | A security goal breaks permanently for some class of users, with no protocol-level recovery path. |
 | High | A security goal degrades measurably for a class of users under realistic conditions; partial mitigations leave material gaps. |
 | Medium | A security goal degrades partially; the impact is bounded by implementation quality, deployment shape, or attacker sustainment cost. |
@@ -353,7 +353,7 @@ Impact = which goal breaks, for whom, at what scope. One sentence per entry.
 ### 5.2 Likelihood (five-label scale)
 
 | Label | Reading |
-|---|---|---|
+|---|---|
 | Very unlikely | Exotic configuration or sustained effort with weak payoff. |
 | Unlikely | Realistic configuration but meaningful preconditions or friction. |
 | Possible | Reachable by the driving archetype under normal deployment oddities. |
@@ -1407,7 +1407,7 @@ Which layer owns each responsibility. "Protocol layer" entries point at rules or
 Canonical mapping of goals and rules. Risk column equals each entry's residual risk.
 
 | ID | Name | Problem | Mitigation | Gap | Risk |
-|---|---|---|---|---|---|---|
+|---|---|---|---|---|---|
 | T-DI-01 | Forged created_at in audit evidence | Signing proves identity, not time; in-window forged timestamps store silently and corrupt audit claims | OTS tamper-resistant attestation (may); CA-1 no-backdate (should); relay windows | CA-1 unenforced; OTS low-adoption; window is ecosystem practice | Low |
 | T-DI-02 | Relay-subset divergence in canonical bytes | Canonical bytes follow the observed event set; heterogeneous coverage yields divergent-but-deterministic state | RC-3 recompute (must, non-UI); RC-4 (should, UI); multi-relay querying | No set-agreement control; divergence persists until events arrive | Medium overall, Low for non-UI |
 | T-DI-03 | Retraction propagation gaps | Relay withholding or detaching a kind 5 deletion leaves clients computing stale canonical bytes or facing context-free retractions | DEL-9 must-class local caching; DEL-8 retroactive application; DEL-11 should co-serving; DQ-2 should polls; multi-relay querying | No completeness guarantee; co-serving and polling rest at should; must-class caching reaches only received deletions | Medium |
@@ -1551,6 +1551,6 @@ The previous revision of this threat model pins spec v0.5.3. Several terms chang
 | "canonical identifiers", "identifier mirroring" | **indexers (`i` tags), canonical indexer registry** | §9, IR-1 to IR-4, IX-1 to IX-4 | "Mirroring" implied a sync mechanism that does not exist. Registry entries are conventions publishers should include (IX-1). |
 | `scrutiny-v053` | `scrutiny-v0.8.1` (pattern `scrutiny-v\d+\.\d+\.\d+`) | TAG-2 | Version discovery tag. |
 | "cycle detection (§7.4 MUST)" | never specified | §7.4 | The old TM pinned this fabrication to §7.4 (see its line 493: chain traversal "MUST break cycles by excluding the patch with the higher event ID hash"). No such rule exists; traversal is linear by construction (RC-1). |
-| Section-number-only citations | **rule IDs first, sections second** | spec Appendix F | Citation form: `| Spec | [SF-4], [TR-7]; §7.2 |`. IDs are machine-checked against Appendix F (all 142 rule IDs, dashed and undashed families). Section-only citations rot across releases and are forbidden in adversarial entries. Structural-weakness entries may anchor to a rule family plus a section (`no single rule: family SF; see §7.2`), because no single rule carries their claim. NIP references are written unbracketed (`NIP-01`); band and motivation grades may be bracketed (`[B3]`, `[M4]`) and are excluded from the citation check by convention. |
+| Section-number-only citations | **rule IDs first, sections second** | spec Appendix F | Citation form: `\| Spec \| [SF-4], [TR-7]; §7.2 \|`. IDs are machine-checked against Appendix F (all 142 rule IDs, dashed and undashed families). Section-only citations rot across releases and are forbidden in adversarial entries. Structural-weakness entries may anchor to a rule family plus a section (`no single rule: family SF; see §7.2`), because no single rule carries their claim. NIP references are written unbracketed (`NIP-01`); band and motivation grades may be bracketed (`[B3]`, `[M4]`) and are excluded from the citation check by convention. |
 
 Terms intentionally kept, shared with the spec: canonical chain, root author, tip, foreign patch, overlay, annotation, patched content, canonical bytes. Also target state, orphaned overlay, stale overlay, admission (V/A/D layers), and self-fork. Also kept: topology cascade, per the kept-terms line.
