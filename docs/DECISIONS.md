@@ -14,9 +14,8 @@ them. RFC 2119 is what Nostr's own NIPs use; adopting ISO/IEC Directives Part 2'
 vocabulary instead would fight the ecosystem the protocol is built on, for no benefit — a reader
 moving between a NIP and this spec would meet two incompatible normative vocabularies.
 
-**Not yet executed.** The spec is still missing the standard BCP 14 boilerplate paragraph. Cheapest,
-highest-value fix identified and deliberately deferred pending a decision on whether to also add the
-Scope / Conformance / Normative References gaps in the same pass (see Open questions below).
+**Executed in v0.9.0.** The BCP 14 boilerplate, the three roles and a conformance sentence now open
+the specification. Scope stays in §1 and the normative references stay in §3.1's NIP table.
 
 ## S2 — Licence: MIT retained for the pre-1.0 phase
 
@@ -267,11 +266,33 @@ canonical spots, and `verify-corpus.mjs` asserts the title, **Version:** field, 
 §4 preamble agree. A future missed literal fails the documented check instead of silently
 desyncing; §3 keeps one concrete instance, so no "what a real event looks like" is lost.
 
+## S10 — v0.9.0 landing: one release for every change to rule wording
+
+Eight open spec-feedback issues (F19-F26), the V-layer note (#36) and a vocabulary clean-up all
+change rule text. Releasing them together means the restructure that follows can be checked as
+non-normative: its rule census must equal v0.9.0's.
+
+**Layers stay three (closes #36).** A fourth layer for producer obligations was considered and
+rejected. After v0.6.1 moved the producer rules out of V, TAG-4 was the only remaining misfit, and
+moving it to D removes the contradiction with TAG-5. A new layer would touch 14 rules, the vectors'
+layer metadata and the tools library, and add a concept, for no change in behavior.
+
+**`supersedes` is defined, graph-ordered.** The issue proposed resolving to the newest member, which
+needs `created_at` ordering the specification forbids elsewhere (SF-4, RC-1). The head of a lineage
+is the member nothing supersedes; two successors fork the lineage and are surfaced, never chosen
+between. Nothing attached to a superseded event moves to its replacement: carrying Bindings and
+overlays across would give a key authority over statements other people signed.
+
+**Vocabulary.** The vectors use `pending` as a verdict and `annotations` as a field, so the Binding
+word "pending" and the diagnostic sense of "annotation" stay; the other senses moved. "Indexer"
+keeps its meaning for `i` values; the service sense is "index service".
+
+**Deferred.** Issue #48 (a machine-readable prefix vocabulary) needs census evidence that lives with
+the pilot corpus. It ships as its own change with the pointer sentence in §9.
+
 ---
 
 ## Open questions
 
-- No BCP 14 boilerplate paragraph in the spec yet (S1).
-- No formal **Scope** clause, **Conformance** clause, or collected **Normative References** section.
-  Currently implicit in §1 Abstract, the rule tables collectively, and each rule's "inherits from"
-  column, respectively. A rigorous spec states these explicitly; whether to add them is undecided.
+- No formal **Scope** clause or collected **Normative References** section; both are implicit in §1
+  and §3.1. Conformance is stated since v0.9.0.

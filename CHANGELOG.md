@@ -5,6 +5,52 @@ are terse and cite the affected rule IDs (Appendix F); the rationale for why a *
 as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
 — licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
 
+## v0.9.0
+
+- **Why 0.9.0.** New rules (SUP-1..4, DQ-5..7, IR-5) and amended rule text (TAG-4, BD-5, BD-6, PT-6,
+  PT-11, VER-2, SF-1..SF-6, DEL-2, DEL-4, DEL-8, DEL-11, DQ-1, IM-3, CA-1, RC-3..RC-5, E1, BD-2, H1,
+  RL-5). One release
+  carries every change to normative wording; the restructure that follows moves text without
+  changing any rule.
+- **Keywords and conformance (DECISIONS S1).** The BCP 14 boilerplate, the three roles (producer,
+  consumer, relay), and one sentence on what conformance means now open the specification.
+- **Query legs (F19, F20, F21).** DQ-1 now says an event-type `t` value satisfies the fabric-tag
+  requirement. DQ-5 forbids combining the two in one `#t` list. DQ-6 writes the chain-root → patches
+  filter and DQ-7 the by-id fetch; §8.2 shows both legs.
+- **Supersession (F22).** New §4.7, SUP-1..4: the `supersedes` marker on a Product or Metadata `e` tag,
+  honored only for the same pubkey and event type. A lineage's head is the member nothing supersedes,
+  two successors fork the lineage and the fork is surfaced, never resolved by `created_at`. Bindings,
+  patches and overlays are not transferred. §11's patch-redo entry is renamed so one name no longer
+  carries two designs.
+- **Spelling and counts (F23).** IR-5: an `i` value is a spelling, and a widened count discloses the
+  spellings it covers.
+- **Legacy version tag (F24).** No rule change. Vector `tags/legacy-three-digit-version-tag` pins
+  `scrutiny-v059` as invalid.
+- **TAG-4 (F25, #36).** TAG-4 moves from V to D and is scoped to the `t` values this specification
+  defines; TAG-5 governs every other tag. Vector `tags/inherited-tag-is-ignored` pins a NIP-23
+  `published_at` tag as valid. §6.0 now states why producer obligations stay in A and D, which closes
+  the V-layer note.
+- **Unobserved targets (F26).** §7.6 opens with the paragraph that names the three surfaces (pending
+  Binding, held Patch, late deletion) as one rule. No rule changes.
+- **Self-fork resolution (SF-5, §7.2).** A deletion must target a sibling, meaning a patch that
+  replies directly to the shared parent. Deleting a patch below a sibling removes only that patch and
+  leaves the fork in place. The existing vector deletes a sibling, so conformant behavior is
+  unchanged. SF-1 names the patches *siblings* and the word "branch" is retired.
+- **Vocabulary.** "Admitted" belongs to the trust gate only (BD-5, PT-11 and VER-2 now say rejected or
+  processed; BD-6 and PT-6 reworded; §6.0 is "Rule layers"). "Patched content" is canonical bytes.
+  "UI" and "non-UI" consumers are interactive and service consumers. "Topology cascade" is the kind 5
+  cascade. "Annotation" no longer means a foreign patch; it remains the diagnostic attached to an
+  outcome (H2, RL-3, OV-9).
+- **Inherited semantics.** §3.2 marks three SCRUTINY-specific departures: markup in `kind:1` content
+  (NIP-10), the `link` and `supersedes` markers (NIP-10), and keeping the original of a deleted event
+  (NIP-09). IM-3 now names `fallback` entries (NIP-94) for alternate sources and NIP-94 joins the
+  references. CA-1 and §4 cite NIP-11's `created_at` limits, §3.1 notes that NIP-03 is marked
+  `unrecommended` upstream, and the §10 deletion example carries a `k` tag.
+- **Corpus.** `vectors/validity.json` gains two cases (19 → 21); its digest and G.1 are re-pinned.
+  `application.json` is unchanged. The `specVersion` field stays at `0.6.1`.
+- Version tag `scrutiny-v0.8.1` → `scrutiny-v0.9.0`. §3's forward-compatibility example moved from
+  `scrutiny-v0.9.0` to `scrutiny-v0.9.1`.
+
 ## v0.8.1
 
 - **E3 clarified (F18, [issue #37](https://github.com/crocs-muni/scrutiny-fabric/issues/37)).** "Closing fence ≥ opening-fence length" could be read as

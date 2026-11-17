@@ -45,7 +45,7 @@ SCRUTINY Fabric is that graph layer: permissionless, censorship-resistant, and a
 
 ## The protocol in brief
 
-All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every event carries exactly one `["t","scrutiny-fabric"]` tag, exactly one version tag (`scrutiny-v<MAJOR>.<MINOR>.<PATCH>`, e.g. `scrutiny-v0.8.1`), and exactly one event-type tag.
+All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every event carries exactly one `["t","scrutiny-fabric"]` tag, exactly one version tag (`scrutiny-v<MAJOR>.<MINOR>.<PATCH>`, e.g. `scrutiny-v0.9.0`), and exactly one event-type tag.
 
 | Event type | Role |
 |---|---|
@@ -54,7 +54,7 @@ All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every
 | **Binding** | An immutable signed edge, **Product ↔ Metadata only**: `e root` is the Product, `e link` is the Metadata |
 | **Patch** | A git-style unified diff that evolves a Product or Metadata's `content` over time |
 
-Patches authored by the root event's own author form the **canonical chain** — what that author is currently saying. Patches by anyone else are never folded into canonical content; they render as **overlays** (annotations or proposed changes) against the specific event they reply to. Deletion is NIP-09 `kind:5`; there is no SCRUTINY-specific retraction event.
+Patches authored by the root event's own author form the **canonical chain** — what that author is currently saying. Patches by anyone else are never folded into canonical content; they render as **overlays** (comments or proposed changes) against the specific event they reply to. Deletion is NIP-09 `kind:5`; there is no SCRUTINY-specific retraction event.
 
 Discovery is cheap for the common case: canonical identifiers in NIP-73 `i` tags (`cve:`, `cpe:`, `purl:`, `cc:`, `fips:`, …) make "all events about CVE-X" a single relay filter. Anything richer requires local processing — a deliberate trade-off.
 
@@ -64,7 +64,7 @@ Trust is entirely the user's: each user maintains a set of trusted pubkeys, and 
 
 | Document | Contents |
 |---|---|
-| [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.8.1. Event types, diff format, trust admission, chain and overlay resolution, discovery patterns, indexer registry, and a flat registry of every normative rule (Appendix F) |
+| [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.9.0. Event types, diff format, trust admission, chain and overlay resolution, discovery patterns, indexer registry, and a flat registry of every normative rule (Appendix F) |
 | [docs/threat-model.md](docs/threat-model.md) | Threat model: adversary capabilities, per-threat risk ratings (see the [§10 summary table](docs/threat-model.md#10-summary-table)), and residual risk |
 
 The specification is the only normative source. Appendix F assigns every normative rule a stable mnemonic ID (`BD-3`, `T1`, `DEL-7`, …) so implementations and conformance tests can cite rules precisely.
@@ -72,7 +72,7 @@ The specification is the only normative source. Appendix F assigns every normati
 > [!WARNING]
 > **Work in progress — experimental.**
 >
-> The specification is a **draft at v0.8.1** and should not be relied on for production security decisions. Breaking changes are expected while the version remains below 1.0. Implementation feedback is actively shaping the specification, which is why the version number moves as often as it does.
+> The specification is a **draft at v0.9.0** and should not be relied on for production security decisions. Breaking changes are expected while the version remains below 1.0. Implementation feedback is actively shaping the specification, which is why the version number moves as often as it does.
 
 ## Status
 

@@ -1001,6 +1001,77 @@
           "PT-7"
         ]
       }
+    },
+    {
+      "name": "tags/legacy-three-digit-version-tag",
+      "rule": "TAG-2",
+      "why": "The retired three-digit form is not a version tag, so the event carries no valid one and no dual-path acceptance exists.",
+      "event": {
+        "id": "00000000000000000000000000000000000000000000000000000000000000e1",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v059"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "TAG-2"
+        ]
+      }
+    },
+    {
+      "name": "tags/inherited-tag-is-ignored",
+      "rule": "TAG-5",
+      "why": "Tags defined by other NIPs are ignored under TAG-5 whatever their spelling; TAG-4 does not constrain them.",
+      "event": {
+        "id": "00000000000000000000000000000000000000000000000000000000000000e2",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "published_at",
+            "1714000000"
+          ],
+          [
+            "D",
+            "2024-04-25"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid"
+      }
     }
   ]
 }
