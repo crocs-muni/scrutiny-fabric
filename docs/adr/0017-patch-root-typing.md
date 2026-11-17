@@ -18,4 +18,4 @@ The rule is scoped to the observed case. While the root is unobserved, UR-2 hold
 
 ## Consequences
 
-Chain resolution can assume that every root it meets is a Product or Metadata event.
+Chain resolution can assume that every observed root is a Product or Metadata event.

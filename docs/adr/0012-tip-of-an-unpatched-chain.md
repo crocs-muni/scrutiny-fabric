@@ -8,7 +8,7 @@
 
 ## Context
 
-An overlay is `clean` when its target is the tip of the canonical chain. If the tip is defined as "the last patch" and nothing else, a root that was never patched has no tip, and the first overlay on any new Product would be `stale`. That claims the chain has advanced past a target it has not advanced past, in the most common case.
+An overlay is `clean` when its target is the tip of the canonical chain. If the tip is defined as "the last patch", a root that was never patched has no tip, and the first overlay on any new Product would be `stale`. That claims the chain has advanced past a target it has not advanced past, in the most common case.
 
 ## Decision
 
@@ -16,4 +16,4 @@ The tip is the last event in the canonical chain: the last patch where the chain
 
 ## Consequences
 
-A consumer that reads the tip as "the last patch" misclassifies every first overlay as `stale`. The same reading also affects the `resolved` outcome of chain application, whose tip is the root event for an empty chain.
+A consumer that reads the tip as "the last patch" misclassifies every overlay on an unpatched root as `stale`. The same reading also affects the `resolved` outcome of chain application, whose tip is the root event for a chain with no patches.

@@ -18,7 +18,7 @@ Event IDs are short labels (`aaa111`) and the version tag appears in template fo
   "kind": 1,
   "pubkey": "vendor_pk",
   "created_at": 1714000000,
-  "content": "Infineon M7794A12 — smartcard chip used in CC EAL4+ certified products (BSI-DSZ-CC-0814-2012).",
+  "content": "Infineon M7794A12 — smartcard chip used in CC EAL4+ certified products (BSI-DSZ-CC-0814-2012).\n",
   "tags": [
     ["t", "scrutiny-fabric"],
     ["t", "scrutiny-product"],
@@ -74,7 +74,7 @@ stateDiagram-v2
 
 ## 3. Binding (`ccc333`)
 
-The researcher binds the two with a Binding that asserts the vulnerability connection.
+The researcher publishes a Binding that connects the Metadata event to the Product.
 
 ```json
 {
@@ -93,7 +93,7 @@ The researcher binds the two with a Binding that asserts the vulnerability conne
 }
 ```
 
-Once the Binding is admitted, users who trust the researcher, or who reach the Product by another trust path, can find the Product and the Metadata event and follow the connection.
+A user who trusts `researcher_pk` has the Binding admitted, and with it both endpoints, the Product and the Metadata event, even if the user trusts neither `vendor_pk` nor the author of the Metadata event.
 
 ```mermaid
 stateDiagram-v2
@@ -157,7 +157,7 @@ An auditor disputes the firmware wording: the chip was certified as Rev A, and R
 }
 ```
 
-`eee555` is not part of the canonical chain, because `auditor_pk` differs from `vendor_pk`. A user sees it only if they trust `auditor_pk`. Then it renders as an overlay: its target is `ddd444`, so the client computes `ddd444`'s resolved content (root plus `ddd444`'s diff) and draws the auditor's proposed diff over it. `ddd444` is the tip and the hunk applies, so the overlay is `clean`. The canonical bytes stay primary, and the overlay appears beside them.
+`eee555` is not part of the canonical chain, because `auditor_pk` differs from `vendor_pk`. The overlay is admitted only if the user trusts `auditor_pk`. It then renders as an overlay: its target is `ddd444`, so the client computes `ddd444`'s resolved content (root plus `ddd444`'s diff) and draws the auditor's proposed diff over it. `ddd444` is the tip and the hunk applies, so the overlay is `clean`. The canonical bytes are unchanged, and the overlay appears beside them.
 
 ```mermaid
 stateDiagram-v2
@@ -190,9 +190,9 @@ The vendor decides that the wording in `ddd444` was misleading and retracts it w
 What follows:
 
 - `ddd444` leaves the canonical chain. Any root-author patch that replied to it would leave too; here there is none.
-- The canonical bytes of the Product revert to the root: two indexers and the original description.
+- The canonical bytes of the Product revert to the root content, the original description.
 - `eee555` replied to `ddd444`, so it is now orphaned. If the client can still find `ddd444` (cached, on another relay, or through the "show deleted events" toggle), the overlay renders against `ddd444`'s resolved content (α). Otherwise it renders as a standalone artifact with its payload, author and target id (β). Either way the auditor's statement is kept.
-- A Fabric-aware relay keeps `ddd444`, `eee555` and `fff666`, so an audit-mode query can recover the history.
+- A SCRUTINY-aware relay keeps `ddd444`, `eee555` and `fff666`, so a query for the audit view can recover the history.
 
 The vendor may later publish a new patch, with a new id, that replies to `aaa111` and states the firmware information more clearly. The auditor may republish their patch against the new event if they still object.
 

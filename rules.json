@@ -1064,7 +1064,7 @@
         "NIP-09"
       ],
       "section": "7",
-      "text": "Fabric-aware relays SHOULD inspect the `e` tag target of a kind 5 event; if the target event carries a `scrutiny-fabric` `t` tag, the relay SHOULD store the deletion alongside the original and surface it to Fabric-aware queriers. Keeping the original departs from NIP-09's request that relays delete it (§3.2)."
+      "text": "SCRUTINY-aware relays SHOULD inspect the `e` tag target of a kind 5 event; if the target event carries a `scrutiny-fabric` `t` tag, the relay SHOULD store the deletion alongside the original and surface it to SCRUTINY-aware queriers. Keeping the original departs from NIP-09's request that relays delete it (§3.2)."
     },
     {
       "id": "DQ-1",

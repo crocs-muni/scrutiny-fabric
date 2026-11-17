@@ -11,7 +11,7 @@ The plan was a GitHub Actions workflow in this public repository that runs the r
 
 ## Decision
 
-Skip CI for now. A vendored copy would recreate the hand-maintained duplicate that the generated extractor exists to avoid.
+Skip CI for now. A token stored as a secret would give a public workflow a credential for a private repository, and a vendored copy would recreate the hand-maintained duplicate that the generated extractor exists to avoid.
 
 ## Consequences
 

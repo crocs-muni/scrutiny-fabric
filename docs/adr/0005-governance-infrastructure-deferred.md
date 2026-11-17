@@ -11,7 +11,7 @@ These were researched and deliberately not added: `CITATION.cff`, `CONTRIBUTING.
 
 ## Decision
 
-Add none of them yet. Each has a place in the project's eventual maturity, and none fits a single-maintainer pre-1.0 repository with no outside contributor to govern, cite or disclose to.
+Add none of them yet. The repository has one maintainer, no outside contributors and no release before 1.0, so none of them has a use yet.
 
 ## Consequences
 

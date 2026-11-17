@@ -7,7 +7,7 @@
 
 ## Context
 
-MIT is a software licence with no patent language. For a specification whose premise is permissionless implementation, that is a real gap. The alternative that was researched is CC0-1.0, which matches the Nostr NIPs' public-domain practice, paired with a patent non-assertion statement (OWFa 1.0 Patent-Only, or informal prose if the formal instrument is too heavy at this stage).
+MIT is a software licence with no patent language. For a specification whose premise is permissionless implementation, that is a gap. The alternative that was researched is CC0-1.0, which matches the Nostr NIPs' public-domain practice, paired with a patent non-assertion statement (OWFa 1.0 Patent-Only, or informal prose if the formal instrument is too heavy at this stage).
 
 ## Decision
 

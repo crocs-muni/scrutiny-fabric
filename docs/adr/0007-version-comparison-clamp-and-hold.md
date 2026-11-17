@@ -17,7 +17,7 @@ A batch of spec feedback (F15, F16, F17) came from live reproductions on the ref
 ## Decision
 
 - **F15** restates the existing order. Fields compare as digit strings (ADR-0010).
-- **F16** is resolved by holding the patch (UR-4), in the shape UR-2 already has. Chain membership would claim a contiguity the observed set cannot support. Optimistic inclusion is not safe in the interim, because two children of one missing parent would fire SF-1 and freeze the canonical bytes for a fork that may disappear when the parent arrives. Holding is also the least new machinery and composes with CHN-1 unchanged.
+- **F16** is resolved by holding the patch (UR-4), the treatment UR-2 gives a patch with an unobserved root. Including it optimistically would claim a contiguity the observed set cannot support, and two children of one missing parent would trigger SF-1 and freeze the canonical bytes for a fork that may disappear when the parent arrives. Holding adds the least machinery and leaves CHN-1 unchanged.
 - **F17** is resolved by clamping to the content's line range, in one sentence of T2, with the bound defined in content terms (ADR-0013).
 
 ## Consequences

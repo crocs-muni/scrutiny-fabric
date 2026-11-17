@@ -18,4 +18,4 @@ A self-fork and a HALT are independent freeze conditions, and both can be live i
 
 ## Consequences
 
-SF-3 still surfaces every condition found, so a fork that lost the race to a HALT is reported although it did not determine the content.
+SF-3 and H2 still surface every condition found, so a fork downstream of a HALT is reported although it did not determine the content.

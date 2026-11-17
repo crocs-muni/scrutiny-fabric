@@ -1,4 +1,4 @@
-# ADR-0003: Release notes, rule rationale and decisions live in separate places
+# ADR-0003: Release notes and decisions live outside the specification
 
 | | |
 |---|---|
@@ -13,7 +13,7 @@ The inline changelog had grown to 13% of the specification's words. Its entries 
 ## Decision
 
 - `CHANGELOG.md` holds terse release notes, one entry per version, citing rule IDs.
-- Per-rule rationale stays inline in the specification, next to the rule. Cross-cutting rationale not tied to one rule lives in a decision record.
+- Per-rule rationale is at most one sentence next to the rule, with a link to the record that holds the argument. Cross-cutting rationale lives in a decision record.
 
 ## Consequences
 

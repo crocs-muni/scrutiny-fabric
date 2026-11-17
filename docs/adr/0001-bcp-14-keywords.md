@@ -16,4 +16,4 @@ The specification uses the BCP 14 keywords and states the boilerplate once, in "
 
 ## Consequences
 
-A reader who moves between a NIP and this specification meets one normative vocabulary. The boilerplate also says which role each rule binds (producer, consumer, relay) and what conformance means, and that a SHOULD may be departed from only for a documented reason.
+A reader who moves between a NIP and this specification meets one normative vocabulary. The "Keywords and conformance" section also says which role each rule binds (producer, consumer, relay), what conformance means, and that a SHOULD may be departed from only for a documented reason.

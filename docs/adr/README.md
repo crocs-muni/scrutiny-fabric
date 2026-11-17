@@ -1,14 +1,14 @@
 # Architecture decision records
 
-One decision per file, append-only. To change a decision, add a record that supersedes it and update the old record's status line. The layout follows the ADR directory of `scrutiny-fabric-tools`.
+One decision per file. To change a decision, add a record that supersedes it and update the old record's status line; apart from that line, records are not edited.
 
-A record explains why the specification reads as it does; it never changes what the specification requires. Records 0001 to 0009 are the former `DECISIONS.md` entries S1 to S10 (S4 and S7 are merged into 0004), and records 0010 to 0017 hold arguments that used to sit inside the specification body.
+A record explains why the specification reads as it does and is not normative. Records 0001 to 0009 are the former `DECISIONS.md` entries S1 to S10 (S4 and S7 are merged into 0004), and records 0010 to 0017 hold arguments that used to sit inside the specification body.
 
 | ADR | Title | Status |
 |---|---|---|
 | [0001](0001-bcp-14-keywords.md) | Normative keywords follow BCP 14 (RFC 2119 and RFC 8174) | Accepted |
 | [0002](0002-licence-mit-for-pre-1-0.md) | MIT licence retained until 1.0 | Accepted; revisit before 1.0 |
-| [0003](0003-changelog-rationale-and-decisions-split.md) | Release notes, rule rationale and decisions live in separate places | Accepted; extended in 0.9.1 |
+| [0003](0003-changelog-rationale-and-decisions-split.md) | Release notes and decisions live outside the specification | Accepted; extended in 0.9.1 |
 | [0004](0004-version-tag-scheme.md) | Version tag `scrutiny-v<MAJOR>.<MINOR>.<PATCH>` | Accepted; supersedes the three-digit `scrutiny-vMMP` form |
 | [0005](0005-governance-infrastructure-deferred.md) | Governance, citation and contribution infrastructure deferred | Accepted; revisit at 1.0 |
 | [0006](0006-ci-validator-deferred.md) | CI validation of the rule registry deferred | Accepted; revisit when the tools repository is public |
