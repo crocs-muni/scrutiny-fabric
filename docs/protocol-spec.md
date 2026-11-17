@@ -9,7 +9,7 @@ This is the only normative document. For an introduction, read the [overview](ov
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in BCP 14 [RFC 2119] [RFC 8174] when, and only when, they appear in all capitals, as shown here.
 
-This specification binds three roles. A **producer** builds and publishes events. A **consumer** reads events and resolves them. An *interactive* consumer renders for a person; a *service* consumer is any consumer that is not interactive, whether it serves other software (index services, APIs, scanners, agents) or runs as a tool. A **relay** stores and serves events. A rule binds the role it names: "producers" and "publishers" are producers, "consumers" and "clients" are consumers, "relays" are relays, and "implementations" means every role the rule's subject concerns. An implementation conforms when it satisfies every MUST and MUST NOT in the rules that bind a role it implements and reports the outcomes pinned by the conformance vectors ([§10](#10-conformance-vectors)). A SHOULD or SHOULD NOT may be departed from only for a reason the implementer understands and documents.
+This specification binds three roles. A **producer** builds and publishes events. A **consumer** reads events and resolves them. An *interactive* consumer renders for a person; a *service* consumer is any consumer that is not interactive, whether it serves other software (index services, APIs, scanners) or runs as a tool. A **relay** stores and serves events. A rule binds the role it names: "producers" and "publishers" are producers, "consumers" and "clients" are consumers, "relays" are relays, and "implementations" means every role the rule's subject concerns. An implementation conforms when it satisfies every MUST and MUST NOT in the rules that bind a role it implements and reports the outcomes pinned by the conformance vectors ([§10](#10-conformance-vectors)). A SHOULD or SHOULD NOT may be departed from only for a reason the implementer understands and documents.
 
 Normative references: [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174), and the base specifications in [§3.2](#32-base-layers-and-inherited-semantics). Each rule table below is the authority for its rules.
 
@@ -65,7 +65,7 @@ Each term has one meaning in this document.
 - **SCRUTINY event**: a `kind: 1` event that carries a `scrutiny-fabric` `t` tag. Whether it is valid is decided by the V rules ([§5.1](#51-rule-layers)).
 - **Product**, **Metadata**: root events. A **root event** is the Product or Metadata event that a chain of Patches is anchored to.
 - **Binding**: a signed edge between one Product and one Metadata event ([§3.4](#34-binding)).
-- **Patch**: a `scrutiny-patch` event that carries zero or one fenced unified diff ([§3.5](#35-patch)). The **patch payload** is defined in [§4.1](#41-payload-and-envelope).
+- **Patch**: a `scrutiny-patch` event that carries zero or one patch payload ([§3.5](#35-patch)). The **patch payload** is defined in [§4.1](#41-payload-and-envelope).
 - **No-op patch**: a Patch with no fenced block, or a header-only block with no hunks. Its effect is the identity.
 - **SCRUTINY-aware relay**: a relay that implements the relay behavior of [DEL-11](#rule-DEL-11).
 - **Deletion request**: a Nostr `kind: 5` event. It is **honored** when its `pubkey` equals the target's `pubkey`. The target of an honored deletion request is **deleted**. A deleted event is **retracted**: the **default view** hides it, and an **audit view** shows it with its deletion request ([DEL-10](#rule-DEL-10)).
@@ -77,7 +77,7 @@ Each term has one meaning in this document.
 - **Root-author patch**, **foreign patch**: a Patch whose `pubkey` equals, or differs from, the root author's.
 - **Canonical chain**: the linear sequence that starts at the root event and continues with the root-author patches threaded by `e reply` markers.
 - **Tip**: the last event of the applied chain ([RC-5](#rule-RC-5)): the root event where the chain has no patches, otherwise the last successfully applied patch. It is undefined while an unresolved self-fork or a ceiling is the earlier freeze point.
-- **Resolved content** of an event: the root content with every patch up to and including that event applied. The **canonical bytes** are the resolved content of the tip.
+- **Resolved content** of an event: the root content with every patch up to and including that event applied. The **canonical bytes** are the resolved content of the tip or, while a self-fork is unresolved, of the shared parent ([SF-2](#rule-SF-2)).
 - **Sibling**, **subtree**: siblings are root-author patches that reply to the same parent. A sibling's subtree is the sibling and all its descendants, which the deletion cascade removes together.
 - **Self-fork**: two or more siblings. The canonical chain is undefined until the fork is resolved.
 - **HALT**: the state in which a patch has failed pre-validation and the canonical bytes stay at the last applied patch. A chain whose application a ceiling stopped is **aborted under a ceiling** ([RL-5](#rule-RL-5)).
@@ -86,7 +86,7 @@ Each term has one meaning in this document.
 **Observation and validity**
 
 - **Observed**: received, and verified under [SIG-1](#rule-SIG-1). An event that is not observed is **unobserved**.
-- **Held**: the disposition of a Patch whose `e root` is unobserved, of a root-author patch whose `e reply` target is unobserved, or of a `supersedes` marker whose target is unobserved. A Binding with an unobserved endpoint is **pending**. All are re-evaluated when the event arrives.
+- **Held**: the disposition of a Patch whose `e root` is unobserved, of a root-author patch whose `e reply` target is unobserved, or of a `supersedes` marker whose target is unobserved. A root-author patch that replies to a held patch is held too ([UR-4](#rule-UR-4)). A Binding with an unobserved endpoint is **pending**, as is a foreign patch whose `e reply` target is unobserved ([PT-7](#rule-PT-7)). All are re-evaluated when the event arrives.
 - **V-valid**: satisfying every V rule ([§5.1](#51-rule-layers)). Anything else is V-invalid.
 - **Annotation**: a report a consumer makes about a patch or a chain: the protocol error annotation of [H2](#rule-H2), the resource-limit-exceeded annotation of [RL-3](#rule-RL-3) and the self-fork error of [SF-3](#rule-SF-3).
 - **Ceiling**: a consumer's configured limit on work or size ([§4.5](#45-resource-limits)).
@@ -210,7 +210,7 @@ stateDiagram-v2
 
 The `<relay>` field is a hint. The `<author_pk>` field is a hint for outbox-model discovery: when the relay hint does not resolve, the referenced author's write relays are searched.
 
-A Binding has no update mechanism ([BD-9](#rule-BD-9)). A third party who believes a Binding is wrong cannot retract it. The third party can publish a Binding of their own, which a user sees only if the user's trusted set includes its author; the protocol has no dispute mechanism for edges. Collapsing duplicates is a presentation choice ([BD-11](#rule-BD-11)).
+A Binding has no update mechanism ([BD-9](#rule-BD-9)). A third party who believes a Binding is wrong cannot retract it. The third party SHOULD publish a Binding of their own instead, which a user sees only if the user's trusted set includes its author; the protocol has no dispute mechanism for edges. Collapsing duplicates is a presentation choice ([BD-11](#rule-BD-11)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -229,7 +229,7 @@ A Binding has no update mechanism ([BD-9](#rule-BD-9)). A third party who believ
 
 ### 3.5 Patch
 
-A **Patch** is a NIP-10 reply to a Product, a Metadata event or another Patch. It carries at most one unified diff that proposes a change to the `content` of its target. The `i` tags, `k` tags and attachments of a root event cannot be patched.
+A **Patch** is a NIP-10 reply to a Product, a Metadata event or another Patch. It carries at most one patch payload, a unified diff that proposes a change to the `content` of its target. The `i` tags, `k` tags and attachments of a root event cannot be patched.
 
 | Tag | Count | Requirement | Description |
 |---|---|---|---|
@@ -348,7 +348,7 @@ NIP-92 describes `imeta` as metadata for a URL that appears in the event content
 
 A patch's diff acts on the `content` field of the target event, read as a UTF-8 byte sequence and never normalized ([PB-1](#rule-PB-1)).
 
-The diff sits in the Patch's own `content` as a CommonMark §4.5 fenced code block. The **patch payload** is the byte sequence of the lines strictly between the opening and closing fence lines, each terminated by `\n`.
+The diff sits in the Patch's own `content` as a CommonMark §4.5 fenced code block. The **patch payload** is the byte sequence of the lines between the opening and closing fence lines, each terminated by `\n`; when there is no closing fence, every line after the opening fence line ([E5](#rule-E5)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -448,7 +448,7 @@ The procedure below computes the canonical bytes of a root event and classifies 
 2. Build the canonical chain: start at the root event and follow `e reply` links through root-author patches ([CHN-1](#rule-CHN-1)). Apply the deletion cascade of every honored deletion request ([§7](#7-kind-5-deletion)). A patch whose `e root` is unobserved is held ([UR-2](#rule-UR-2)); a root-author patch whose `e reply` target is unobserved takes no position in the walk and is held ([UR-4](#rule-UR-4)).
 3. If two or more siblings share a parent, the chain is in a self-fork ([§6.2](#62-self-fork)): freeze at the shared parent and apply nothing downstream of it.
 4. Take the root content as the starting state. For each root-author patch in chain order, up to the freeze point if there is one, pre-validate the payload by applying it to the current content in a temporary workspace (`git apply --check` and jsdiff's `applyPatch` behave this way, subject to [T1](#rule-T1)). No-op patches skip pre-validation and change nothing.
-5. If pre-validation succeeds, apply the payload and go on. If it fails, HALT ([H1](#rule-H1)): the canonical bytes are the state after the last applied patch, or the root content if the first patch failed. The tip is the last applied patch ([RC-5](#rule-RC-5)). The failure is reported as a protocol error annotation ([H2](#rule-H2)).
+5. If pre-validation succeeds, apply the payload and go on. If it fails, HALT ([H1](#rule-H1)): the canonical bytes are the state after the last applied patch, or the root content if the first patch failed. The tip is the last applied patch, or the root if the first patch failed ([RC-5](#rule-RC-5)). The failure is reported as a protocol error annotation ([H2](#rule-H2)).
 6. If a ceiling stops application before any verdict ([§4.5](#45-resource-limits)), the outcome is *aborted under a ceiling* ([RL-5](#rule-RL-5)). It is not HALT, because no patch failed, and it is not resolved, because patches remain unapplied. The tip is undefined (RC-5).
 7. If every patch applied, the outcome is *resolved* and the canonical bytes are the final state. The tip is defined in RC-5.
 8. Classify each foreign patch against its target ([§6.3](#63-foreign-overlays)). Apply the trusted set to the results last ([§5.2](#52-trust-and-admission)).
@@ -495,7 +495,7 @@ flowchart TD
 
 **Figure 4: Canonical-chain walk and apply pipeline for one root.** Follow the arrows from the observed set to one of six outcomes: not processed, rejected, held, frozen (self-fork or HALT), aborted under a ceiling, or resolved. A held patch re-enters the walk when its target arrives. Fill colors only group the boxes.
 
-The position rules for pure-insertion hunks in [T2](#rule-T2) are argued in [ADR-0013](adr/0013-pure-insertion-position-and-carry-forward.md). An implementation may delegate application to `git apply` or to a unified-diff library such as the `diff` npm package. It must check the uniqueness of T1 itself, because these tools do not require a unique match.
+The position rules for pure-insertion hunks in [T2](#rule-T2) are argued in [ADR-0013](adr/0013-pure-insertion-position-and-carry-forward.md). An implementation may delegate application to `git apply` or to a unified-diff library such as the `diff` npm package. T1 still applies, because these tools do not require a unique match.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -620,7 +620,7 @@ stateDiagram-v2
 
 **Figure 6: Self-fork states.** While forked, the canonical bytes are frozen at the shared parent of the earliest unresolved fork. A fork whose shared parent is itself held ([UR-4](#rule-UR-4)) is not a fork yet.
 
-A self-fork does not gate overlays: an overlay whose target has defined resolved content keeps rendering against it ([§6.3](#63-foreign-overlays)), and an overlay whose target is a sibling or lies below the fork is orphaned ([OV-3](#rule-OV-3)).
+A self-fork does not gate overlays: an overlay whose target has defined resolved content keeps rendering against it ([§6.3](#63-foreign-overlays)), as `stale` or `conflict` because no tip exists ([OV-10](#rule-OV-10)), and an overlay whose target is a sibling or lies below the fork is orphaned ([OV-3](#rule-OV-3)).
 
 [ADR-0014](adr/0014-self-fork-and-halt-precedence.md) gives the reasons for the choices in [SF-5](#rule-SF-5) and [SF-7](#rule-SF-7).
 
@@ -644,13 +644,13 @@ An overlay is read against its target state: the original `content` if the targe
 |---|---|---|
 | **Clean** | The target is in the canonical chain, the overlay's hunks apply against the target state, and the target is the current tip. | Show the proposed diff highlighted over the target's content. |
 | **Conflict** | The target is in the canonical chain, but at least one hunk fails against the target state: its context is missing or ambiguous ([T1](#rule-T1)), or the payload fails pre-validation for another reason ([C1](#rule-C1)). | Surface a conflict in the API. SHOULD show the target-time view, the proposed view and the current canonical bytes side by side. No protocol-level merge happens. |
-| **Stale** | The target is in the canonical chain and the hunks apply, but the target is no longer the tip (RC-5): a canonical patch lies downstream of it, or the tip is undefined because of an unresolved self-fork or a ceiling ([OV-10](#rule-OV-10)). | Treat it as a clean overlay against historical state, and show it apart from `clean`, with a note giving N, the number of canonical patches downstream of the target. |
+| **Stale** | The target is in the canonical chain and the hunks apply, but the target is no longer the tip (RC-5): a canonical patch lies downstream of it, or the tip is undefined because of an unresolved self-fork or a ceiling (OV-10). | Treat it as a clean overlay against historical state, and show it apart from `clean`, with a note giving N, the number of canonical patches downstream of the target, when there are any. |
 | **Orphaned** | The target is deleted, was never received, or has no defined resolved content in the chain (at or beyond a HALT or a ceiling stop, in or below an unresolved self-fork, or held). | Apply the α/β rule ([§7](#7-kind-5-deletion)). |
-| **Unclassified** | A consumer ceiling ([§4.5](#45-resource-limits)) was reached before classification. The target is defined and obtainable; nothing about the overlay is established. | Surface the overlay with the resource-limit-exceeded annotation and say that classification was not completed. Never present it as `conflict` or `orphaned`. |
+| **Unclassified** | A consumer ceiling ([§4.5](#45-resource-limits)) was reached before classification. The target is defined and obtainable; nothing about the overlay is established. | Surface the overlay with the resource-limit-exceeded annotation and say that classification was not completed. Never present it as `conflict`, `orphaned`, `clean` or `stale` ([OV-9](#rule-OV-9)). |
 
 ```mermaid
 flowchart TD
-    OV(["Foreign patch (V-valid, observed)"]) --> TGT{"Target has defined resolved content?"}
+    OV(["Foreign patch (observed; V-valid, or pending on its target)"]) --> TGT{"Target has defined resolved content?"}
     TGT -->|no| ORPH["Orphaned: α or β rendering (§7)"]
     TGT -->|yes| CEIL{"Ceiling reached?"}
     CEIL -->|yes| UNC["Unclassified (OV-9)"]
@@ -721,7 +721,7 @@ The effect on the default view depends on what the target is:
 
 | Target obtainable | Rule | Rendering |
 |---|---|---|
-| Yes: cached, or fetched from any relay, including under the "show deleted" toggle | α | Render the overlay against the target's resolved content as it was before the deletion. |
+| Yes: the consumer has it (cache, audit store) or can fetch it from a relay it follows, including under the "show deleted" toggle | α | Render the overlay against the target's resolved content as it was before the deletion. |
 | No | β | Render a standalone artifact: payload, author, target event id and a "target unavailable" marker. Do not re-anchor it to the target's parent or any other event. |
 
 The rule applies equally to overlays whose targets have not yet reached the client: render β until the target arrives, then upgrade to α.
@@ -731,7 +731,7 @@ flowchart TD
     DEL["Honored deletion request for patch P"] --> CAS["P and its root-author descendants<br/>leave the canonical chain (DEL-2)"]
     CAS --> BYTES["Canonical bytes revert to the last surviving ancestor"]
     CAS --> OVL["Overlays whose target was P or a removed descendant: orphaned"]
-    OVL --> Q{"P obtainable?<br/>(cache, any relay, audit store)"}
+    OVL --> Q{"P obtainable?<br/>(cache, audit store, followed relay)"}
     Q -->|yes| ALPHA["α: render against P's resolved content"]
     Q -->|no| BETA["β: render payload, author, target id"]
 ```
@@ -841,7 +841,7 @@ Three kinds of query have no cheap indexed form and need content parsing or NIP-
 
 The form follows [RFC 3552](https://www.rfc-editor.org/rfc/rfc3552). The [threat model](threat-model.md) analyzes each attack in detail.
 
-**Assumptions.** Schnorr signatures and SHA-256 hold. Relays are untrusted for completeness and integrity: a relay can omit events, serve them late, ignore filters or stop answering. At least one relay a consumer queries is honest. No attacker controls a user's trusted set. Artifact hosts are untrusted, and attachment bytes are checked against their declared hash. Event content is untrusted input to any renderer or language model that reads it.
+**Assumptions.** Schnorr signatures and SHA-256 hold. Relays are untrusted for completeness and integrity: a relay can omit events, serve them late, ignore filters or stop answering. At least one relay a consumer queries is honest. No attacker controls a user's trusted set. Artifact hosts are untrusted, and attachment bytes are checked against their declared hash. Event content is untrusted input to any renderer or other program that reads it.
 
 **What signatures give.** A signature binds an event to its pubkey: only the key holder can produce one, and any change to the event invalidates it. A signature says nothing about time: an author can set any `created_at`, and only a relay that sets timestamp bounds can limit it ([CA-1](#rule-CA-1)).
 
@@ -917,6 +917,6 @@ A case that depends on a ceiling ([§4.5](#45-resource-limits)) carries an `opti
 ### 10.3 Reading the vectors
 
 - **Halt reasons are advisory.** For an `apply` case that expects `halt`, the `reason` field records why the reference implementation halted. This specification defines no vocabulary of halt reasons, so conformance requires only agreement that application halted and, where it succeeded, on the resulting bytes.
-- **Signatures and event IDs are not exercised.** Events in the A-layer vectors are well-formed, but their `id` and `sig` are placeholders. These vectors presuppose that SIG-1 and V-layer validity already succeeded; they do not test either.
+- **Signatures and event IDs are not exercised.** Events in the A-layer vectors are well-formed, but their `id` and `sig` are placeholders. These vectors presuppose that SIG-1 and V-layer validity already succeeded; they do not test either, and MUST NOT be used to exercise either.
 - **Confluence is asserted over the whole corpus.** Every `chain` case MUST yield its stated expectation under every permutation of its `events` array ([UR-1](#rule-UR-1)).
 - **The corpus is incomplete.** It grows as rules are implemented. A rule without a case still binds.

@@ -77,7 +77,7 @@ flowchart LR
 
 1. **Verify.** The client checks the signature and recomputes the event id. An event that fails is dropped.
 2. **Resolve chains.** It follows patch links from each root, applies the diffs in order, and stops at the first patch that does not apply. If the author published two patches for the same parent, the chain is in a self-fork: the client freezes at the shared parent and reports the self-fork.
-3. **Classify overlays.** Each foreign patch is checked against the text it was written for. It ends in one of five states: clean, stale, conflict, orphaned (its target is deleted or missing) or unclassified (a resource ceiling was reached first).
+3. **Classify overlays.** Each foreign patch is checked against the text it was written for. It ends in one of five states: clean, stale, conflict, orphaned (its target is deleted, missing, or has no defined content because the chain halted, forked or hit a ceiling first) or unclassified (a resource ceiling was reached first).
 4. **Gate by trust.** Only now does the client hide whatever the user's trusted set does not admit.
 
 Clients see events in different orders, so every step gives the same result for the same set of events and the same resource ceilings.

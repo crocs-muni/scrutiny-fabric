@@ -10,7 +10,7 @@ tables under 0.9.1 map the old names to the new ones.
 
 Restructure. **No rule changed:** the 152 rules have the same IDs, layers, inheritance and wording as in
 0.9.0, and `vectors/` is byte-identical. The only edits inside rule rows are the section references
-they contain, updated to the new numbering (28 rows). Section titles and numbers changed, so citations
+they contain, updated to the new numbering (28 rows; E7 also drops a section title). Section titles and numbers changed, so citations
 of sections need updating; rule IDs are stable.
 
 - **One normative file.** `docs/protocol-spec.md` holds the rule tables as the only statement of each
@@ -28,8 +28,8 @@ of sections need updating; rule IDs are stable.
   They keep their keywords where they now stand: MUST defer to the base layers (3.2), MAY attach NIP-03
   attestations (3.1), SHOULD publish a competing Binding (3.4), SHOULD produce grammar-conforming payloads
   (4.3), SHOULD query several relays and cross-check, SHOULD warn when a trust expansion admits many new keys
-  (9), SHOULD check NIP-11 before NIP-50 search (8.1), MUST NOT outlive (7: admission and its assertion),
-  SHOULD verify the vector digest in CI, MUST NOT use the A-layer vectors for SIG-1, and the per-permutation
+  (9), SHOULD check NIP-11 before NIP-50 search (8.1), SHOULD treat a retracted root as absent in the default
+  view and show its full history in an audit view (7), SHOULD verify the vector digest in CI, MUST NOT use the A-layer vectors for SIG-1, and the per-permutation
   MUST (10). The proof-of-work advice stays in the optional-signals guide. A later normative release may give
   them rule IDs. Where a rule row owns the requirement (RL-1, RL-2, RC-4, DEL-11, DQ-2, IM-1, IX-1, IX-4),
   the prose now names the rule and no longer restates the keyword.
@@ -37,9 +37,7 @@ of sections need updating; rule IDs are stable.
   another SCRUTINY value (DQ-5), as the rule does; section 4.4 steps now say honored deletion requests, two or
   more siblings, and give the annotation (H2) and the RL-4 consequence.
 - **Known gaps carried over.** The threat model still cites the 0.8.1 numbering and `tools/verify-tm-sync.mjs`
-  does not run until the threat model is rewritten. A test implementation written from sections 3 to 8 found
-  gaps in the rule wording itself (for example how the `@@` counts bound a hunk); they are listed for the next
-  normative release and are not changed here.
+  does not run until the threat model is rewritten.
 
 Section map (old to new):
 
@@ -391,7 +389,7 @@ Section map (old to new):
 - **§4.3 pending-endpoint lifecycle.** Bindings whose endpoints are not yet observable are held
   pending; admitted on endpoint arrival if typing check passes; permanently invalid (cached)
   otherwise.
-- **§7.1 recomputation requirement.** Non-UI consumers (indexers, HTTP APIs, AI agents,
+- **§7.1 recomputation requirement.** Non-UI consumers (indexers, HTTP APIs,
   vulnerability scanners) MUST recompute canonical bytes and overlay states when their observed
   event set changes. UIs SHOULD.
 - **§4.1 / §4.2 / §9 k-tag rule.** Set semantics: at minimum one `k` per distinct prefix kind in the
