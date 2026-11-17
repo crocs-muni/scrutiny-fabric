@@ -1,0 +1,1147 @@
+{
+  "specVersion": "0.9.2",
+  "rules": [
+    {
+      "id": "TAG-1",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.1",
+      "text": "Every SCRUTINY event MUST carry exactly one `[\"t\",\"scrutiny-fabric\"]` tag."
+    },
+    {
+      "id": "TAG-2",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.1",
+      "text": "Every SCRUTINY event MUST carry exactly one version `t` tag matching `^scrutiny-v\\d+\\.\\d+\\.\\d+$`."
+    },
+    {
+      "id": "TAG-3",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.1",
+      "text": "Every SCRUTINY event MUST carry exactly one event-type `t` tag from `{scrutiny-product, scrutiny-metadata, scrutiny-binding, scrutiny-patch}`."
+    },
+    {
+      "id": "TAG-4",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.1",
+      "text": "The `t` values this specification defines use kebab-case (`scrutiny-fabric`, `scrutiny-product`, …); underscored variants from older drafts are not defined. The rule does not constrain other tags: TAG-5 governs every unknown or inherited tag, whatever its spelling."
+    },
+    {
+      "id": "TAG-5",
+      "layer": "V",
+      "inherits": [
+        "NIP-01"
+      ],
+      "section": "3.1",
+      "text": "Unknown tags MUST be ignored by parsers."
+    },
+    {
+      "id": "VER-1",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.1",
+      "text": "Ordering between two version tags is a per-field numeric tuple comparison of `(MAJOR, MINOR, PATCH)`. Each field compares as a decimal digit string — leading zeros ignored, the longer string the greater, equal lengths lexicographically — never by conversion to a host number type, and never as a lexicographic comparison of the whole tag value."
+    },
+    {
+      "id": "VER-2",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.1",
+      "text": "A higher-version event MAY be processed opaquely if it satisfies every Validity invariant of this specification."
+    },
+    {
+      "id": "VER-3",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.1",
+      "text": "A higher-version event that violates a Validity invariant of this specification MUST NOT be rendered as a Product, Metadata, Binding, or Patch."
+    },
+    {
+      "id": "VER-4",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.1",
+      "text": "Implementations MUST NOT reject higher-version events *solely* because of the version tag."
+    },
+    {
+      "id": "OTS-1",
+      "layer": "A",
+      "inherits": [
+        "NIP-03"
+      ],
+      "section": "3.1",
+      "text": "OpenTimestamps attestations are an audit signal only: consumers MUST NOT use OTS-derived timestamps in canonical-chain construction, overlay classification, or self-fork resolution."
+    },
+    {
+      "id": "SIG-1",
+      "layer": "V",
+      "inherits": [
+        "NIP-01"
+      ],
+      "section": "3.1",
+      "text": "Before processing any event — including kind 5 deletions and kind 1040 attestations — implementations MUST verify the signature **and** that `id` equals the SHA-256 of the NIP-01 canonical serialization. A signature-only check is insufficient."
+    },
+    {
+      "id": "CA-1",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.3",
+      "text": "Publishers SHOULD NOT backdate `created_at` to a historical date the event describes. Relays may reject events outside a bounded timestamp window (NIP-11 `created_at_lower_limit`, `created_at_upper_limit`, in seconds); historical dates belong in `content`."
+    },
+    {
+      "id": "PR-1",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.3",
+      "text": "A Product event MUST carry a `content` field (any UTF-8 byte sequence; format is free-form)."
+    },
+    {
+      "id": "PR-2",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.3",
+      "text": "A Product event SHOULD carry no more than 64 `i` tags."
+    },
+    {
+      "id": "PR-3",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.3",
+      "text": "A Product event SHOULD carry no more than 64 `k` tags."
+    },
+    {
+      "id": "PR-4",
+      "layer": "D",
+      "inherits": [
+        "NIP-73"
+      ],
+      "section": "3.3",
+      "text": "The `k` collection SHOULD contain at minimum one entry per **distinct** `i` prefix kind present in the event. A missing or incomplete `k` collection does NOT invalidate the event; consumers MAY derive the kind from the `i` value's prefix (§3.7). Consumers MUST treat `k` as a set."
+    },
+    {
+      "id": "PR-5",
+      "layer": "V",
+      "inherits": [
+        "NIP-92"
+      ],
+      "section": "3.3",
+      "text": "`imeta` attachments are OPTIONAL."
+    },
+    {
+      "id": "MD-1",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.3",
+      "text": "A Metadata event MUST carry a `content` field (any UTF-8 byte sequence; format is free-form)."
+    },
+    {
+      "id": "MD-2",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.3",
+      "text": "A Metadata event SHOULD carry no more than 64 `i` tags."
+    },
+    {
+      "id": "MD-3",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.3",
+      "text": "A Metadata event SHOULD carry no more than 64 `k` tags."
+    },
+    {
+      "id": "MD-4",
+      "layer": "D",
+      "inherits": [
+        "NIP-73"
+      ],
+      "section": "3.3",
+      "text": "The `k` collection SHOULD contain at minimum one entry per **distinct** `i` prefix kind present in the event. A missing or incomplete `k` collection does NOT invalidate the event; consumers MAY derive the kind from the `i` value's prefix (§3.7). Consumers MUST treat `k` as a set."
+    },
+    {
+      "id": "MD-5",
+      "layer": "V",
+      "inherits": [
+        "NIP-92"
+      ],
+      "section": "3.3",
+      "text": "`imeta` attachments are OPTIONAL."
+    },
+    {
+      "id": "BD-1",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.4",
+      "text": "A Binding event MUST carry exactly one `e` tag with marker `root`."
+    },
+    {
+      "id": "BD-2",
+      "layer": "V",
+      "inherits": [
+        "NIP-10"
+      ],
+      "section": "3.4",
+      "text": "A Binding event MUST carry exactly one `e` tag with marker `link`. The `link` marker is defined by this specification; NIP-10 defines only `root` and `reply` (§3.2)."
+    },
+    {
+      "id": "BD-3",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.4",
+      "text": "The `e root` endpoint MUST be a `scrutiny-product` event."
+    },
+    {
+      "id": "BD-4",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.4",
+      "text": "The `e link` endpoint MUST be a `scrutiny-metadata` event."
+    },
+    {
+      "id": "BD-5",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.4",
+      "text": "A Binding whose endpoints, once observed, do not satisfy BD-3/BD-4 is an invalid SCRUTINY event and MUST be rejected (TR-1)."
+    },
+    {
+      "id": "BD-6",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.4",
+      "text": "A Binding whose endpoints are not yet observed MUST be treated as *pending*: stored locally but NOT rendered until both endpoints are observed."
+    },
+    {
+      "id": "BD-7",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.4",
+      "text": "A Binding whose observed endpoint contradicts BD-3/BD-4 transitions to permanently invalid; implementations SHOULD cache the rejection."
+    },
+    {
+      "id": "BD-8",
+      "layer": "D",
+      "inherits": [
+        "NIP-10"
+      ],
+      "section": "3.4",
+      "text": "The `<relay>` field in `e` tags is advisory. An empty string means \"no hint.\" Implementations MUST NOT rely on relay hints exclusively and SHOULD query their configured relay set for referenced events; they MUST fall back to their full relay set if the event is not found on the hinted relay."
+    },
+    {
+      "id": "BD-9",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.4",
+      "text": "Bindings have no patch-based update mechanism. To correct a Binding, kind 5 delete it and publish a replacement. Patch events cannot target a Binding."
+    },
+    {
+      "id": "BD-10",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.4",
+      "text": "A Binding MUST NOT contain more than one `e root` or more than one `e link`."
+    },
+    {
+      "id": "BD-11",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.4",
+      "text": "Duplicate detection is a presentation concern. Implementations MAY collapse visually-identical bindings (same root, same link, same pubkey) at render time."
+    },
+    {
+      "id": "BD-12",
+      "layer": "V",
+      "inherits": [
+        "NIP-10"
+      ],
+      "section": "3.4",
+      "text": "A mismatch between the author-hint suffix in an `e` tag and the actual event `pubkey` does not invalidate the referencing Binding. Trust decisions MUST be based on the verified event pubkey, not the hint."
+    },
+    {
+      "id": "PT-1",
+      "layer": "V",
+      "inherits": [
+        "NIP-10"
+      ],
+      "section": "3.5",
+      "text": "A Patch event MUST carry exactly one `e` tag with marker `root` (pointing at the root Product or Metadata)."
+    },
+    {
+      "id": "PT-2",
+      "layer": "V",
+      "inherits": [
+        "NIP-10"
+      ],
+      "section": "3.5",
+      "text": "A Patch event MUST carry exactly one `e` tag with marker `reply` (pointing at its immediate target)."
+    },
+    {
+      "id": "PT-3",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.5",
+      "text": "A Patch event carries zero or one patch payload; further fenced `diff` / `patch` blocks are prose (PT-4, E6)."
+    },
+    {
+      "id": "PT-4",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.5",
+      "text": "If multiple fenced `diff` / `patch` blocks appear, only the first (document order) is the patch payload; subsequent blocks MUST be treated as prose."
+    },
+    {
+      "id": "PT-5",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.5",
+      "text": "Authorship classification: a **root-author patch** has `pubkey` equal to the root event's `pubkey`; a **foreign patch** does not."
+    },
+    {
+      "id": "PT-6",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.5",
+      "text": "A root-author patch's `e reply` MUST point at the root event or another root-author patch of the same root. A root-author patch whose `e reply` names any other event (a foreign patch, a Binding, an event outside its chain) is ignored for canonical-chain construction (§6.3). While the target is unobserved this rule cannot be evaluated — the parent's authorship class is unknown — so the patch is neither included in nor excluded from the chain on its basis; it is retained and held per §6.4 (UR-4)."
+    },
+    {
+      "id": "PT-7",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.5",
+      "text": "A foreign patch's `e reply` MUST point at the root event or a root-author patch of the same root. A foreign patch whose observed `e reply` target is any other event is invalid; this includes overlay-to-overlay reply (§6.3). While the target is unobserved the patch is pending (as UR-2 for an unobserved root), is retained and re-evaluated when the target arrives, and renders as an orphaned overlay (OV-3)."
+    },
+    {
+      "id": "PT-8",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.5",
+      "text": "A no-op patch (no fenced block, or header-only fenced block per §4.1 N1/N2) participates in chain topology but contributes no content change."
+    },
+    {
+      "id": "PT-9",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.5",
+      "text": "Patches are append-only. A patch cannot be inserted between two existing patches, and its parent pointer cannot be changed after publication. Removal is only via kind 5 deletion by the patch's own author (§7)."
+    },
+    {
+      "id": "PT-10",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.5",
+      "text": "The event referenced by `e root` MUST be a `scrutiny-product` or `scrutiny-metadata` event."
+    },
+    {
+      "id": "PT-11",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.5",
+      "text": "A Patch whose OBSERVED `e root` violates PT-10 is invalid and MUST be rejected."
+    },
+    {
+      "id": "SUP-1",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.6",
+      "text": "A Product or Metadata event MAY carry `[\"e\", <id>, <relay>, \"supersedes\"]`. The marker forms a supersession link if and only if the named event is observed, is V-valid, has the same event type as the carrying event, and has the same `pubkey`; an event retained after a deletion request still counts as observed. Otherwise no link forms, and the marker is re-evaluated whenever the observed set changes (UR-1): while the named event is unobserved the marker is held. An event SHOULD carry at most one `supersedes` marker, and a consumer honors only the first in tag order."
+    },
+    {
+      "id": "SUP-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.6",
+      "text": "A consumer that reports the current version of any member of a succession reports its final member. A succession is forked when two or more non-deleted events supersede the same event: consumers MUST surface the fork (the event ids of the competing successors) and MUST NOT choose between them by `created_at`, event ID, or any other heuristic. The fork ends when at most one of them is non-deleted. A deleted event stays in its succession: if the final member is deleted the succession is retracted, and its earlier members do not become current again."
+    },
+    {
+      "id": "SUP-3",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.6",
+      "text": "Successions are computed over all V-valid observed events, and trust admission is applied to the result (TR-7). A link confers no admission: the final member is in a user's view only if TR-2 admits it. Bindings, patches, overlays and deletion requests attached to a superseded event are not transferred to its replacement; they continue to refer to the event they name."
+    },
+    {
+      "id": "SUP-4",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.6",
+      "text": "A Product or Metadata event carrying a `supersedes` marker is valid. An `e` tag with the marker `supersedes` is neither `root`, `reply` nor `link`: it counts toward none of BD-1, BD-2, PT-1 or PT-2, creates no Binding or Patch relation, and has no meaning on a Binding or a Patch. Its author-hint element, when present, is advisory as for any `e` tag (BD-12)."
+    },
+    {
+      "id": "IX-1",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.7",
+      "text": "Publishers SHOULD include canonical `i` tags for top-level indexers the event is *about* (CVE, CPE, PURL, CC certificate ID, FIPS validation number, etc.)."
+    },
+    {
+      "id": "IX-2",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.7",
+      "text": "Events SHOULD contain no more than 64 `i` tags."
+    },
+    {
+      "id": "IX-3",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.7",
+      "text": "`i` tags and `k` tags on root events (Products and Metadata) are immutable. Patches only modify `content` (§3.5). To add or change indexers after publication, publish a new root event."
+    },
+    {
+      "id": "IX-4",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.7",
+      "text": "Deeply nested indexers from payload contents (e.g., every component in a large SBOM) SHOULD NOT be duplicated as `i` tags."
+    },
+    {
+      "id": "IR-1",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.7",
+      "text": "Prefix is lowercase ASCII matching `[a-z0-9-]+`. An `i` value with no `:` has no prefix and breaks this rule."
+    },
+    {
+      "id": "IR-2",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.7",
+      "text": "Value is the source authority's canonical form, preserved verbatim (case, punctuation, separators all as the issuing body writes them)."
+    },
+    {
+      "id": "IR-3",
+      "layer": "V",
+      "inherits": [
+        "NIP-73"
+      ],
+      "section": "3.7",
+      "text": "Parsers split on the **first** `:` only; values containing colons (e.g., `cpe:2.3:...`) work transparently."
+    },
+    {
+      "id": "IR-4",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.7",
+      "text": "Unknown prefixes are valid; parsers pass them through and treat them as opaque indexers."
+    },
+    {
+      "id": "IR-5",
+      "layer": "D",
+      "inherits": [],
+      "section": "3.7",
+      "text": "An `i` value is a spelling: a `#i` filter matches exactly that spelling. A service consumer that reports a count for an `i` value reports it as scoped to the spellings it searched, and one that widens across spellings (aliases, deprecated prefixes, case-folding) MUST disclose the set of spellings the count covers."
+    },
+    {
+      "id": "IM-1",
+      "layer": "A",
+      "inherits": [
+        "NIP-92"
+      ],
+      "section": "3.8",
+      "text": "Implementations SHOULD verify the `x` hash by streaming the artifact contents and comparing against the declared SHA-256."
+    },
+    {
+      "id": "IM-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.8",
+      "text": "If a declared `size` is present, implementations SHOULD additionally compare fetched byte length against `size` and treat a mismatch as a verification failure of the same severity as a hash mismatch."
+    },
+    {
+      "id": "IM-3",
+      "layer": "A",
+      "inherits": [
+        "NIP-92",
+        "NIP-94"
+      ],
+      "section": "3.8",
+      "text": "An `imeta` tag names its primary source in `url` and MAY name alternates in `fallback` entries (NIP-94). Implementations SHOULD try the sources in order, `url` first, and accept the first whose fetched bytes match the declared `x` hash. Source selection MUST NOT influence the validity decision — only the hash check does. Additional `url` entries in one `imeta` tag are not alternates and are ignored."
+    },
+    {
+      "id": "IM-4",
+      "layer": "A",
+      "inherits": [],
+      "section": "3.8",
+      "text": "Implementations MUST warn before displaying or processing unverified artifacts."
+    },
+    {
+      "id": "IM-5",
+      "layer": "V",
+      "inherits": [],
+      "section": "3.8",
+      "text": "SCRUTINY extends NIP-92: `imeta` attachments are not required to be referenced in the event's `content` field."
+    },
+    {
+      "id": "PB-1",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.1",
+      "text": "The `content` field is consumed verbatim as a UTF-8 byte sequence; no normalization (line-ending, trailing-newline, BOM-stripping, whitespace trimming) is performed before diffing or applying."
+    },
+    {
+      "id": "PB-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.1",
+      "text": "Consumers MUST NOT normalize the patch-payload byte sequence (the bytes strictly between the fence lines — or, for an unclosed block, after the opening fence line to the end of `content` — each terminated by `\\n`) before feeding it to a unified-diff applier."
+    },
+    {
+      "id": "E1",
+      "layer": "V",
+      "inherits": [
+        "CommonMark §4.5",
+        "NIP-10"
+      ],
+      "section": "4.1",
+      "text": "The patch payload MUST be wrapped in a CommonMark §4.5 fenced code block using backtick (`` ` ``) fences. Tilde (`~`) fences are not recognized as SCRUTINY patch payloads. Markup in `kind:1` `content` is a SCRUTINY-specific departure from NIP-10 (§3.2)."
+    },
+    {
+      "id": "E2",
+      "layer": "V",
+      "inherits": [
+        "CommonMark §4.5"
+      ],
+      "section": "4.1",
+      "text": "The opening fence MUST consist of three or more consecutive backticks, followed by an info string whose first whitespace-delimited token, lowercased, is `diff` or `patch`. Any additional info-string tokens after the first are ignored."
+    },
+    {
+      "id": "E3",
+      "layer": "V",
+      "inherits": [
+        "CommonMark §4.5"
+      ],
+      "section": "4.1",
+      "text": "The closing fence MUST consist of at least as many backticks as the opening fence, on a line of its own (CommonMark §4.5 closing-fence rule)."
+    },
+    {
+      "id": "E4",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.1",
+      "text": "**Variable-length fences.** Producers MUST choose an opening-fence length of `max(3, N + 1)`, where `N` is the longest run of consecutive backticks anywhere inside the payload bytes, so that any payload can be embedded unambiguously. This is a producer obligation enforced when building an event; a consumer has nothing to check (E3, E5, ADR-0011)."
+    },
+    {
+      "id": "E5",
+      "layer": "V",
+      "inherits": [
+        "CommonMark §4.5"
+      ],
+      "section": "4.1",
+      "text": "The payload bytes are the concatenation of all lines strictly between the opening and closing fence lines, each line terminated by `\\n` (LF). The opening and closing fence lines themselves are NOT part of the payload. When no closing fence exists (E3), the payload is every line after the opening fence line to the end of `content`."
+    },
+    {
+      "id": "E6",
+      "layer": "V",
+      "inherits": [],
+      "section": "4.1",
+      "text": "A patch event's `content` MAY contain multiple fenced blocks. The **first** block (in document order) whose info string matches E2 is the patch payload; all subsequent matching blocks are prose and MUST be ignored as patch payloads."
+    },
+    {
+      "id": "E7",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.1",
+      "text": "If no fenced block matching E2 is present in `content`, the patch is a no-op (see §3.5)."
+    },
+    {
+      "id": "N1",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.1",
+      "text": "A prose-only patch event (no fenced `diff` / `patch` block matching E2) is a valid no-op."
+    },
+    {
+      "id": "N2",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.1",
+      "text": "A header-only fenced block (valid `--- a/content` / `+++ b/content` headers, zero hunks) is a valid no-op. Consumers MUST NOT reject this shape as malformed."
+    },
+    {
+      "id": "N3",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.1",
+      "text": "Consumers MUST treat both N1 and N2 as successful no-op application against the current content: the content is unchanged; the event is recorded in the chain as normal."
+    },
+    {
+      "id": "C1",
+      "layer": "V",
+      "inherits": [],
+      "section": "4.2",
+      "text": "The `---` and `+++` header path tokens MUST be exactly `a/content` and `b/content` respectively. A payload with any other path tokens is invalid. A path-token failure is a `---` line and a `+++` line whose first tokens are not `a/content` and `b/content`. Any other failure of the consumer grammar or of the hunk-length rule of C6, apart from the lines P2 forbids, leaves the payload V-valid: in the canonical chain it fails pre-validation and HALTs (H1), and a foreign patch's overlay is `conflict`."
+    },
+    {
+      "id": "C2",
+      "layer": "V",
+      "inherits": [
+        "unified-diff"
+      ],
+      "section": "4.2",
+      "text": "A payload carrying trailing data on its `---`, `+++`, `diff --git`, or `@@` lines (timestamps as emitted by `patch -u` / GNU `diff -u`, whitespace, etc.) **is valid**; consumers MUST tolerate that data and MUST ignore it. A trailing CR on such a line is part of that data."
+    },
+    {
+      "id": "C3",
+      "layer": "V",
+      "inherits": [
+        "unified-diff"
+      ],
+      "section": "4.2",
+      "text": "A payload carrying the `Index:` preamble (capital `I`, followed by an `===…` separator line) **is valid**; the preamble MAY appear and consumers MUST tolerate it. It is *not* the same as the `index <sha>..<sha>` line emitted by `git diff` by default, which is forbidden (see P2)."
+    },
+    {
+      "id": "C4",
+      "layer": "V",
+      "inherits": [
+        "unified-diff"
+      ],
+      "section": "4.2",
+      "text": "A payload carrying a `diff --git a/content b/content` line before the headers **is valid**; the line MAY appear and consumers MUST tolerate it. It is not required."
+    },
+    {
+      "id": "C5",
+      "layer": "A",
+      "inherits": [
+        "unified-diff"
+      ],
+      "section": "4.2",
+      "text": "A hunk line beginning with `\\` is a no-newline-at-end-of-file marker: it states that the immediately preceding hunk line has no line terminator (on the old side for a `-` line, on the new side for a `+` line, on both sides for a context line), and consumers MUST handle it so. For matching under T1 and for the resulting bytes, a line without a terminator differs from the same line with one. Consumers MUST key on the `\\` prefix; the marker's text is informational and MUST NOT be relied upon (ADR-0018)."
+    },
+    {
+      "id": "C6",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.2",
+      "text": "Hunk `@@` line numbers are advisory; the `@@` counts are authoritative for the length of the hunk. A hunk consists of exactly as many old-side lines (context and `-` lines) and new-side lines (context and `+` lines) as its counts declare, an omitted count meaning 1. While a hunk's counts are unmet, an empty line is an empty context line and a `\\` line is attached to the preceding line and not counted; a line that begins a new `@@` hunk or file section (C8), or the end of the payload, while a count is unmet makes the payload malformed (HALT, H1). Once the counts are met, empty lines and `\\` markers are skipped up to the next `@@` line, file-section header or the end of the payload; any other line there makes the payload malformed. Consumers MUST locate each hunk by context match against the current content, subject to the determinism requirement in §4.4."
+    },
+    {
+      "id": "C7",
+      "layer": "V",
+      "inherits": [],
+      "section": "4.2",
+      "text": "**Floor on acceptance.** Any patch payload matching the consumer grammar above is valid, including one carrying a header block and zero hunks (the header-only no-op shape, N2). A conforming consumer MUST accept every such payload and MUST NOT apply a stricter reading of the grammar than the grammar states. C1 fixes what the valid set excludes and C7 fixes its lower bound (ADR-0011)."
+    },
+    {
+      "id": "C8",
+      "layer": "A",
+      "inherits": [
+        "unified-diff"
+      ],
+      "section": "4.2",
+      "text": "**Multiple file sections.** A payload MAY carry more than one `file-section`. A `---` line occurring where a hunk line could appear begins a new file section; it MUST NOT be interpreted as a removal line. Consumers MUST process the hunks of every section as a single sequence in document order, sequenced per §4.4 T3, and MUST NOT drop any section (ADR-0018)."
+    },
+    {
+      "id": "P1",
+      "layer": "A",
+      "inherits": [
+        "unified-diff"
+      ],
+      "section": "4.3",
+      "text": "**Context lines.** Producers SHOULD emit `min(3, available)` lines of context before and after each change block: three where the content affords it, and as many as exist where it does not. This is a producer obligation, not a validity criterion applied to a received payload (ADR-0011). Consumers MUST NOT reject a payload for carrying fewer context lines; a zero-context hunk is normal (see T2) and the §4.3 example below has none."
+    },
+    {
+      "id": "P2",
+      "layer": "V",
+      "inherits": [],
+      "section": "4.3",
+      "text": "No `index <oldsha>..<newsha> <mode>` lines (the lowercase-`index` form emitted by `git diff` by default), no `mode` lines, no `similarity index` lines, and no rename metadata. Strip these post-hoc. Note that `--no-index` does **not** suppress them — it makes git diff two paths outside a repository and has no effect on index-line emission — so a producer using the `git` invocation recommended above MUST filter the index line itself."
+    },
+    {
+      "id": "P3",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.3",
+      "text": "Producers MUST emit UTF-8 with LF line endings inside the payload. This is a producer obligation enforced when building an event: a consumer MUST NOT reject a payload over its line endings, because PB-2 forbids normalising the payload bytes, so a CRLF payload fails to match LF content and is handled by the determinism requirement (T1) as an ordinary failure to apply."
+    },
+    {
+      "id": "P4",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.3",
+      "text": "Producers SHOULD verify their patch applies cleanly against the target event's resolved content before publishing."
+    },
+    {
+      "id": "T1",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.4",
+      "text": "**Determinism (unambiguous context).** Each hunk's context lines together with its removed (`-`) lines MUST occur exactly once in the current content at the time of application. If the pattern occurs zero times, or two or more times, the patch is invalid (HALT, H1). Implementations MAY use the `@@` line numbers as a hint for the initial search position but MUST verify uniqueness across the full target content before applying. Occurrences may overlap: the pattern `a`, `a` occurs twice in `a`, `a`, `a`."
+    },
+    {
+      "id": "T2",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.4",
+      "text": "**Insertion carve-out.** A hunk with no context lines and no `-` lines (e.g., `@@ -0,0 +1,N @@` against empty content, or any pure-insertion hunk) has no pattern to disambiguate. Such a hunk MUST apply at the position implied by its `@@` header's `-` line number; the T1 uniqueness check does not apply. For a pure-insertion hunk, `-L,0` designates the position after line L of the pre-application content, and `-0,0` the start. A pure-insertion hunk positioned after, or clamped to follow, a final line that has no terminator HALTs (H1). That line number is interpreted in the coordinates of the patch's pre-application content, and MUST be carried forward by the net line delta of all prior hunks in the same patch whose header old range ends at or before line L. If the implied position, after carry-forward, falls outside the current content's line range, it clamps: a position past the last line inserts the `+` lines after the final line, and one before the first line inserts them at the start. The line count is the count of the content's own lines (a final newline terminates the last line and does not add one, so `a\\nb\\n` has two lines and a `@@ -3,0 +3,1 @@` hunk against it appends after `b`). Clamping defines the position; it is not a failed match, and it never reaches T1 or invokes H1. See ADR-0013."
+    },
+    {
+      "id": "T3",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.4",
+      "text": "**Multi-hunk sequencing.** When a patch carries multiple hunks, the T1 check for each hunk is evaluated against the content as produced after all prior hunks in the **same patch** have already been applied. Hunks are processed in document order, across every `file-section` of the payload (C8). A hunk that would satisfy T1 against the pre-patch content but fails after an earlier hunk in the same patch has shifted matching positions causes the patch to HALT (H1). A pure-insertion hunk has no pattern and so is never subject to this check; its position is governed by T2's carry-forward instead."
+    },
+    {
+      "id": "H1",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.4",
+      "text": "**HALT semantics.** If pre-validation fails for a patch in the canonical chain, the canonical bytes are the state after the last successfully applied patch (or the root state, if the first patch is invalid). No later patches are applied, even if they might themselves be individually valid. HALT is reevaluated whenever the chain topology changes — most commonly when the invalid patch is kind 5 deleted by its author (§7), removing it from the chain."
+    },
+    {
+      "id": "H2",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.4",
+      "text": "**Protocol error annotation.** Implementations MUST surface an invalid patch as a protocol error annotation, including the event ID, author, and the failure reason."
+    },
+    {
+      "id": "CHN-1",
+      "layer": "A",
+      "inherits": [
+        "NIP-10"
+      ],
+      "section": "4.4",
+      "text": "The canonical chain is built by walking root-author patches (those whose `pubkey` equals the root event's `pubkey`) by following NIP-10 `e reply` markers from the root forward. A root-author patch whose `e reply` target is unobserved contributes no position to the walk; it is held per UR-4 until re-evaluated on the target's arrival."
+    },
+    {
+      "id": "CHN-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.4",
+      "text": "Kind 5 cascade per §7 is applied while building the chain (deleted patches and their descendants are removed)."
+    },
+    {
+      "id": "CHN-3",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.4",
+      "text": "Foreign patches (those whose `pubkey` differs from the root event's `pubkey`) never enter the canonical chain. They are evaluated separately as overlays against their `e reply` target's resolved content (the target-state snapshot rule, §6.3). The same T1/T2/T3/H1 rules apply when computing an overlay's classification against its target."
+    },
+    {
+      "id": "RL-1",
+      "layer": "D",
+      "inherits": [],
+      "section": "4.5",
+      "text": "Producers SHOULD respect the recommended bounds of §4.5."
+    },
+    {
+      "id": "RL-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.5",
+      "text": "Consumers SHOULD enforce configurable ceilings and SHOULD bound total patch-application work (bytes compared, charged at no less than one unit per line of the hunk's match pattern (T1)), not only hunk or patch counts."
+    },
+    {
+      "id": "RL-3",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.5",
+      "text": "Exceeding a ceiling aborts application and MUST be surfaced as a distinct resource-limit-exceeded annotation, never as HALT. The event remains V-valid."
+    },
+    {
+      "id": "RL-4",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.5",
+      "text": "Content abandoned for resource reasons MUST NOT be served or cached as canonical bytes."
+    },
+    {
+      "id": "RL-5",
+      "layer": "A",
+      "inherits": [],
+      "section": "4.5",
+      "text": "**Chain disposition under a ceiling.** A chain whose application was stopped by a ceiling is reported as **aborted under a ceiling**, distinct from both `resolved` and HALT. Reporting it as HALT is forbidden by RL-3. The report MUST identify the patch at which application stopped and the ceiling that was reached, and MUST NOT cite H1 (ADR-0019)."
+    },
+    {
+      "id": "TR-1",
+      "layer": "V",
+      "inherits": [],
+      "section": "5.1",
+      "text": "V-invalid events MUST NOT enter SCRUTINY processing and MUST NOT be rendered. A V-valid event MUST NOT be rejected by an A or D rule (§5.1)."
+    },
+    {
+      "id": "TR-2",
+      "layer": "D",
+      "inherits": [],
+      "section": "5.2",
+      "text": "A SCRUTINY event is admitted to a user's view if its `pubkey` is trusted OR it is reachable via a trusted Binding (§5.2)."
+    },
+    {
+      "id": "TR-3",
+      "layer": "D",
+      "inherits": [],
+      "section": "5.2",
+      "text": "A Binding event is admitted only if its `pubkey` is trusted. Trust does NOT flow transitively through the endpoints (§5.2)."
+    },
+    {
+      "id": "TR-4",
+      "layer": "D",
+      "inherits": [],
+      "section": "5.2",
+      "text": "When a Binding is admitted, both of its endpoints (`e root` and `e link`) become reachable and are admitted even if their authors are not directly trusted (§5.2) — for as long as the Binding is not retracted (§7, DEL-5)."
+    },
+    {
+      "id": "TR-5",
+      "layer": "D",
+      "inherits": [],
+      "section": "5.2",
+      "text": "When a root Product or Metadata is admitted, its canonical chain is admitted with it: root-author patches and root-author kind 5 events targeting them are admitted automatically — for as long as the root's own admission survives (§7, DEL-5)."
+    },
+    {
+      "id": "TR-6",
+      "layer": "D",
+      "inherits": [],
+      "section": "5.2",
+      "text": "Foreign patches are NOT transitively admitted via root admission. They require independent trust on the foreign author's pubkey."
+    },
+    {
+      "id": "TR-7",
+      "layer": "D",
+      "inherits": [],
+      "section": "5.2",
+      "text": "Trust filtering is applied at presentation time, to the results of chain and overlay computation. Implementations MUST NOT filter by trust before canonical-chain construction, self-fork detection, or overlay classification."
+    },
+    {
+      "id": "RC-1",
+      "layer": "A",
+      "inherits": [
+        "NIP-10"
+      ],
+      "section": "6.1",
+      "text": "The canonical chain is the linear sequence of patch events whose `pubkey` equals the root event's `pubkey`, threaded by NIP-10 `e reply` markers from the root forward."
+    },
+    {
+      "id": "RC-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.1",
+      "text": "Canonical bytes are computed strictly from the root event plus the canonical chain. Foreign overlays are NOT part of canonical bytes."
+    },
+    {
+      "id": "RC-3",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.1",
+      "text": "Service consumers MUST recompute canonical bytes and overlay states whenever their observed event set changes in a way that affects events they serve."
+    },
+    {
+      "id": "RC-4",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.1",
+      "text": "Interactive consumers SHOULD recompute on observed-set change."
+    },
+    {
+      "id": "RC-5",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.1",
+      "text": "**Tip identification.** The tip is the last event of the applied chain: the root event, then each successfully applied patch in order. A chain that carries no patches therefore has the root as its tip. The tip is undefined where an unresolved self-fork (SF-1) or a ceiling (RL-5) is the earlier freeze point (SF-7), and defined where a HALT (H1) is: it is then the last successfully applied patch, or the root event if the first patch failed. The `clean` classification of §6.3 turns on whether the overlay's target is the tip (ADR-0012)."
+    },
+    {
+      "id": "SF-1",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.2",
+      "text": "A **root self-fork** occurs when two or more root-author patches reply to the same parent event; they are *siblings*. The canonical chain is undefined while the self-fork is unresolved. Two patches sharing a parent that is itself held pending an unobserved target (UR-4) are not a fork: neither participates in the chain yet, so there is no position to contend for, and detection re-evaluates if and when the target arrives."
+    },
+    {
+      "id": "SF-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.2",
+      "text": "Clients MUST freeze the canonical bytes at the shared parent of the forked patches while the self-fork is unresolved."
+    },
+    {
+      "id": "SF-3",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.2",
+      "text": "Clients MUST surface the self-fork as an explicit error condition (event IDs of the siblings, timestamps, available context)."
+    },
+    {
+      "id": "SF-4",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.2",
+      "text": "Clients MUST NOT silently choose between the siblings by `created_at`, event ID, or any other heuristic."
+    },
+    {
+      "id": "SF-5",
+      "layer": "A",
+      "inherits": [
+        "NIP-09"
+      ],
+      "section": "6.2",
+      "text": "Resolution: the root author emits a kind 5 deletion targeting one of the siblings (a patch that replies directly to the shared parent); the kind 5 cascade (§7) eliminates that sibling's subtree in its entirety. A deletion that targets a patch below a sibling leaves the fork in place. Deleting the shared parent or an ancestor of it removes both siblings with it."
+    },
+    {
+      "id": "SF-6",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.2",
+      "text": "Multiple unresolved forks are resolved independently; canonical bytes are frozen at the earliest unresolved fork."
+    },
+    {
+      "id": "SF-7",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.2",
+      "text": "**Precedence between a self-fork and a HALT.** Where a self-fork (SF-2) and a HALT (§4.4 H1) are both live, canonical bytes freeze at whichever point is earlier in chain order. A self-fork upstream of a HALT freezes at the shared parent, and the patches downstream of it, including the one that would have HALTed, are never evaluated. A HALT upstream of a self-fork freezes at the last successfully applied patch; the fork is still surfaced per SF-3 though it did not determine the content. Implementations MUST NOT apply any patch past a HALT in order to reach a downstream fork parent: H1 admits no exception. See ADR-0014."
+    },
+    {
+      "id": "OV-1",
+      "layer": null,
+      "inherits": [],
+      "section": "6.3",
+      "text": "*Reserved.* Foreign-patch reply-target validity is normative under **PT-7** (§3.5). This ID is retained for cross-reference stability."
+    },
+    {
+      "id": "OV-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.3",
+      "text": "**Target-state snapshot.** An overlay is interpreted against the target's resolved content — the canonical bytes computed by applying the canonical chain up to and including the foreign patch's `e reply` target. This is the byte sequence the overlay author signed against, and the only sequence the overlay is evaluated against."
+    },
+    {
+      "id": "OV-3",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.3",
+      "text": "If the overlay's `e reply` target has no defined resolved content (at or beyond the patch at which application HALTed, inside an unresolved self-fork, itself a sibling in such a fork, held pending an unobserved reply parent per UR-4, or at or beyond the patch at which application stopped under a ceiling per RL-5), the overlay MUST be treated as **orphaned** and MUST NOT be classified as clean / conflict / stale."
+    },
+    {
+      "id": "OV-4",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.3",
+      "text": "Overlay classification against its target is a pure function of (overlay payload, target's resolved content) and MUST be deterministic across compliant clients. Given fixed ceilings, this holds for OV-9's `unclassified` outcome too; because ceilings are local and configurable (RL-2), two clients with *different* ceilings MAY reach different outcomes, and that is the one permitted source of divergence."
+    },
+    {
+      "id": "OV-5",
+      "layer": "D",
+      "inherits": [],
+      "section": "6.3",
+      "text": "Clients SHOULD expose the classification (clean / conflict / stale / orphaned, or `unclassified` per OV-9) through their API/data layer so downstream tooling can read it. Visual rendering remains client-defined."
+    },
+    {
+      "id": "OV-6",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.3",
+      "text": "A foreign overlay is rendered against its original `e reply` target's resolved content. Clients MAY additionally offer a \"rebase preview\" against the current canonical tip; this is informational and outside the protocol's normative surface."
+    },
+    {
+      "id": "OV-7",
+      "layer": "D",
+      "inherits": [],
+      "section": "6.3",
+      "text": "A foreign patch is visible to the user only if its `pubkey` is in the user's trusted set. The trust set gates which overlays appear; it does not affect the canonical chain."
+    },
+    {
+      "id": "OV-8",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.3",
+      "text": "A root-author patch whose `e reply` points at a foreign patch is ignored for canonical-chain construction."
+    },
+    {
+      "id": "OV-9",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.3",
+      "text": "**Ceiling reached before classification.** If a §4.5 consumer ceiling is reached while classifying an overlay, the outcome is **unclassified**, a distinct fifth outcome and not one of the four classifications. Such an overlay MUST NOT be reported as `conflict`, `orphaned`, `clean` or `stale`. It MUST be accompanied by the distinct resource-limit-exceeded annotation of RL-3, and MUST NOT cite H1 (ADR-0019)."
+    },
+    {
+      "id": "OV-10",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.3",
+      "text": "**No tip, no `clean`.** While the tip is undefined (an unresolved self-fork, SF-1, or a chain stopped by a ceiling, RL-5), no overlay is `clean`: an overlay whose target is a defined position (the root, or a patch applied before the freeze or stop) and whose hunks apply against it is `stale`; if they fail, `conflict` (OV-9 applies when a ceiling is reached first). An overlay on a position that is not defined is `orphaned` (OV-3)."
+    },
+    {
+      "id": "UR-1",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.4",
+      "text": "Ingestion MUST be confluent: the state an implementation reaches depends only on the set of events observed, never on arrival order."
+    },
+    {
+      "id": "UR-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.4",
+      "text": "A Patch whose `e root` is unobserved MUST be retained and re-evaluated on the root's arrival. It does not participate in the canonical chain until then."
+    },
+    {
+      "id": "UR-3",
+      "layer": "D",
+      "inherits": [],
+      "section": "6.4",
+      "text": "A classification MAY be cached as permanent only when no further observation could change it. A Patch's authorship class MUST NOT be cached while its root is unobserved."
+    },
+    {
+      "id": "UR-4",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.4",
+      "text": "A root-author patch whose `e reply` target is unobserved MUST be retained and re-evaluated on the target's arrival. It does not participate in canonical-chain construction or self-fork detection until then; PT-6 is evaluated if and when the target is observed. A root-author patch that replies to a held patch is held too."
+    },
+    {
+      "id": "DEL-1",
+      "layer": "A",
+      "inherits": [
+        "NIP-09"
+      ],
+      "section": "7",
+      "text": "A kind 5 deletion is honored only when its `pubkey` matches the target event's `pubkey`."
+    },
+    {
+      "id": "DEL-2",
+      "layer": "A",
+      "inherits": [],
+      "section": "7",
+      "text": "Deletion of a root-author patch removes the patch and all its canonical descendants from the canonical chain (kind 5 cascade). The canonical bytes revert to the last surviving ancestor."
+    },
+    {
+      "id": "DEL-3",
+      "layer": "A",
+      "inherits": [],
+      "section": "7",
+      "text": "Deletion of a foreign overlay hides it from default overlay rendering. Canonical bytes are unaffected."
+    },
+    {
+      "id": "DEL-4",
+      "layer": "D",
+      "inherits": [],
+      "section": "7",
+      "text": "Deletion of a root Product/Metadata hides the root from default views. The canonical chain, foreign overlays, and Bindings referencing the root are preserved for audit. Clients MUST NOT silently drop overlays or patches associated with a retracted root."
+    },
+    {
+      "id": "DEL-5",
+      "layer": "D",
+      "inherits": [],
+      "section": "7",
+      "text": "Deletion of a Binding hides the edge from default views **and revokes the admission it conferred** (TR-4). Endpoints remain V-valid and are never cascade-deleted; an endpoint with no surviving admission path leaves the default view along with its canonical chain. An independently-admitted overlay whose target has left the view renders per the α/β rule, not dropped."
+    },
+    {
+      "id": "DEL-6",
+      "layer": "A",
+      "inherits": [
+        "NIP-09"
+      ],
+      "section": "7",
+      "text": "A kind 5 event cannot itself be deleted by another kind 5 event. To restore previously deleted content, the author must publish a fresh event with a new ID."
+    },
+    {
+      "id": "DEL-7",
+      "layer": "A",
+      "inherits": [],
+      "section": "7",
+      "text": "**α/β degradation for orphaned overlays.** If the overlay's target is obtainable (cached or fetched), render against the target's universe (α). If unobtainable, render as a standalone artifact (β); the overlay is not re-anchored to any other event."
+    },
+    {
+      "id": "DEL-8",
+      "layer": "A",
+      "inherits": [],
+      "section": "7",
+      "text": "If a kind 5 deletion's target is not yet observed, the deletion event is recorded and applied when the target is observed. Canonical bytes MUST be recomputed when a previously unobserved deletion target arrives."
+    },
+    {
+      "id": "DEL-9",
+      "layer": "A",
+      "inherits": [],
+      "section": "7",
+      "text": "Implementations MUST cache locally received kind 5 deletion events and apply them during chain construction, regardless of whether the queried relay reports the deletion."
+    },
+    {
+      "id": "DEL-10",
+      "layer": "D",
+      "inherits": [],
+      "section": "7",
+      "text": "Clients SHOULD offer a \"show deleted events\" toggle that, when enabled, surfaces deleted events and all their descendants (patches against a deleted root, overlays against deleted patches, etc.) so users can inspect the historical state."
+    },
+    {
+      "id": "DEL-11",
+      "layer": "D",
+      "inherits": [
+        "NIP-09"
+      ],
+      "section": "7",
+      "text": "SCRUTINY-aware relays SHOULD inspect the `e` tag target of a kind 5 event; if the target event carries a `scrutiny-fabric` `t` tag, the relay SHOULD store the deletion alongside the original and surface it to SCRUTINY-aware queriers. Keeping the original departs from NIP-09's request that relays delete it (§3.2)."
+    },
+    {
+      "id": "DQ-1",
+      "layer": "D",
+      "inherits": [
+        "NIP-01"
+      ],
+      "section": "8.4",
+      "text": "All discovery queries assume relays supporting NIP-01 `#t`, `#e`, and `#i` filters. A query that selects by an event-type `t` value satisfies the fabric-tag requirement at the relay; any other discovery query MUST include `#t:[\"scrutiny-fabric\"]`. A relay returns whatever matches, so a consumer MUST verify TAG-1 on every result. Kind 5 lookups are exempt, because kind 5 events typically do not carry `scrutiny-fabric` tags."
+    },
+    {
+      "id": "DQ-2",
+      "layer": "D",
+      "inherits": [
+        "NIP-09"
+      ],
+      "section": "8.4",
+      "text": "Clients SHOULD issue `{kinds:[5], #e:[<id>]}` for every chain root, every patch, and every Binding they cache, both at first sight and periodically thereafter, to guard against relays that store deletions but omit them from default filter results. Binding deletions are required because retraction revokes conferred admission (§7, DEL-5)."
+    },
+    {
+      "id": "DQ-3",
+      "layer": "D",
+      "inherits": [
+        "NIP-50"
+      ],
+      "section": "8.4",
+      "text": "When falling back to NIP-50 free-text `search` queries (§8.1 step 3), clients MUST verify returned events carry valid `scrutiny-fabric` tags (per §3.1) and match the user's intent. NIP-50 ranking is relay-dependent and untrusted."
+    },
+    {
+      "id": "DQ-4",
+      "layer": "D",
+      "inherits": [
+        "NIP-10"
+      ],
+      "section": "8.4",
+      "text": "When traversing `e`-tag references (§3.4, §8.2), the query MUST select the expected event-type `t` value, results MUST be filtered locally for that tag, and the `e` tag markers (`root`, `link`, `reply`, `supersedes`) MUST be inspected to determine each result's role relative to the queried event."
+    },
+    {
+      "id": "DQ-5",
+      "layer": "D",
+      "inherits": [
+        "NIP-01"
+      ],
+      "section": "8.4",
+      "text": "A `#t` filter list MUST NOT combine `scrutiny-fabric` with any other SCRUTINY `t` value (an event-type value or a version value). NIP-01 matches any listed value and every SCRUTINY event carries the fabric tag, so the combination selects every SCRUTINY event and voids the other constraint."
+    },
+    {
+      "id": "DQ-6",
+      "layer": "D",
+      "inherits": [],
+      "section": "8.4",
+      "text": "A chain's patches are obtained with the root-anchored query `{\"kinds\":[1],\"#t\":[\"scrutiny-patch\"],\"#e\":[\"<root-event-id>\"]}`. Every patch names the chain root in an `e` tag with marker `root` (PT-1). A consumer MUST keep only results whose `e` tag with marker `root` names the queried id. A relay may truncate results (NIP-11 `max_limit`, `default_limit`), so a consumer MUST page until a query returns fewer events than the limit in force. Chain order comes from `e reply` parentage (PT-2), never from `created_at`."
+    },
+    {
+      "id": "DQ-7",
+      "layer": "D",
+      "inherits": [
+        "NIP-01"
+      ],
+      "section": "8.4",
+      "text": "Events whose ids are known are fetched with `{\"ids\":[\"<event-id>\", ...]}`. DQ-1 does not apply to such a fetch: the id fixes the event, and its signature and id are verified under SIG-1."
+    },
+    {
+      "id": "DQ-8",
+      "layer": "D",
+      "inherits": [
+        "NIP-01"
+      ],
+      "section": "8.4",
+      "text": "The events that supersede a known event are found with `{\"kinds\":[1],\"#t\":[\"<event type of the known event>\"],\"#e\":[\"<event-id>\"],\"authors\":[\"<pubkey of the known event>\"]}`. Only results carrying a `supersedes` marker that names the id count (SUP-1)."
+    }
+  ]
+}

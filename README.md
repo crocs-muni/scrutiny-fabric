@@ -45,7 +45,7 @@ SCRUTINY Fabric is that graph layer: permissionless, censorship-resistant, and a
 
 ## The protocol in brief
 
-All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every event carries exactly one `["t","scrutiny-fabric"]` tag, exactly one version tag (`scrutiny-v<MAJOR>.<MINOR>.<PATCH>`, e.g. `scrutiny-v0.8.1`), and exactly one event-type tag.
+All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every event carries exactly one `["t","scrutiny-fabric"]` tag, exactly one version tag (`scrutiny-v<MAJOR>.<MINOR>.<PATCH>`, e.g. `scrutiny-v0.9.2`), and exactly one event-type tag.
 
 | Event type | Role |
 |---|---|
@@ -54,7 +54,7 @@ All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every
 | **Binding** | An immutable signed edge, **Product ↔ Metadata only**: `e root` is the Product, `e link` is the Metadata |
 | **Patch** | A git-style unified diff that evolves a Product or Metadata's `content` over time |
 
-Patches authored by the root event's own author form the **canonical chain** — what that author is currently saying. Patches by anyone else are never folded into canonical content; they render as **overlays** (annotations or proposed changes) against the specific event they reply to. Deletion is NIP-09 `kind:5`; there is no SCRUTINY-specific retraction event.
+Patches authored by the root event's own author form the **canonical chain** — what that author is currently saying. Patches by anyone else are never folded into canonical content; they render as **overlays** (comments or proposed changes) against the specific event they reply to. Deletion is NIP-09 `kind:5`; there is no SCRUTINY-specific retraction event.
 
 Discovery is cheap for the common case: canonical identifiers in NIP-73 `i` tags (`cve:`, `cpe:`, `purl:`, `cc:`, `fips:`, …) make "all events about CVE-X" a single relay filter. Anything richer requires local processing — a deliberate trade-off.
 
@@ -64,21 +64,25 @@ Trust is entirely the user's: each user maintains a set of trusted pubkeys, and 
 
 | Document | Contents |
 |---|---|
-| [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.8.1. Event types, diff format, trust admission, chain and overlay resolution, discovery patterns, indexer registry, and a flat registry of every normative rule (Appendix F) |
+| [docs/overview.md](docs/overview.md) | **Start here.** What the protocol is and how a client builds its view |
+| [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.9.2. Event types, diff format, trust admission, chain and overlay resolution, deletion, discovery, identifier registry |
+| [rules.json](rules.json) | Every normative rule as one machine-readable list, generated from the rule tables of the specification |
+| [docs/guide/](docs/guide) | Worked example, git mapping, roadmap, optional signals (not normative) |
+| [docs/adr/](docs/adr/README.md) | Decision records: why the specification reads as it does |
 | [docs/threat-model.md](docs/threat-model.md) | Threat model: adversary capabilities, per-threat risk ratings (see the [§10 summary table](docs/threat-model.md#10-summary-table)), and residual risk |
 
-The specification is the only normative source. Appendix F assigns every normative rule a stable mnemonic ID (`BD-3`, `T1`, `DEL-7`, …) so implementations and conformance tests can cite rules precisely.
+The specification is the only normative source. Every normative rule has a stable mnemonic ID (`BD-3`, `T1`, `DEL-7`, …) so implementations and conformance tests can cite rules precisely.
 
 > [!WARNING]
 > **Work in progress — experimental.**
 >
-> The specification is a **draft at v0.8.1** and should not be relied on for production security decisions. Breaking changes are expected while the version remains below 1.0. Implementation feedback is actively shaping the specification, which is why the version number moves as often as it does.
+> The specification is a **draft at v0.9.2** and should not be relied on for production security decisions. Breaking changes are expected while the version remains below 1.0. Implementation feedback is actively shaping the specification, which is why the version number moves as often as it does.
 
 ## Status
 
-The specification is complete enough to implement against, and is being implemented — that work surfaces gaps, which feed back here as amendments. Conformance vectors are published and digest-pinned in Appendix G (`vectors/`); `node tools/verify-corpus.mjs` checks the pins.
+The specification is complete enough to implement against, and is being implemented — that work surfaces gaps, which feed back here as amendments. Conformance vectors are published and digest-pinned in section 10 of the specification (`vectors/`); `node tools/verify-corpus.mjs` checks the pins.
 
-Known open items are tracked in the specification's own §11 rather than duplicated here.
+Known open items are tracked in the [roadmap](docs/guide/roadmap.md) rather than duplicated here.
 
 ## Contributing
 
@@ -86,9 +90,9 @@ Issues and pull requests are welcome, particularly:
 
 - **Ambiguities.** Two implementers reading a rule differently is a specification bug, not an implementation bug. Report it as one.
 - **Implementation experience.** If a rule is impractical, expensive, or unimplementable on real relays, that matters more than elegance.
-- **Indexer prefixes.** The §9 registry is a baseline, not a closed set. New prefixes follow the convention "lowercase prefix, authority-canonical value."
+- **Indexer prefixes.** The indexer registry (specification §3.7) is a baseline, not a closed set. New prefixes follow the convention "lowercase prefix, authority-canonical value."
 
-When citing the specification, use the rule IDs from Appendix F.
+When citing the specification, use the rule IDs, for example `BD-3`.
 
 ## License
 

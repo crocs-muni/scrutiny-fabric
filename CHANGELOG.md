@@ -1,9 +1,172 @@
 # Changelog
 
 Release history for the SCRUTINY Fabric protocol specification (`docs/protocol-spec.md`). Entries
-are terse and cite the affected rule IDs (Appendix F); the rationale for why a *specific rule* reads
-as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
-— licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
+are terse and cite the affected rule IDs; [`rules.json`](rules.json) lists every rule. The reasons for
+cross-cutting decisions and for long-running rules are in [docs/adr/](docs/adr/README.md). Entries before
+0.9.1 cite sections, appendices and `DECISIONS.md` entries by the numbering of their own release; the
+tables under 0.9.1 map the old names to the new ones.
+
+## v0.9.2
+
+Shorter rule rows. **No requirement changed:** the 152 rules keep their IDs, layers, inheritance, and every
+MUST, SHOULD and MAY with its conditions. Thirteen rows lose the argument they carried inline (about 520
+words): C5, C7, C8, DQ-6, E4, OV-9, P1, P3, RC-5, RL-5, SF-7, T1 and T2. The argument is in
+[docs/adr/](docs/adr/README.md): ADR-0011 (P1, E4, P3, C7), ADR-0012 (RC-5), ADR-0013 (T1, T2), ADR-0014 (SF-7)
+and two new records, ADR-0018 (C5, C8) and ADR-0019 (RL-5, OV-9). DQ-6's reasons are in the
+discovery table of section 8.2. Rows cite an ADR by its number only, so `rules.json` stays plain text.
+
+- **Rows changed.** T2: the paragraph on why the position is carried forward, the remark that `git apply` and
+  jsdiff do the same, and the remark about C6 are removed. T1: the sentence on why line numbers do not
+  disambiguate is removed. RC-5, SF-7, P1, E4, P3, C7, C5, C8, RL-5, OV-9, DQ-6: reasons removed, rule
+  sentences kept as they were.
+- **Version.** Version tag `scrutiny-v0.9.1` → `scrutiny-v0.9.2`; `vectors/` is unchanged and its digests
+  still match section 10.1.
+
+## v0.9.1
+
+Restructure. **No rule changed:** the 152 rules have the same IDs, layers, inheritance and wording as in
+0.9.0, and `vectors/` is byte-identical. The only edits inside rule rows are the section references
+they contain, updated to the new numbering (28 rows; E7 also drops a section title). Section titles and numbers changed, so citations
+of sections need updating; rule IDs are stable.
+
+- **One normative file.** `docs/protocol-spec.md` holds the rule tables as the only statement of each
+  rule. Appendix F is dropped and `rules.json` is generated from the tables by `tools/gen-rules.mjs`;
+  `tools/verify-corpus.mjs` checks that it is current. Rule anchors (`#rule-BD-3`) are unchanged.
+- **New documents.** `docs/overview.md`; `docs/guide/` (worked example, git mapping, roadmap, optional
+  signals); `docs/adr/` with 17 decision records. `docs/DECISIONS.md` is removed: S1 to S10 are ADR-0001
+  to ADR-0009 (S4 and S7 are merged into ADR-0004).
+- **Terms and figures.** Section 2 defines every term once (the old Appendix C glossary). The specification
+  carries nine figures: event graph, Binding lifecycle, successions, application pipeline, where each layer
+  acts, self-fork states, overlay classification, deletion and α/β rendering, a discovery session.
+- **Rule-layer prose.** The layer "manifests" of the old section 6.0 are removed; the Layer column is the
+  only authority. The argument for the layers is ADR-0011.
+- **Normative sentences outside rule rows.** The old prose carried requirements that no rule row states.
+  They keep their keywords where they now stand: MUST defer to the base layers (3.2), MAY attach NIP-03
+  attestations (3.1), SHOULD publish a competing Binding (3.4), SHOULD produce grammar-conforming payloads
+  (4.3), SHOULD query several relays and cross-check, SHOULD warn when a trust expansion admits many new keys
+  (9), SHOULD check NIP-11 before NIP-50 search (8.1), SHOULD treat a retracted root as absent in the default
+  view and show its full history in an audit view (7), SHOULD verify the vector digest in CI, MUST NOT use the A-layer vectors for SIG-1, and the per-permutation
+  MUST (10). The proof-of-work advice stays in the optional-signals guide. A later normative release may give
+  them rule IDs. Where a rule row owns the requirement (RL-1, RL-2, RC-4, DEL-11, DQ-2, IM-1, IX-1, IX-4),
+  the prose now names the rule and no longer restates the keyword.
+- **Two prose clarifications.** Section 8.2 now says the `#t` list is not to combine `scrutiny-fabric` with
+  another SCRUTINY value (DQ-5), as the rule does; section 4.4 steps now say honored deletion requests, two or
+  more siblings, and give the annotation (H2) and the RL-4 consequence.
+- **Known gaps carried over.** The threat model still cites the 0.8.1 numbering and `tools/verify-tm-sync.mjs`
+  does not run until the threat model is rewritten.
+
+Section map (old to new):
+
+| Old | New |
+|---|---|
+| Keywords and conformance | Keywords and conformance |
+| 1 Abstract, 2 Motivation | 1 Scope; [overview](docs/overview.md) |
+| 3 Versioning and identification | 3.1 |
+| 3.1 NIP dependencies, 3.2 inherited semantics | 3.2; optional signals in [guide](docs/guide/optional-signals.md) |
+| 4.1, 4.2 Product, Metadata | 3.3 |
+| 4.3 Binding | 3.4 |
+| 4.4 Patch | 3.5 |
+| 4.5 Indexer discipline | 3.7 |
+| 4.6 Payload attachments | 3.8 |
+| 4.7 Supersession | 3.6 |
+| 5.1, 5.2 Patch payload and format | 4.1, 4.2, 4.3 |
+| 5.3 Application, 7.4 Computing the canonical bytes | 4.4 |
+| 5.4 Resource limits | 4.5 |
+| 6.0 Rule layers | 5.1 |
+| 6.1 to 6.4 Trust and admission | 5.2 |
+| 7.1 Root author and canonical chain | 6.1 |
+| 7.2 Root self-fork | 6.2 |
+| 7.3 Foreign overlays | 6.3 |
+| 7.5 Trust model and assumptions | 9 Security considerations |
+| 7.6 Unresolved references | 6.4 |
+| 8 Discovery and queries | 8 |
+| 9 Canonical indexer registry | 3.7 |
+| 10 Kind 5 deletion | 7 |
+| 11 Future work | [roadmap](docs/guide/roadmap.md) |
+| Appendix A Companion CLI | removed; the tools repository documents it |
+| Appendix B Git mapping | [guide](docs/guide/git-mapping.md) |
+| Appendix C Glossary | 2 Terms |
+| Appendix D Worked example | [guide](docs/guide/worked-example.md) |
+| Appendix E Interop validation | one sentence in 4.2; the findings stay in the tools repository |
+| Appendix F Rule registry | [`rules.json`](rules.json) |
+| Appendix G Conformance vectors | 10 |
+
+## v0.9.0
+
+- **Why 0.9.0.** New rules (SUP-1..4, DQ-5..8, IR-5, OV-10) and amended rule text (TAG-4, BD-2, BD-5, BD-6,
+  PT-6, PT-11, VER-2, SF-1..SF-6, DEL-2, DEL-4, DEL-8, DEL-11, DQ-1, DQ-4, DQ-5, DQ-6, IM-3, CA-1,
+  RC-3..RC-5, E1, H1, RL-5, C1, C2, C5, C6, T1, T2, OV-3, PT-3, PT-7, UR-4, IR-1). One release carries every change to normative wording; the restructure
+  that follows moves text without changing any rule.
+- **Keywords and conformance (DECISIONS S1).** The BCP 14 boilerplate, the three roles (producer,
+  consumer, relay), a sentence mapping the words rules use ("publishers", "clients", "implementations")
+  to roles, and what conformance means. A SHOULD may be departed from only for a documented reason.
+  A service consumer is any consumer that is not interactive.
+- **Query legs (F19, F20, F21).** DQ-1 now says an event-type `t` value satisfies the fabric-tag
+  requirement at the relay and that a consumer still verifies TAG-1 on every result. DQ-4 requires a
+  traversal query to select the event-type value. DQ-5 forbids combining `scrutiny-fabric` with any
+  other SCRUTINY `t` value. DQ-6 writes the chain-root → patches filter, requires keeping only results
+  whose `e root` names the root, and requires paging past relay limits. DQ-7 writes the by-id fetch.
+  DQ-8 and §8.2 add the successors leg. The §8.1 and §4.3 examples now carry a typed or fabric filter.
+- **Supersession (F22).** New §4.7, SUP-1..4. A `supersedes` marker links an event to an observed,
+  V-valid, same-type event by the same pubkey; a deleted but retained event still counts. Events so
+  linked form a succession whose final member is the current version. Two non-deleted successors fork
+  it and the fork is surfaced, never resolved by `created_at`; a deleted final member retracts the
+  succession. Successions are computed over all valid events and trust is applied to the result, so a
+  link confers no admission. Bindings, patches and overlays are not transferred. §11's patch-redo
+  entry is renamed so one name no longer carries two designs.
+- **Spelling and counts (F23).** IR-5: an `i` value is a spelling, and a service consumer that widens a
+  count across spellings discloses them.
+- **Legacy version tag (F24).** No rule change. Vector `tags/legacy-three-digit-version-tag` pins
+  `scrutiny-v059` as invalid; the reference library still accepts it until its own fix lands.
+- **TAG-4 (F25, #36).** TAG-4 moves from V to D and is scoped to the `t` values this specification
+  defines; TAG-5 governs every other tag. Vector `tags/inherited-tag-is-ignored` pins NIP-23
+  `published_at` and `title` tags as valid. §6.0 states why producer obligations stay in A and D,
+  which closes the V-layer note.
+- **Unobserved targets (F26).** §7.6 opens with one paragraph naming the four places the condition
+  shows (pending Binding, held Patch, held `supersedes` marker, late deletion). No rule changes.
+- **Self-fork resolution (SF-5, §7.2).** A deletion must target a sibling, meaning a patch that
+  replies directly to the shared parent. Deleting a patch below a sibling removes only that patch and
+  leaves the fork in place; deleting the shared parent or an ancestor removes both siblings. The
+  existing vector deletes a sibling and the reference library already cascades per DEL-2, so both
+  agree with the corrected text; an implementation of the old wording, which resolved a fork by
+  deleting any patch in an arm, must change. Two vectors pin the boundary. SF-1 names the patches
+  *siblings* and the word "branch" is retired from rule text. (The vector field `branchIds` keeps
+  its name.)
+- **Vocabulary.** "Admitted" belongs to the trust gate only (BD-5, PT-11 and VER-2 now say rejected or
+  processed; BD-6 and PT-6 reworded; §6.0 is "Rule layers"). "Patched content" is canonical bytes.
+  "UI" and "non-UI" consumers are interactive and service consumers. "Topology cascade" is the kind 5
+  cascade. "Annotation" no longer means a foreign patch; it remains the diagnostic attached to an
+  outcome (H2, RL-3, OV-9). Appendix C gains sibling, succession and the two consumer classes.
+- **Inherited semantics.** §3.2 marks three SCRUTINY-specific departures: markup in `kind:1` content
+  and the `link` and `supersedes` markers (NIP-10), and keeping the original of a deleted event
+  (NIP-09). Its preamble now excepts them. IM-3 names `fallback` entries (NIP-94) for alternate
+  sources, ignores additional `url` entries, and NIP-94 joins the references. E1 and BD-2 list NIP-10
+  as an inheritance. CA-1 and §4 cite NIP-11's `created_at` limits, §3.1 notes that NIP-03 is marked
+  `unrecommended` upstream, and both deletion examples carry a `k` tag.
+- **Implementer-test gaps (G1–G14).** A fresh implementation written from the rule text alone passed
+  every vector only after guessing at fourteen points; each is now stated. C6: the `@@` counts bound a
+  hunk, the line numbers stay advisory, while counts are unmet an empty line is context and a `\` line
+  is attached, an early `@@` or section header or the payload's end is malformed (HALT), and after the
+  counts only empty lines and `\` markers may precede the next hunk. C1: only a wrong path token is
+  V-invalid (P2's forbidden lines are the other V case); every other grammar failure HALTs, or makes a
+  foreign patch's overlay `conflict`. The grammar's trailing data allows a tab or a CR, and `lineno`
+  and `count` are defined. C5: a `\` line says the preceding line has no
+  terminator, and a line with one differs from the same line without. T1: overlapping occurrences
+  count. T2: `-L,0` is the position after line L, the carry-forward counts only hunks whose header
+  range ends at or before L, and an insertion after an unterminated final line HALTs. RC-5: the tip is
+  the last event of the applied chain, the last applied patch under a HALT, and undefined where a fork
+  or a ceiling is the earlier freeze point. New OV-10: with no tip no overlay is `clean`, a defined,
+  applying target is `stale` and a failing one `conflict`; OV-3 and the §7.3 table cover targets at or
+  beyond a HALT or a ceiling stop. UR-4: holds are transitive among root-author patches.
+  PT-7: a foreign patch awaiting its reply target is `pending`; PT-6 and PT-7 say "of the same root"
+  and cover a reply to any other event. PT-3 no longer contradicts PT-4 and E6. IR-1: an `i` value
+  with no colon breaks it. G.2 gains a Reporting paragraph and the vocabulary of `expect`, and
+  `chain/root-only`'s `why` is corrected.
+- **Corpus.** `vectors/validity.json` gains eight cases (19 → 27) and `vectors/application.json` four
+  (48 → 52); digests and G.1 are re-pinned. Vectors for SUP-1..3 and DQ-5..8 are not yet published
+  (G.3: the corpus is incomplete by design). The `specVersion` field stays at `0.6.1`.
+- Version tag `scrutiny-v0.8.1` → `scrutiny-v0.9.0`. §3's forward-compatibility example moved from
+  `scrutiny-v0.9.0` to `scrutiny-v0.9.1`.
 
 ## v0.8.1
 
@@ -242,7 +405,7 @@ as it does lives inline in the spec, next to that rule. Cross-cutting rationale 
 - **§4.3 pending-endpoint lifecycle.** Bindings whose endpoints are not yet observable are held
   pending; admitted on endpoint arrival if typing check passes; permanently invalid (cached)
   otherwise.
-- **§7.1 recomputation requirement.** Non-UI consumers (indexers, HTTP APIs, AI agents,
+- **§7.1 recomputation requirement.** Non-UI consumers (indexers, HTTP APIs,
   vulnerability scanners) MUST recompute canonical bytes and overlay states when their observed
   event set changes. UIs SHOULD.
 - **§4.1 / §4.2 / §9 k-tag rule.** Set semantics: at minimum one `k` per distinct prefix kind in the

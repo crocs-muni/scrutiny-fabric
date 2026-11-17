@@ -198,7 +198,7 @@
     {
       "name": "version/higher-version-admitted-opaquely",
       "rule": "VER-2",
-      "why": "A higher-version event satisfying every V invariant is admitted, never dropped for its tag.",
+      "why": "A higher-version event satisfying every V invariant is processed opaquely, never dropped for its tag.",
       "event": {
         "id": "000000000000000000000000000000000000000000000000000000000000000d",
         "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1000,6 +1000,459 @@
         "mustEmit": [
           "PT-7"
         ]
+      }
+    },
+    {
+      "name": "tags/legacy-three-digit-version-tag",
+      "rule": "TAG-2",
+      "why": "The retired three-digit form is not a version tag, so the event carries no valid one and no dual-path acceptance exists.",
+      "event": {
+        "id": "00000000000000000000000000000000000000000000000000000000000000e1",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v059"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "TAG-2"
+        ]
+      }
+    },
+    {
+      "name": "tags/inherited-tag-is-ignored",
+      "rule": "TAG-5",
+      "why": "Tags defined by other NIPs (here NIP-23's published_at and title) are ignored under TAG-5 whatever their spelling; TAG-4 does not constrain them.",
+      "event": {
+        "id": "00000000000000000000000000000000000000000000000000000000000000e2",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "title",
+            "A product"
+          ],
+          [
+            "published_at",
+            "1714000000"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "supersedes/product-carrying-the-marker-is-valid",
+      "rule": "SUP-4",
+      "why": "A supersedes marker on a Product is a lineage statement, not a validity condition.",
+      "event": {
+        "id": "00000000000000000000000000000000000000000000000000000000000000e3",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "e",
+            "00000000000000000000000000000000000000000000000000000000000000e4",
+            "",
+            "supersedes",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "A replacement product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "supersedes/marker-is-not-a-binding-endpoint",
+      "rule": "SUP-4",
+      "why": "An e tag with the marker supersedes counts toward neither BD-1 nor BD-2, so a Binding with exactly one root and one link plus a supersedes tag is still well formed.",
+      "event": {
+        "id": "00000000000000000000000000000000000000000000000000000000000000e5",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-binding"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000003",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000004",
+            "",
+            "link",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ],
+          [
+            "e",
+            "00000000000000000000000000000000000000000000000000000000000000e4",
+            "",
+            "supersedes",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "An edge.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000003",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000004",
+          "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-metadata"
+            ]
+          ],
+          "content": "Some metadata.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "patch/second-fenced-block-is-prose",
+      "rule": "PT-3",
+      "why": "A second matching fenced block is prose under PT-4 and E6; the event is not invalid for carrying it.",
+      "event": {
+        "id": "f100000000000000000000000000000000000000000000000000000000000000",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "5000000000000000000000000000000000000000000000000000000000000000",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "5000000000000000000000000000000000000000000000000000000000000000",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "```diff\n--- a/content\n+++ b/content\n@@ -1 +1 @@\n-old\n+new\n```\n\n```diff\n--- a/content\n+++ b/content\n@@ -1 +1 @@\n-old\n+ignored\n```",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "5000000000000000000000000000000000000000000000000000000000000000",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "patch/foreign-pending-while-its-reply-target-is-unobserved",
+      "rule": "PT-7",
+      "why": "A foreign patch cannot be judged against PT-7 until its reply target is observed, so the verdict is pending.",
+      "event": {
+        "id": "f200000000000000000000000000000000000000000000000000000000000000",
+        "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "5000000000000000000000000000000000000000000000000000000000000000",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "9000000000000000000000000000000000000000000000000000000000000000",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "```diff\n--- a/content\n+++ b/content\n@@ -1 +1 @@\n-old\n+new\n```",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "5000000000000000000000000000000000000000000000000000000000000000",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "pending",
+        "awaiting": [
+          "9000000000000000000000000000000000000000000000000000000000000000"
+        ]
+      }
+    },
+    {
+      "name": "product/i-value-without-a-colon-has-no-prefix",
+      "rule": "IR-1",
+      "why": "An i value with no colon has no prefix, so IR-1 is broken.",
+      "event": {
+        "id": "f300000000000000000000000000000000000000000000000000000000000000",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "i",
+            "nocolonhere"
+          ],
+          [
+            "k",
+            "nocolonhere"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "IR-1"
+        ]
+      }
+    },
+    {
+      "name": "patch/header-trailing-tab-and-cr-are-tolerated",
+      "rule": "C2",
+      "why": "Trailing data on a header line may start with a tab or be a bare CR; it is ignored and the payload stays valid.",
+      "event": {
+        "id": "f400000000000000000000000000000000000000000000000000000000000000",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "```diff\n--- a/content\t2026-01-01 00:00:00 +0000\r\n+++ b/content\r\n@@ -1 +1 @@\n-old\n+new\n```",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000005",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid"
       }
     }
   ]
