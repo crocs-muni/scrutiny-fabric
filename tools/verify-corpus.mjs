@@ -70,7 +70,7 @@ for (const [file, parsed] of Object.entries(corpus)) {
 
 const titleV = spec.match(/^# SCRUTINY Fabric — Protocol Specification v(\d+\.\d+\.\d+)$/m)?.[1];
 const fieldV = spec.match(/^\*\*Version:\*\* (\d+\.\d+\.\d+)$/m)?.[1];
-const tagExampleV = spec.match(/for example `\["t", "scrutiny-v(\d+\.\d+\.\d+)"\]`/)?.[1];
+const tagExampleV = spec.match(/(?:for example|such as) `\["t", "scrutiny-v(\d+\.\d+\.\d+)"\]`/)?.[1];
 check(titleV != null, "title line does not carry a concrete vMAJOR.MINOR.PATCH version");
 check(fieldV != null, "**Version:** field does not carry a concrete version");
 for (const [where, v] of [["**Version:** field", fieldV], ["section 3.1 tag example", tagExampleV], ["rules.json specVersion", registry.specVersion]])

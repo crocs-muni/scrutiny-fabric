@@ -93,7 +93,7 @@ The researcher publishes a Binding that connects the Metadata event to the Produ
 }
 ```
 
-A user who trusts `researcher_pk` has the Binding admitted, and with it both endpoints, the Product and the Metadata event, even if the user trusts neither `vendor_pk` nor the author of the Metadata event.
+A user who trusts `researcher_pk` has the Binding admitted, and with it both endpoints, the Product and the Metadata event, even if the user does not trust `vendor_pk`.
 
 ```mermaid
 stateDiagram-v2
@@ -206,6 +206,4 @@ stateDiagram-v2
     eee555 : Foreign patch eee555 (orphaned, α or β)
 ```
 
-## What the example covers
-
-Two principals publish their own roots, and a Binding joins them. The vendor evolves the Product through a root-author patch. An auditor adds a foreign patch that renders as an overlay against `ddd444`'s resolved content. The vendor retracts the patch, the canonical content reverts, and the overlay is orphaned and kept for audit. This exercises event types, the diff format, chain construction, overlay rendering, the deletion cascade and orphaned-overlay handling. Larger scenarios (self-forks, long chains, embedded SBOMs) are compositions of the same pieces.
+Larger scenarios (self-forks, long chains, embedded SBOMs) combine the same pieces.

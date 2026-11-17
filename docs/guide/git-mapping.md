@@ -13,4 +13,4 @@ This note is not normative; [the specification](../protocol-spec.md) defines eve
 | Merge conflict | Overlay in the *conflict* state | The overlay is classified `conflict` and exposed through the client's API. The protocol has no merge. |
 | Signing | Nostr event signature | Every event is signed, as a signed commit is. |
 
-Git concepts not in the table have no SCRUTINY counterpart. Merges are on the [roadmap](roadmap.md).
+Merges are on the [roadmap](roadmap.md).

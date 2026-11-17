@@ -11,7 +11,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 This specification binds three roles. A **producer** builds and publishes events. A **consumer** reads events and resolves them. An *interactive* consumer renders for a person; a *service* consumer is any consumer that is not interactive, whether it serves other software (index services, APIs, scanners, agents) or runs as a tool. A **relay** stores and serves events. A rule binds the role it names: "producers" and "publishers" are producers, "consumers" and "clients" are consumers, "relays" are relays, and "implementations" means every role the rule's subject concerns. An implementation conforms when it satisfies every MUST and MUST NOT in the rules that bind a role it implements and reports the outcomes pinned by the conformance vectors ([§10](#10-conformance-vectors)). A SHOULD or SHOULD NOT may be departed from only for a reason the implementer understands and documents.
 
-Normative references: [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174), and the base specifications in [§3.2](#32-base-layers-and-inherited-semantics). Each rule table below is the authority for its rules. The Layer column assigns every rule, except reserved IDs, to one of the three layers of [§5.1](#51-rule-layers), and [`rules.json`](../rules.json) lists all rules in one file, generated from these tables.
+Normative references: [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174), and the base specifications in [§3.2](#32-base-layers-and-inherited-semantics). Each rule table below is the authority for its rules.
 
 Examples are not normative. Where an example and a rule disagree, the rule governs.
 
@@ -54,7 +54,7 @@ CC certification report`"]:::metadata
     classDef metadata fill:#fff,stroke:#f15a24,stroke-width:3px,color:#000
 ```
 
-**Figure 1: The event graph.** A Binding names one Product in its `e root` tag and one Metadata event in its `e link` tag. Arrows run from a Metadata event through a Binding to a Product, which is the direction of the edge. Each label is the tag in the Binding that names the event at that end of the arrow: `e link` names the Metadata event and `e root` names the Product. A Product can have many Bindings.
+**Figure 1: The event graph.** Arrows run from a Metadata event through a Binding to a Product. Each label is the Binding tag that names the event at that end of the arrow. A Product can have many Bindings.
 
 ## 2. Terms
 
@@ -94,30 +94,24 @@ Each term has one meaning in this document.
 
 **Trust and discovery**
 
-- **Trusted set**: the pubkeys a user trusts. How the set is built is out of scope.
+- **Trusted set**: the pubkeys a user trusts.
 - **Admitted**: included in a user's view by the trust rules of [§5.2](#52-trust-and-admission). Events that are not admitted are hidden from the view; they are still computed over.
 - **Indexer**: the value of an `i` tag, such as a CVE number, a CPE or a Package URL. An **index service** is a service consumer that precomputes views.
 - **Interactive consumer**, **service consumer**: see Keywords and conformance.
 
 ## 3. Event model
 
-All SCRUTINY events are `kind: 1` Nostr events. `t` tags say which events are in scope and what type each is; the type decides which other tags the event carries.
-
 ### 3.1 Identification and versioning
 
-A SCRUTINY event carries three kinds of `t` tag:
+A SCRUTINY event carries three `t` tags ([TAG-1](#rule-TAG-1) to [TAG-3](#rule-TAG-3)): `["t", "scrutiny-fabric"]`, which puts it in scope; a version tag such as `["t", "scrutiny-v0.9.1"]`; and one event-type tag.
 
-- `["t", "scrutiny-fabric"]`, which puts the event in scope.
-- `["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"]`, for example `["t", "scrutiny-v0.9.1"]`, which names the specification version.
-- One event-type tag: `scrutiny-product`, `scrutiny-metadata`, `scrutiny-binding` or `scrutiny-patch`.
+An event without `scrutiny-fabric` is not a SCRUTINY event and this specification does not apply to it.
 
-A `kind: 1` event that has `scrutiny-fabric` but breaks the cardinalities below is an invalid SCRUTINY event. An event without `scrutiny-fabric` is not a SCRUTINY event and this specification does not apply to it. Tag names use kebab-case; inside the version tag the three numbers are separated by dots.
+Version numbers are decimal integers with no digit-count ceiling. Versions order by comparing `MAJOR`, `MINOR` and `PATCH` in turn, each as a digit string, so no implementation depends on a host integer type ([ADR-0010](adr/0010-digit-string-version-ordering.md)). A consumer that meets a higher version than its own may store the event and make it discoverable, provided the event satisfies every V rule; it does not reject the event for its version tag alone.
 
-Version numbers are unpadded decimal integers with no digit-count ceiling. Versions order by comparing `MAJOR`, `MINOR` and `PATCH` in turn, each as a digit string, so no implementation depends on a host integer type ([ADR-0010](adr/0010-digit-string-version-ordering.md)). A consumer that meets a higher version than its own may store the event and make it discoverable, provided the event satisfies every V rule; it does not reject the event for its version tag alone.
+A signature check alone is not enough, because the signature covers the `id`: an event whose `content` or `tags` were altered while keeping the original `id` and `sig` still passes it. Honoring a forged deletion request would remove canonical history, and relays are not trusted to have checked ([§9](#9-security-considerations)). An event that fails either check is not processed or rendered ([SIG-1](#rule-SIG-1)).
 
-Before it processes any event, a consumer verifies the signature and recomputes the event `id`. A signature check alone is not enough, because the signature covers the `id`, so an event whose `content` or `tags` were altered while keeping the original `id` and `sig` still passes it. The check applies to every event a consumer reads, including kind 5 deletion requests and kind 1040 attestations: honoring a forged deletion request would remove canonical history, and relays are not trusted to have checked ([§9](#9-security-considerations)). An event that fails either check is not processed or rendered.
-
-Publishers MAY attach [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) OpenTimestamps attestations (kind 1040) to any SCRUTINY event. An attestation is evidence that an event existed before a Bitcoin block, which helps audits and disputes after a key compromise. The protocol has no `created_at`-based tip selection, and [OTS-1](#rule-OTS-1) keeps timestamps out of resolution. NIP-03 is marked `unrecommended` on its own page.
+Publishers MAY attach [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) OpenTimestamps attestations (kind 1040) to any SCRUTINY event. An attestation is evidence that an event existed before a Bitcoin block, which helps audits and disputes after a key compromise. NIP-03 is marked `unrecommended` on its own page.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -152,30 +146,22 @@ Behavior in these areas is inherited from the base layer. Implementations MUST d
 
 | Topic | Base layer | Meaning for SCRUTINY |
 |---|---|---|
-| Event structure, JSON encoding, signatures, relay protocol, tag indexing (`#e`, `#t`, `#i`, `#k`) | NIP-01 | SCRUTINY events are kind 1 events. NIP-01 defines the signature scheme and the `id`; [SIG-1](#rule-SIG-1) requires that both be checked. Relays index events by tag. |
-| Deletion: author match, several `e` tags, optional `k` scoping, relay honor semantics | NIP-09 | A kind 5 event may carry several `e` tags; each target is an independent request, gated by the author match. Kind 5 events usually carry no `scrutiny-fabric` tag, so discovery queries them by kind and `#e` ([§8](#8-discovery)). |
-| `e` tag grammar: `root` and `reply` markers, empty relay hint, advisory author hint | NIP-10 | An empty relay hint means no hint. A wrong author hint does not invalidate the Binding that carries it ([BD-12](#rule-BD-12)). |
+| Event structure, JSON encoding, signatures, relay protocol, tag indexing (`#e`, `#t`, `#i`, `#k`) | NIP-01 | NIP-01 defines the signature scheme and the `id`; SIG-1 requires that both be checked. |
+| Deletion: author match, several `e` tags, optional `k` scoping, relay honor semantics | NIP-09 | A kind 5 event may carry several `e` tags; each target is an independent request, gated by the author match. |
+| `e` tag grammar: `root` and `reply` markers, empty relay hint, advisory author hint | NIP-10 | An empty relay hint means no hint. |
 | Markup in `kind: 1` `content` | NIP-10 | **SCRUTINY-specific.** NIP-10 advises against markdown or HTML in kind 1 content. Patches carry a CommonMark fenced block ([§4.1](#41-payload-and-envelope)), and Product and Metadata `content` is free-form. A generic client shows the text as written. |
 | The `e` tag marker set | NIP-10 | **SCRUTINY-specific.** NIP-10 defines `root` and `reply`. Bindings also use `link` ([§3.4](#34-binding)), and Product and Metadata events may use `supersedes` ([§3.6](#36-supersession)). A generic client may ignore or misread them. |
 | Relay handling of deleted events | NIP-09 | **SCRUTINY-specific.** NIP-09 asks relays to delete the event. [DEL-11](#rule-DEL-11) asks a SCRUTINY-aware relay to keep the original of a `scrutiny-fabric` event together with its deletion request. |
-| `i` and `k` tags: an indexer written as `<prefix>:<value>`, `k` as the kind of indexer | NIP-73 | Same tag shape and meaning, with SCRUTINY's own prefix registry ([§3.7](#37-indexers)). `k` is the set of indexer kinds present in the event. |
+| `i` and `k` tags: an indexer written as `<prefix>:<value>`, `k` as the kind of indexer | NIP-73 | Same tag shape and meaning, with SCRUTINY's own prefix registry ([§3.7](#37-indexers)). |
 | Fenced blocks: info strings, variable-length fences | CommonMark §4.5 | CommonMark defines how a fenced block opens and closes, how fence lengths match and where the block ends. SCRUTINY selects the first block whose info string matches [E2](#rule-E2) ([§4.1](#41-payload-and-envelope)). |
-| Eventual consistency across relays | Nostr operational model | Events arrive out of order, late or never. Canonical bytes, overlay states and self-fork detection are re-evaluated when the observed set changes ([§6.1](#61-root-author-and-canonical-chain)). |
 
 Where a base layer allows a choice, SCRUTINY may narrow it in the section that uses it, and says so there. [ADR-0016](adr/0016-departures-from-nip-10-and-nip-09.md) gives the reasons for the three SCRUTINY-specific rows.
 
 ### 3.3 Product and Metadata
 
-A **Product** names a hardware model, software package or other target. A **Metadata** event states an observation, finding, test result, certification, vulnerability or advisory; a Binding connects it to a Product. The two have the same shape and differ in the `t` tag. Metadata events usually carry more content and more attachments, such as a full advisory or an SBOM.
+A **Product** names a hardware model, software package or other target. A **Metadata** event states an observation, finding, test result, certification, vulnerability or advisory; a Binding connects it to a Product. The two have the same shape and differ in the `t` tag.
 
-| Field or tag | Count | Requirement | Description |
-|---|---|---|---|
-| `content` | 1 | MUST | Free-form text: prose, JSON, YAML or any other format. |
-| `i` | 0..64 | SHOULD | Indexers of what the event is about ([§3.7](#37-indexers)). |
-| `k` | 0..64 | SHOULD | The kinds of the `i` indexers present ([§3.7](#37-indexers)). |
-| `imeta` | 0..N | OPTIONAL | Attached files ([§3.8](#38-attachments)). |
-
-`created_at` is the time the event was created, not the time of the fact it describes. Historical dates, such as a certification or disclosure date, belong in `content`. A relay may refuse events whose `created_at` lies outside a window and advertises the bounds in the NIP-11 fields `created_at_lower_limit` and `created_at_upper_limit`, so a backdated event can be refused.
+`created_at` is the time the event was created, not the time of the fact it describes ([CA-1](#rule-CA-1)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -206,9 +192,9 @@ A **Binding** is an immutable directed edge from a Metadata event to a Product. 
 | `e` with marker `root` | 1 | MUST | The Product: `["e", "<id>", "<relay>", "root", "<author_pk>"]`. |
 | `e` with marker `link` | 1 | MUST | The Metadata event: `["e", "<id>", "<relay>", "link", "<author_pk>"]`. |
 
-A Binding whose endpoints are two Products, two Metadata events or any other pair of event types is invalid ([BD-5](#rule-BD-5)). To record any other relationship, publish a Metadata event that describes it and bind that event to a Product.
+To record a relationship other than Metadata to Product, publish a Metadata event that describes it and bind that event to a Product.
 
-A Binding can arrive before its endpoints. Until both are observed the Binding is pending. It is stored and not rendered; an audit view may list long-pending Bindings.
+An audit view may list long-pending Bindings ([BD-6](#rule-BD-6)).
 
 ```mermaid
 stateDiagram-v2
@@ -220,11 +206,11 @@ stateDiagram-v2
     Retracted --> [*] : admission it conferred revoked
 ```
 
-**Figure 2: Binding lifecycle.** A Binding stays pending until both endpoints are observed, unless one observed endpoint already has the wrong type, which makes it invalid at once. The rejection can be cached because the type of an observed endpoint does not change. A retracted Binding confers no admission on its endpoints ([DEL-5](#rule-DEL-5)).
+**Figure 2: Binding lifecycle.** A Binding is invalid at once when an observed endpoint has the wrong type, even if the other endpoint has not arrived.
 
-The `<relay>` field is a hint. The `<author_pk>` field is a hint for outbox-model discovery: when the relay hint does not resolve, the referenced author's write relays are searched. Trust decisions rest on the verified `pubkey` of the event.
+The `<relay>` field is a hint. The `<author_pk>` field is a hint for outbox-model discovery: when the relay hint does not resolve, the referenced author's write relays are searched.
 
-A Binding has no update mechanism. To correct one, delete it ([§7](#7-kind-5-deletion)) and publish a replacement. A third party who believes a Binding is wrong cannot retract it. The third party can publish a Binding of their own, which a user sees only if the user's trusted set includes its author; the protocol has no dispute mechanism for edges. A Binding by a trusted author cannot be overridden by anyone else. The protocol keeps every valid Binding; collapsing duplicates is a presentation choice ([BD-11](#rule-BD-11)).
+A Binding has no update mechanism ([BD-9](#rule-BD-9)). A third party who believes a Binding is wrong cannot retract it. The third party can publish a Binding of their own, which a user sees only if the user's trusted set includes its author; the protocol has no dispute mechanism for edges. Collapsing duplicates is a presentation choice ([BD-11](#rule-BD-11)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -250,7 +236,7 @@ A **Patch** is a NIP-10 reply to a Product, a Metadata event or another Patch. I
 | `e` with marker `root` | 1 | MUST | The root Product or Metadata event: `["e", "<root-id>", "<relay>", "root", "<root-author-pk>"]`. |
 | `e` with marker `reply` | 1 | MUST | The event the Patch applies to: the root, or the root-author patch whose resolved content the diff is written against. |
 
-A root-author patch extends the canonical chain. A foreign patch does not change the canonical bytes; it renders as an overlay ([§6.3](#63-foreign-overlays)). Order within a chain comes from `e reply` links, and `created_at` plays no part. Patches are append-only ([PT-9](#rule-PT-9)).
+Order within a chain comes from `e reply` links, and `created_at` plays no part. Patches are append-only ([PT-9](#rule-PT-9)).
 
 The `e root` of a Patch must name a Product or Metadata event, as the endpoints of a Binding are typed ([PT-10](#rule-PT-10), [ADR-0017](adr/0017-patch-root-typing.md)). A Patch with no fenced diff, or with a header-only block, is a no-op patch. It takes a position in the chain and changes nothing; its text can hold a note, a deprecation notice or a comment.
 
@@ -274,7 +260,7 @@ A root author who must change an immutable part of a root event, its `i` or `k` 
 
 `["e", "<superseded-event-id>", "<relay>", "supersedes"]`
 
-The marker records lineage only: the old event and everything attached to it stay where they are. A relay that honored the deletion may no longer serve the old event; then the target stays unobserved and no link forms ([SUP-1](#rule-SUP-1)).
+The marker records lineage only ([SUP-3](#rule-SUP-3)). A relay that honored the deletion may no longer serve the old event; then the target stays unobserved and no link forms ([SUP-1](#rule-SUP-1)).
 
 ```mermaid
 flowchart LR
@@ -285,7 +271,7 @@ flowchart LR
     F -.- G
 ```
 
-**Figure 3: Successions.** An arrow points from an event to the event that supersedes it. The first succession is linear and its final member is `v3`. The second is forked because two non-deleted events supersede `w1` ([SUP-2](#rule-SUP-2)).
+**Figure 3: Successions.** An arrow points from an event to the event that supersedes it. The first succession is linear and its final member is `v3`; the second is forked ([SUP-2](#rule-SUP-2)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -296,11 +282,11 @@ flowchart LR
 
 ### 3.7 Indexers
 
-Relay queries by `i` tag are the protocol's main discovery mechanism, so a root event that omits its indexers cannot be found that way. It is reachable only through a Binding, a full scan or free-text search ([§8.1](#81-finding-events-by-what-they-are)). [IX-1](#rule-IX-1) asks for the indexers the event is about, such as a CVE, CPE, PURL, Common Criteria certificate or FIPS validation number. [IX-4](#rule-IX-4) asks producers to omit indexers nested in a payload, such as every component of an SBOM, because they bloat the event and dilute discovery.
+Relay queries by `i` tag are the protocol's main discovery mechanism, so a root event that omits its indexers is reachable only through a Binding, a full scan or free-text search ([§8.1](#81-finding-events-by-what-they-are)). [IX-1](#rule-IX-1) and [IX-4](#rule-IX-4) say which indexers to include and which to leave out.
 
-Each `i` tag has the form `<prefix>:<value>` and is accompanied by a `k` tag that carries the prefix, for example `["i", "cve:CVE-2017-15361"]` with `["k", "cve"]`. A producer may emit one `k` per `i` or one per distinct prefix; a consumer treats the `k` tags as a set. Because the kind can be derived from the prefix, a missing `k` tag reduces discoverability by `#k` filter and does not affect validity.
+Each `i` tag has the form `<prefix>:<value>` and is accompanied by a `k` tag that carries the prefix, for example `["i", "cve:CVE-2017-15361"]` with `["k", "cve"]`. A producer may emit one `k` per `i` or one per distinct prefix. A missing `k` tag reduces discoverability by `#k` filter and does not affect validity ([PR-4](#rule-PR-4)).
 
-The registry below is a baseline; other prefixes are allowed. New prefixes follow the convention "lowercase prefix, authority-canonical value". Unknown prefixes pass through as opaque indexers.
+The registry below is a baseline; other prefixes are allowed ([IR-1](#rule-IR-1) to [IR-4](#rule-IR-4)).
 
 | Prefix | `k` tag | Source | Example |
 |---|---|---|---|
@@ -313,8 +299,6 @@ The registry below is a baseline; other prefixes are allowed. New prefixes follo
 | `fcc-id` | `fcc-id` | FCC equipment | `fcc-id:2AHKT-T2` |
 | `swid` | `swid` | SWID tag | `swid:tag-id` |
 | `gtin` | `gtin` | GS1 GTIN | `gtin:00012345678905` |
-
-The `i` and `k` tags of a root event are immutable ([IX-3](#rule-IX-3)). To add or change indexers, publish a new root event and link it with `supersedes` ([§3.6](#36-supersession)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -348,7 +332,7 @@ To stay below typical relay event-size limits, a payload larger than about 30 KB
 
 The event signature covers the declared hash. The `x` hash is the main check on the bytes that a host serves, so a consumer that skips verification loses the integrity guarantee of the attachment ([IM-1](#rule-IM-1)). The `size` field also bounds a download: a client can stop when the bytes exceed it.
 
-NIP-92 describes `imeta` as metadata for a URL that appears in the event content. SCRUTINY also uses it for attachments that `content` does not mention ([IM-5](#rule-IM-5)), such as SBOMs (CycloneDX, SPDX), CSAF advisories, in-toto and SLSA attestations, signed PDFs, certification reports and large test archives.
+NIP-92 describes `imeta` as metadata for a URL that appears in the event content. SCRUTINY also uses it for attachments that `content` does not mention ([IM-5](#rule-IM-5)), such as SBOMs, advisories, attestations and certification reports.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -362,11 +346,9 @@ NIP-92 describes `imeta` as metadata for a URL that appears in the event content
 
 ### 4.1 Payload and envelope
 
-A patch's diff acts on the `content` field of the target event, read as a UTF-8 byte sequence. The consumer does not normalize it: no line-ending conversion, trailing-newline change, BOM stripping or whitespace trimming happens before diffing or applying.
+A patch's diff acts on the `content` field of the target event, read as a UTF-8 byte sequence and never normalized ([PB-1](#rule-PB-1)).
 
-The diff sits in the Patch's own `content` as a CommonMark §4.5 fenced code block. The **patch payload** is the byte sequence of the lines strictly between the opening and closing fence lines, each terminated by `\n`. The fence lines and any surrounding prose are not part of it. A block with no closing fence is still a code block in CommonMark: it runs to the end of `content`, and the payload is every line after the opening fence.
-
-To locate the payload, scan `content` for fenced blocks in document order and take the first whose info string matches [E2](#rule-E2). If there is none, the Patch is a no-op.
+The diff sits in the Patch's own `content` as a CommonMark §4.5 fenced code block. The **patch payload** is the byte sequence of the lines strictly between the opening and closing fence lines, each terminated by `\n`.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -383,7 +365,7 @@ To locate the payload, scan `content` for fenced blocks in document order and ta
 | <a id="rule-E6"></a>E6 | V | — | A patch event's `content` MAY contain multiple fenced blocks. The **first** block (in document order) whose info string matches E2 is the patch payload; all subsequent matching blocks are prose and MUST be ignored as patch payloads. |
 | <a id="rule-E7"></a>E7 | A | — | If no fenced block matching E2 is present in `content`, the patch is a no-op (see §3.5). |
 
-A no-op can take either of two shapes. A prose-only Patch has no fenced `diff` block; a producer is left with it when `git diff` prints nothing because the two sides are equal. A header-only block has valid `--- a/content` and `+++ b/content` headers and no hunks; jsdiff's `createTwoFilesPatch` emits it for equal sides. The consumer treats both as the identity.
+A producer is left with a prose-only Patch when `git diff` prints nothing because the two sides are equal, and with a header-only block when jsdiff's `createTwoFilesPatch` is given equal sides ([N1](#rule-N1) to [N3](#rule-N3)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -414,8 +396,8 @@ Notes on the grammar:
 
 - `line-content` allows any octet except LF. ABNF's `VCHAR` would exclude spaces and non-ASCII bytes.
 - A hunk line may be empty: a context line with empty content loses its single space in many pipelines, and `git apply` and jsdiff accept the stripped form.
-- The `Index:` line is optional before the `===` separator; jsdiff omits it for patches from `structuredPatch` and `formatPatch`.
-- A payload may carry several file sections, and a `---` line where a hunk line could appear starts a new section instead of removing a line. The grammar allows both readings; the parsers tested in the interoperability study take this one. A removal of a line whose content is exactly `-- a/content` therefore cannot be expressed.
+
+- A `---` line where a hunk line could appear starts a new file section ([C8](#rule-C8)). A removal of a line whose content is exactly `-- a/content` therefore cannot be expressed.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -461,12 +443,12 @@ diff --git a/content b/content
 The procedure below computes the canonical bytes of a root event and classifies the foreign patches against it (Figure 4).
 
 1. Verify every event ([SIG-1](#rule-SIG-1)). Collect the V-valid events and the deletion requests, fetched as described in [DQ-6](#rule-DQ-6) and [DQ-2](#rule-DQ-2).
-2. Build the canonical chain: start at the root event and follow `e reply` links through root-author patches. Apply the deletion cascade of every honored deletion request ([§7](#7-kind-5-deletion)): a deleted patch is removed with its descendants. A patch whose `e root` is unobserved cannot be classified and is held ([UR-2](#rule-UR-2)). A root-author patch whose `e reply` target is unobserved takes no position in the walk and is held ([UR-4](#rule-UR-4)).
+2. Build the canonical chain: start at the root event and follow `e reply` links through root-author patches ([CHN-1](#rule-CHN-1)). Apply the deletion cascade of every honored deletion request ([§7](#7-kind-5-deletion)). A patch whose `e root` is unobserved is held ([UR-2](#rule-UR-2)); a root-author patch whose `e reply` target is unobserved takes no position in the walk and is held ([UR-4](#rule-UR-4)).
 3. If two or more siblings share a parent, the chain is in a self-fork ([§6.2](#62-self-fork)): freeze at the shared parent and apply nothing downstream of it.
 4. Take the root content as the starting state. For each root-author patch in chain order, up to the freeze point if there is one, pre-validate the payload by applying it to the current content in a temporary workspace (`git apply --check` and jsdiff's `applyPatch` behave this way, subject to [T1](#rule-T1)). No-op patches skip pre-validation and change nothing.
-5. If pre-validation succeeds, apply the payload and go on. If it fails, HALT: the canonical bytes are the state after the last applied patch, or the root content if the first patch failed. No later patch is applied, even if it would apply on its own. The failure is reported as a protocol error annotation ([H2](#rule-H2)). HALT is re-evaluated whenever the chain changes, most often when the author deletes the failing patch.
-6. If a ceiling stops application before any verdict ([§4.5](#45-resource-limits)), the outcome is *aborted under a ceiling*. No patch failed, so the outcome is not HALT, and patches remain unapplied, so it is not resolved. The partial state is not served or cached as canonical bytes ([RL-4](#rule-RL-4)).
-7. If every patch applied, the outcome is *resolved*, the canonical bytes are the final state and the tip is the last patch applied, or the root event where the chain has no patches ([RC-5](#rule-RC-5)).
+5. If pre-validation succeeds, apply the payload and go on. If it fails, HALT ([H1](#rule-H1)): the canonical bytes are the state after the last applied patch, or the root content if the first patch failed. The failure is reported as a protocol error annotation ([H2](#rule-H2)).
+6. If a ceiling stops application before any verdict ([§4.5](#45-resource-limits)), the outcome is *aborted under a ceiling* ([RL-5](#rule-RL-5)). It is not HALT, because no patch failed, and it is not resolved, because patches remain unapplied.
+7. If every patch applied, the outcome is *resolved* and the canonical bytes are the final state. The tip is defined in [RC-5](#rule-RC-5).
 8. Classify each foreign patch against its target ([§6.3](#63-foreign-overlays)). Apply the trusted set to the results last ([§5.2](#52-trust-and-admission)).
 
 A self-fork and a HALT are separate freeze conditions. Where both are live, the canonical bytes freeze at whichever is earlier in chain order ([SF-7](#rule-SF-7)), and every condition found is still surfaced.
@@ -509,9 +491,9 @@ flowchart TD
     classDef dead fill:#F5F5F5,stroke:#999,stroke-width:1.5px,color:#000
 ```
 
-**Figure 4: Canonical-chain walk and apply pipeline for one root.** Follow the arrows from the observed set to one of six outcomes: not processed, rejected, held, frozen (self-fork or HALT), aborted under a ceiling, or resolved. A held patch re-enters the walk when its target arrives, and the whole pipeline runs again when the observed set changes ([RC-3](#rule-RC-3)). Fill colors only group the boxes: blue for held, orange for freeze points, amber for the ceiling, green for the resolved outcome and grey for events that stop taking part.
+**Figure 4: Canonical-chain walk and apply pipeline for one root.** Follow the arrows from the observed set to one of six outcomes: not processed, rejected, held, frozen (self-fork or HALT), aborted under a ceiling, or resolved. A held patch re-enters the walk when its target arrives. Fill colors only group the boxes.
 
-The position rules for pure-insertion hunks in [T2](#rule-T2) are argued in [ADR-0013](adr/0013-pure-insertion-position-and-carry-forward.md). An implementation may delegate application to `git apply` or to a unified-diff library such as the `diff` npm package. It must check the uniqueness of T1 itself, because these tools do not require a unique match. [H1](#rule-H1) applies to a failed application.
+The position rules for pure-insertion hunks in [T2](#rule-T2) are argued in [ADR-0013](adr/0013-pure-insertion-position-and-carry-forward.md). An implementation may delegate application to `git apply` or to a unified-diff library such as the `diff` npm package. It must check the uniqueness of T1 itself, because these tools do not require a unique match.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -526,7 +508,7 @@ The position rules for pure-insertion hunks in [T2](#rule-T2) are argued in [ADR
 
 ### 4.5 Resource limits
 
-SCRUTINY is permissionless, so every consumer processes adversarial input. The determinism check T1 is the most expensive step: it scans the whole target content for each line of each hunk's match pattern, so cost grows with content length times the number of pattern lines.
+SCRUTINY is permissionless, so every consumer processes adversarial input. T1 is the most expensive step: its cost grows with content length times the number of pattern lines.
 
 [RL-1](#rule-RL-1) asks producers to keep to these bounds. The first two are limits that deployed relays enforce; the last two bound consumer work:
 
@@ -539,7 +521,7 @@ SCRUTINY is permissionless, so every consumer processes adversarial input. The d
 
 [RL-2](#rule-RL-2) asks consumers to enforce configurable ceilings and to bound the total work of patch application, measured in bytes compared, instead of relying on hunk or patch counts alone. Whatever the unit, each line of a hunk's match pattern costs at least one unit even when it is empty ([ADR-0008](adr/0008-per-line-floor-and-closing-fence.md)).
 
-An event that exceeds a ceiling stays V-valid. A ceiling stops application and is reported as a resource-limit-exceeded annotation; HALT is reserved for a patch that failed to apply. A ceiling has its own outcomes: an overlay becomes `unclassified` ([OV-9](#rule-OV-9)) and a chain becomes *aborted under a ceiling* ([RL-5](#rule-RL-5)). Neither outcome is a finding against the event or its author.
+An event that exceeds a ceiling stays V-valid ([RL-3](#rule-RL-3)). An overlay then becomes `unclassified` ([OV-9](#rule-OV-9)) and a chain becomes *aborted under a ceiling* (RL-5); neither outcome is a finding against the event or its author.
 
 Verifying an event's `id` requires hashing the whole event, so SIG-1 costs no less than the event's size. A consumer may therefore enforce the total-event-size bound at ingest or at the transport layer before SIG-1, and declining to verify an oversized event does not make it V-invalid. Every other ceiling applies only to events that passed SIG-1.
 
@@ -565,7 +547,7 @@ Every rule belongs to one of three layers. The layer follows from what the rule 
 
 A V-valid event is not rejected for breaking an A or D rule (TR-1). An event with 100 `i` tags breaks [IX-2](#rule-IX-2) and stays valid. A and D failures leave the event in place. A root-author patch that replies to a foreign patch is left out of the chain, and an event that breaks indexer discipline is still stored and shown. Unknown tags are ignored under [TAG-5](#rule-TAG-5). Only V failures keep an event out of processing altogether ([ADR-0011](adr/0011-rule-layers.md)).
 
-V rules take two forms. *Exclusion* rules say what puts an event outside the valid set, such as the tag cardinalities of [§3.1](#31-identification-and-versioning). *Inclusion* rules say what does not put an event outside it, and read as an obligation to tolerate something: [C2](#rule-C2)'s trailing timestamps, [C3](#rule-C3)'s `Index:` preamble, [C7](#rule-C7)'s floor on acceptance. An inclusion rule produces no output when it holds, but it limits how strict a consumer may be.
+V rules take two forms. *Exclusion* rules say what puts an event outside the valid set, such as the tag cardinalities of [§3.1](#31-identification-and-versioning). *Inclusion* rules say what must not be treated as outside it ([C2](#rule-C2), [C3](#rule-C3), [C7](#rule-C7)) and limit how strict a consumer may be (ADR-0011).
 
 A rule about how an event is built is not a V rule. Context-line counts ([P1](#rule-P1)), fence lengths ([E4](#rule-E4)) and line endings ([P3](#rule-P3)) are producer obligations, which a consumer often cannot observe and which would not justify rejecting a received event. They sit in layer A or D. To tell V from A and D, ask whether a consumer holding the event could tell that the rule was honored, and whether rejection is the outcome wanted when it was not. If both answers are no, the rule is not a V rule.
 
@@ -580,7 +562,7 @@ flowchart TD
     D --> VIEW(["User's view"])
 ```
 
-**Figure 5: Where each layer acts.** An event is verified, checked for validity, applied to chain state and gated for display, in that order. Only the first two steps keep an event out of SCRUTINY processing.
+**Figure 5: Where each layer acts.** An event is verified, checked for validity, applied to chain state and gated for display, in that order.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -588,13 +570,11 @@ flowchart TD
 
 ### 5.2 Trust and admission
 
-Each user keeps a trusted set of pubkeys. It can be a hand-picked allowlist, an N-hop expansion of [NIP-02](https://github.com/nostr-protocol/nips/blob/master/02.md) follow lists, or a threshold over a reputation source. The mechanism is out of scope. The protocol assumes only that an implementation can classify any pubkey as trusted or not.
+Each user keeps a trusted set of pubkeys. It can be a hand-picked allowlist, an N-hop expansion of [NIP-02](https://github.com/nostr-protocol/nips/blob/master/02.md) follow lists, or a threshold over a reputation source. The protocol assumes only that an implementation can classify any pubkey as trusted or not.
 
 An event is admitted to a user's view if its `pubkey` is trusted, or if it is reachable through an admitted Binding. A Binding is admitted only if its own `pubkey` is trusted. A Binding is not admitted because its endpoints are trusted, so an untrusted author cannot add a Binding to a user's view by pointing at trusted events.
 
 When a Binding is admitted, both endpoints become admitted, for as long as the Binding is not retracted ([§7](#7-kind-5-deletion)). When a root event is admitted, its canonical chain is admitted with it: the root-author patches, and the root author's deletion requests that target them, are part of the root's current state, which a reader needs in order to judge the Binding. Foreign patches are not admitted with the root. The Binding's author vouches for the connection between two events, and a foreign patch needs its own author's pubkey in the trusted set; it then renders as an overlay.
-
-Filtering is a presentation step. Chain construction, self-fork detection and overlay classification run over every V-valid observed event, without the trusted set, and the trusted set is then applied to the results ([TR-7](#rule-TR-7)). Filtering first would hide a self-fork or HALT in the chain of a root admitted through a Binding.
 
 For example, a user who trusts only a vendor's pubkey, where the vendor publishes Bindings to research findings, sees the vendor's Products and their chains, the vendor's Bindings, the Metadata those Bindings reach and their chains. Patches by other parties do not appear unless the user also trusts those authors.
 
@@ -611,7 +591,7 @@ For example, a user who trusts only a vendor's pubkey, where the vendor publishe
 
 ### 6.1 Root author and canonical chain
 
-Only the root author's patches extend the canonical chain, so the chain is what the root author currently says about the Product or Metadata event. To extend it, the author publishes a patch whose `e reply` points at the tip. A chain is linear when no parent has more than one root-author patch.
+Only the root author's patches extend the canonical chain, so the chain is what the root author currently says about the Product or Metadata event. To extend it, the author publishes a patch whose `e reply` points at the tip.
 
 A chain with no patches has the root event as its tip. Because the root is the tip of an unpatched chain, an overlay on a root that has never been patched is `clean` when its hunks apply, not `stale` ([RC-5](#rule-RC-5), [ADR-0012](adr/0012-tip-of-an-unpatched-chain.md)).
 
@@ -629,7 +609,7 @@ Chain and overlay state depend on the events a consumer has observed so far. A l
 
 ### 6.2 Self-fork
 
-A self-fork happens when an author publishes two patches in parallel, typically from two devices, before either is broadcast, or when someone with a stolen key publishes a competing patch. The canonical chain is then undefined.
+A self-fork happens when an author publishes two patches in parallel, typically from two devices, before either is broadcast, or when someone with a stolen key publishes a competing patch.
 
 ```mermaid
 stateDiagram-v2
@@ -640,11 +620,11 @@ stateDiagram-v2
     Forked --> Linear : deletion of the shared parent removes both siblings
 ```
 
-**Figure 6: Self-fork states.** While forked, the canonical bytes are frozen at the shared parent of the earliest unresolved fork and the fork is surfaced as an error. The chain becomes linear again when one sibling is left or when the shared parent is removed. A fork whose shared parent is itself held ([UR-4](#rule-UR-4)) is not a fork yet.
+**Figure 6: Self-fork states.** While forked, the canonical bytes are frozen at the shared parent of the earliest unresolved fork. A fork whose shared parent is itself held ([UR-4](#rule-UR-4)) is not a fork yet.
 
-[SF-1](#rule-SF-1) to [SF-7](#rule-SF-7) fix detection, rendering, resolution, several forks and the interaction with HALT. A self-fork does not gate overlays: an overlay whose target has defined resolved content keeps rendering against it ([§6.3](#63-foreign-overlays)), and an overlay whose target is a sibling or lies below the fork is orphaned ([OV-3](#rule-OV-3)).
+A self-fork does not gate overlays: an overlay whose target has defined resolved content keeps rendering against it ([§6.3](#63-foreign-overlays)), and an overlay whose target is a sibling or lies below the fork is orphaned ([OV-3](#rule-OV-3)).
 
-The protocol has no way to pick between competing tips: `created_at` is informational and OpenTimestamps attestations are audit evidence only ([OTS-1](#rule-OTS-1)). The reasons for the choices in [SF-5](#rule-SF-5) and SF-7 are in [ADR-0014](adr/0014-self-fork-and-halt-precedence.md).
+The protocol has no way to pick between competing tips: `created_at` is informational and OpenTimestamps attestations are audit evidence only ([OTS-1](#rule-OTS-1)). The reasons for the choices in [SF-5](#rule-SF-5) and [SF-7](#rule-SF-7) are in [ADR-0014](adr/0014-self-fork-and-halt-precedence.md).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -658,18 +638,18 @@ The protocol has no way to pick between competing tips: `created_at` is informat
 
 ### 6.3 Foreign overlays
 
-An interactive consumer renders a foreign patch as an overlay anchored to its `e reply` target. The target is the root event or a root-author patch. A foreign patch that replies to another foreign patch is invalid, and a consumer does not render it as an overlay ([PT-7](#rule-PT-7)). A root-author patch that replies to a foreign patch is not a chain extension and is ignored. An author who wants to adopt a foreign change publishes their own patch with the same effect, replying to a canonical parent.
+An interactive consumer renders a foreign patch as an overlay anchored to its `e reply` target ([PT-7](#rule-PT-7)). An author who wants to adopt a foreign change publishes their own patch with the same effect, replying to a canonical parent.
 
-An overlay is read against its target state: the resolved content of its `e reply` target. If the target is the root event, that is the original `content`. If the target is the root-author patch at position N, it is the root content with patches 1 to N applied. This is what the overlay's author signed against, and the only content the overlay is classified against. If the target has no defined resolved content, because the chain HALTed at or before it, it sits in or below an unresolved self-fork, or it is held, the overlay is orphaned and is not classified as clean, conflict or stale.
+An overlay is read against its target state ([OV-2](#rule-OV-2)): the original `content` if the target is the root event, or the root content with patches 1 to N applied if the target is the root-author patch at position N. If the target has no defined resolved content, the overlay is orphaned and is not classified as clean, conflict or stale (OV-3).
 
-Classification is a pure function of the overlay payload and the target state, and gives the same result on every compliant client with the same ceilings. [OV-5](#rule-OV-5) asks clients to expose the classification through their API so that downstream tools can read it; how it is drawn is up to the client. There are five outcomes: four classifications, and `unclassified`, which records that none was reached.
+There are five outcomes: four classifications, and `unclassified`, which records that none was reached. Classification is deterministic ([OV-4](#rule-OV-4)), and [OV-5](#rule-OV-5) asks clients to expose it through their API.
 
 | State | Condition | Default rendering |
 |---|---|---|
-| **Clean** | The target is in the canonical chain, the overlay's hunks apply against the target state, and the target is the current tip. The root event is the tip where the chain has no patches. | Show the proposed diff highlighted over the target's content. |
+| **Clean** | The target is in the canonical chain, the overlay's hunks apply against the target state, and the target is the current tip. | Show the proposed diff highlighted over the target's content. |
 | **Conflict** | The target is in the canonical chain, but at least one hunk fails against the target state: its context is missing or ambiguous ([T1](#rule-T1)). | Surface a conflict in the API. SHOULD show the target-time view, the proposed view and the current canonical bytes side by side. No protocol-level merge happens. |
 | **Stale** | The target is in the canonical chain and the hunks apply, but the chain has advanced past the target, so at least one canonical patch lies downstream of it. | Treat it as a clean overlay against historical state, and show it apart from `clean`, with a note giving N, the number of canonical patches downstream of the target. |
-| **Orphaned** | The target is deleted, was never received, or has no defined resolved content in the chain (past a HALT, in or below an unresolved self-fork, or held). | Apply the α/β rule ([§7](#7-kind-5-deletion)): if the target can be located, render against its resolved content (α); otherwise render the payload, author and target id alone (β). |
+| **Orphaned** | The target is deleted, was never received, or has no defined resolved content in the chain (past a HALT, in or below an unresolved self-fork, or held). | Apply the α/β rule ([§7](#7-kind-5-deletion)). |
 | **Unclassified** | A consumer ceiling ([§4.5](#45-resource-limits)) was reached before classification. The target is defined and obtainable; nothing about the overlay is established. | Surface the overlay with the resource-limit-exceeded annotation and say that classification was not completed. Never present it as `conflict` or `orphaned`. |
 
 ```mermaid
@@ -686,8 +666,6 @@ flowchart TD
 ```
 
 **Figure 7: Overlay classification.** The questions are asked in this order, and each foreign patch ends in one of the five states.
-
-A foreign patch is admitted only if its `pubkey` is in the user's trusted set ([OV-7](#rule-OV-7)); admission does not change how the canonical chain is computed. A client may offer a "rebase preview" of an overlay against the current tip ([OV-6](#rule-OV-6)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -710,13 +688,13 @@ An event can be observed before the events it names. It is kept and re-evaluated
 - a `supersedes` marker whose target is unobserved is held ([SUP-1](#rule-SUP-1));
 - a deletion request whose target has not arrived is applied when the target is observed ([DEL-8](#rule-DEL-8)).
 
-Ingestion is confluent: the state a consumer reaches depends only on the set of events it has observed. Discarding an event whose target has not yet arrived would break that, because the same set would give different state depending on delivery order.
+Discarding an event whose target has not yet arrived would break confluence ([UR-1](#rule-UR-1)), because the same set would give different state depending on delivery order.
 
-A Patch whose `e root` is unobserved cannot be classified as root-author or foreign, because that needs the root's `pubkey`. It takes no part in the chain until the root arrives.
+A Patch whose `e root` is unobserved cannot be classified as root-author or foreign, because that needs the root's `pubkey`.
 
 A root-author patch whose root is observed but whose `e reply` target is not takes no position in the chain (UR-4). Its own authorship class is already settled, so the hold concerns chain position only ([ADR-0015](adr/0015-confluence-and-unobserved-references.md)).
 
-A consumer caches a classification as permanent only when no further observation can change it. A Binding's endpoint typing cannot change once the endpoint is observed, so the rejection of [BD-7](#rule-BD-7) is safe to cache. A Patch's authorship class is unknown until its root arrives, so none is cached while the root is unobserved.
+[UR-3](#rule-UR-3) limits caching to classifications that no further observation can change, such as the rejection of [BD-7](#rule-BD-7) (ADR-0015).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -727,7 +705,7 @@ A consumer caches a classification as permanent only when no further observation
 
 ## 7. Kind 5 deletion
 
-SCRUTINY uses [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) kind 5 events as deletion requests and defines no retraction event of its own. A deletion request is honored only when its `pubkey` matches the target's `pubkey`, so nobody can delete another author's event.
+SCRUTINY uses [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) kind 5 events as deletion requests and defines no retraction event of its own. Only the target's author can delete it ([DEL-1](#rule-DEL-1)).
 
 ```json
 {
@@ -741,25 +719,23 @@ SCRUTINY uses [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md)
 }
 ```
 
-A deletion request retracts the author's own statement. The target leaves the default view and stays available for audit, together with every event that refers to it. A client SHOULD offer a "show deleted events" toggle that shows deleted events and all their descendants, so that users can inspect the historical state ([DEL-10](#rule-DEL-10)).
+A deletion request retracts the author's own statement. The target leaves the default view and stays available for audit, together with every event that refers to it. Clients SHOULD offer a "show deleted events" toggle ([DEL-10](#rule-DEL-10)).
 
 The effect on the default view depends on what the target is:
 
 | Target | Effect | Details |
 |---|---|---|
 | Root-author patch | Cascade | The patch leaves the canonical chain together with every root-author patch that replies to it, directly or not. The canonical bytes revert to the last surviving ancestor. Overlays that targeted the deleted patch or a removed descendant become orphaned ([§6.3](#63-foreign-overlays)). |
-| Foreign patch | Overlay retraction | The overlay leaves the default overlay rendering. Canonical bytes are unaffected, since overlays were never part of them. |
+| Foreign patch | Overlay retraction | The overlay leaves the default overlay rendering. |
 | Product or Metadata (root) | Default-view retraction | The root leaves default views. Its chain, the overlays on any event in it, and the Bindings that reference it are kept for audit. In the default view a client SHOULD treat the root as absent, and in an audit view it SHOULD show the full history with the deletion notice. Overlays and patches that attach to a retracted root stay available in the audit view ([DEL-4](#rule-DEL-4)); a root author retracts only their own statement. |
-| Binding | Edge retraction | The Binding leaves default views and stops conferring admission on its endpoints ([DEL-5](#rule-DEL-5)). The endpoints stay valid events. An endpoint admitted only through this Binding leaves the default view with its chain. An endpoint with another surviving path, direct trust or a different admitted Binding, is unaffected. |
+| Binding | Edge retraction | The Binding leaves default views and stops conferring admission on its endpoints ([DEL-5](#rule-DEL-5)). The endpoints stay valid events. An endpoint admitted only through this Binding leaves the default view with its chain. |
 | Kind 5 event | None | Deletion requests cannot be deleted. NIP-09 defines no reversal. To restore content, the author publishes a new event with a new id ([DEL-6](#rule-DEL-6)). |
 
-Admission does not outlive the Binding that produced it (DEL-5); otherwise a holder of a trusted key could keep events in a user's view permanently by publishing a Binding and then deleting it. An overlay that is admitted because its author is trusted but whose target has left the view is rendered by the α/β rule, as though the target were unobtainable, and is not dropped.
-
-**α/β rendering for orphaned overlays.** When an overlay's target is deleted or was never received, the overlay is orphaned. Rendering depends on whether the target can still be found:
+**α/β rendering for orphaned overlays.** Rendering depends on whether the target can still be found:
 
 | Target obtainable | Rule | Rendering |
 |---|---|---|
-| Yes: cached, or fetched from any relay, including under the "show deleted" toggle | α | Render the overlay against the target's resolved content as it was before the deletion. The overlay stays `orphaned`; it is not given a clean, conflict or stale classification ([OV-3](#rule-OV-3)). |
+| Yes: cached, or fetched from any relay, including under the "show deleted" toggle | α | Render the overlay against the target's resolved content as it was before the deletion. |
 | No | β | Render a standalone artifact: payload, author, target event id and a "target unavailable" marker. Do not re-anchor it to the target's parent or any other event. |
 
 The rule applies equally to overlays whose targets have not yet reached the client: render β until the target arrives, then upgrade to α.
@@ -774,11 +750,9 @@ flowchart TD
     Q -->|no| BETA["β: render payload, author, target id"]
 ```
 
-**Figure 8: Effect of deleting a root-author patch.** The patch and its descendants leave the chain and the canonical bytes revert. Overlays on a removed patch are kept: they render by α when the patch can be found and by β when it cannot.
+**Figure 8: Effect of deleting a root-author patch.** Overlays on a removed patch are kept: they render by α when the patch can be found and by β when it cannot.
 
 A SCRUTINY-aware relay inspects the target of a kind 5 event. If the target carries a `scrutiny-fabric` tag, it stores the deletion request next to the original and keeps serving both ([DEL-11](#rule-DEL-11)). This departs from NIP-09, which asks relays to delete the original ([§3.2](#32-base-layers-and-inherited-semantics)).
-
-Before applying a deletion request, a consumer checks that its `pubkey` matches the target's. If the target is not yet observed, the request is recorded and applied on arrival, and the canonical bytes are recomputed then. A consumer MUST cache the deletion requests it receives and apply them while building the chain, whether or not the queried relay reports them ([DEL-9](#rule-DEL-9)).
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -814,7 +788,7 @@ A user who knows an indexer (CPE, CVE, PURL, …) starts with the most specific 
    {"kinds": [1], "#t": ["scrutiny-fabric"], "#i": ["cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*", "cpe:2.3:h:infineon:m7794a12:*", "cpe:2.3:h:infineon:*"]}
    ```
 
-3. **Free text** (NIP-50), if indexer search fails. Support, tokenization and ranking vary by relay, and results are sorted by relevance, not by `created_at`. The client verifies that results carry valid SCRUTINY tags and match what the user asked for ([DQ-3](#rule-DQ-3)).
+3. **Free text** (NIP-50), if indexer search fails. Support, tokenization and ranking vary by relay, and results are sorted by relevance, not by `created_at`. Verify the results ([DQ-3](#rule-DQ-3)).
 
    ```json
    {"kinds": [1], "#t": ["scrutiny-fabric"], "search": "Infineon M7794A12"}
@@ -833,15 +807,11 @@ To find Metadata events, use the same four steps with `cve:`, `cwe:` and other i
 | From | Query | Then |
 |---|---|---|
 | Product to its Metadata | `{"kinds":[1],"#t":["scrutiny-binding"],"#e":["<product-id>"]}` | Read the `link` endpoints of the results and resolve them. Filter by the trusted set ([§5.2](#52-trust-and-admission)). |
-| Metadata to its Products | `{"kinds":[1],"#t":["scrutiny-binding"],"#e":["<metadata-id>"]}` | Read the `root` endpoints. NIP-01 relays index the single-letter tag `e`, so any of them supports this. |
+| Metadata to its Products | `{"kinds":[1],"#t":["scrutiny-binding"],"#e":["<metadata-id>"]}` | Read the `root` endpoints. |
 | Root to its patches | `{"kinds":[1],"#t":["scrutiny-patch"],"#e":["<root-id>"]}` | One query returns every patch of the chain, however deep, because each carries the chain root in an `e root` tag ([PT-1](#rule-PT-1)). Rebuild the order from `e reply` links. Keep only results whose `e root` names the queried id, and repeat with an earlier `until` while the relay truncates ([DQ-6](#rule-DQ-6)). |
 | Ids to events | `{"ids":["<id>", …]}` | Fetches known events, for example the endpoints of a Binding or the root of a Patch ([DQ-7](#rule-DQ-7)). |
 | Event to the events that supersede it | `{"kinds":[1],"#t":["<type of the event>"],"#e":["<id>"],"authors":["<pubkey of the event>"]}` | Finds events that name the event in a `supersedes` marker ([DQ-8](#rule-DQ-8)). Only the author can supersede it ([SUP-1](#rule-SUP-1)), hence the `authors` filter. |
 | Event to its deletions | `{"kinds":[5],"#e":["<id>"]}` | Returns kind 5 events that target the id. Kind 5 events usually carry no `scrutiny-fabric` tag, so this query does not filter by `#t`. Honor only those whose `pubkey` matches the target's ([§7](#7-kind-5-deletion)). |
-
-For every chain root, patch and Binding it caches, a client SHOULD issue the deletion query at first sight and periodically afterwards ([DQ-2](#rule-DQ-2)). Bindings are included because deleting one revokes the admission it conferred ([DEL-5](#rule-DEL-5)).
-
-A `#t` list MUST NOT combine `scrutiny-fabric` with another SCRUTINY value ([DQ-5](#rule-DQ-5)): NIP-01 matches any listed value and every SCRUTINY event carries the fabric tag, so the combination selects every SCRUTINY event.
 
 ```mermaid
 sequenceDiagram
@@ -860,7 +830,7 @@ sequenceDiagram
     Note over C: verify SIG-1, resolve chains,<br/>classify overlays, then apply the trusted set
 ```
 
-**Figure 9: A typical discovery session.** Four query shapes cover it: by indexer, by `#e` for Bindings and patches, by id for endpoints and by kind 5 `#e` for deletions. Verification, chain resolution and overlay classification all happen on the consumer, and the trusted set is applied last ([TR-7](#rule-TR-7)).
+**Figure 9: A typical discovery session.** Verification, chain resolution and overlay classification happen on the consumer, and the trusted set is applied last ([TR-7](#rule-TR-7)).
 
 ### 8.3 Queries without an indexed form
 
@@ -889,12 +859,12 @@ The form follows [RFC 3552](https://www.rfc-editor.org/rfc/rfc3552). The [threat
 
 **Assumptions.** Schnorr signatures and SHA-256 hold. Relays are untrusted for completeness and integrity: a relay can omit events, serve them late, ignore filters or stop answering. At least one relay a consumer queries is honest. No attacker controls a user's trusted set. Artifact hosts are untrusted, and attachment bytes are checked against their declared hash. Event content is untrusted input to any renderer or language model that reads it.
 
-**What signatures give.** A signature binds an event to its pubkey: only the key holder can produce one, and any change to the event invalidates it. A consumer honors a deletion request only when its `pubkey` matches the target's ([DEL-1](#rule-DEL-1)). A signature says nothing about time: an author can set any `created_at`. [CA-1](#rule-CA-1) asks publishers not to backdate; only a relay that sets timestamp bounds can enforce it, and only within those bounds.
+**What signatures give.** A signature binds an event to its pubkey: only the key holder can produce one, and any change to the event invalidates it. A signature says nothing about time: an author can set any `created_at`. [CA-1](#rule-CA-1) asks publishers not to backdate; only a relay that sets timestamp bounds can enforce it, and only within those bounds.
 
 **Attacks the protocol addresses.**
 
 - *Tampering and forgery.* A consumer verifies signature and `id` on every event ([SIG-1](#rule-SIG-1)), and SHOULD verify attachments by hash ([IM-1](#rule-IM-1)).
-- *Overwriting by others.* Foreign patches do not enter the canonical chain ([CHN-3](#rule-CHN-3)), and a foreign key cannot delete or supersede another author's event (DEL-1, [SUP-1](#rule-SUP-1)).
+- *Overwriting by others.* Foreign patches do not enter the canonical chain ([CHN-3](#rule-CHN-3)), and a foreign key cannot delete or supersede another author's event ([DEL-1](#rule-DEL-1), [SUP-1](#rule-SUP-1)).
 - *Relay censorship.* Publishers send events to several relays and consumers SHOULD query several and cross-check the results. Attachments hosted outside the relay are not removed when a relay drops the event. A hostile vendor can pressure relays to drop findings, and a client that queries only those relays sees a censored set of events; no cryptographic mechanism prevents this, and the defense is operational.
 - *Flooding and Sybil keys.* Anyone can create keys and publish valid events. They reach a user's view only if the keys are in the user's trusted set or a Binding by a trusted key names their events ([§5.2](#52-trust-and-admission)), and consumers bound the work an event can cause ([§4.5](#45-resource-limits)). A wide N-hop expansion weakens the defense in proportion; an implementation SHOULD warn when an expansion would admit many previously unseen pubkeys.
 - *Hiding conflicts.* Trust filtering runs after chain construction ([TR-7](#rule-TR-7)), so a self-fork or HALT in an admitted chain is always surfaced.
@@ -902,7 +872,7 @@ The form follows [RFC 3552](https://www.rfc-editor.org/rfc/rfc3552). The [threat
 
 **Out of scope.** The mechanism for building a trusted set. Key revocation. Payload semantics: SBOM and advisory contents are not validated. Metadata that is signed but false. Privacy of queries and of relay selection.
 
-**Residual risk.** A leaked key gives the attacker control of every chain of that pubkey: false patches, deletion of legitimate history, forced self-forks, Bindings that look genuine. Without a timestamp attestation, events signed before the leak cannot be told from events signed after it. An OpenTimestamps attestation ([§3.1](#31-identification-and-versioning)) shows that an event existed before a given Bitcoin block, but later events under the same key are indistinguishable from genuine ones. This version has no revocation. The remedy is social: announce the compromise out of band, rotate to a new key and have the community move its trust. A trusted key that signs false statements is, likewise, outside what the protocol can detect.
+**Residual risk.** A leaked key gives the attacker control of every chain of that pubkey: false patches, deletion of legitimate history, forced self-forks, Bindings that look genuine. Without a timestamp attestation, events signed before the leak cannot be told from events signed after it. An OpenTimestamps attestation ([§3.1](#31-identification-and-versioning)) shows that an event existed before a given Bitcoin block, but later events under the same key are indistinguishable from genuine ones. This version has no revocation. The remedy is social: announce the compromise out of band, rotate to a new key and have the community move its trust.
 
 ## 10. Conformance vectors
 
@@ -948,5 +918,5 @@ A case that depends on a ceiling ([§4.5](#45-resource-limits)) carries an `opti
 
 - **Halt reasons are advisory.** For an `apply` case that expects `halt`, the `reason` field records why the reference implementation halted. This specification defines no vocabulary of halt reasons, so conformance requires only agreement that application halted and, where it succeeded, on the resulting bytes.
 - **Signatures and event IDs are not exercised.** Events in the A-layer vectors are well-formed, but their `id` and `sig` are placeholders. These vectors presuppose that SIG-1 and V-layer validity already succeeded; they do not test either.
-- **Confluence is asserted over the whole corpus.** [UR-1](#rule-UR-1) says state depends on the set of events, not their order. Every `chain` case therefore MUST yield its stated expectation under every permutation of its `events` array. A runner that tries only the given order has not run the corpus.
+- **Confluence is asserted over the whole corpus.** Every `chain` case MUST yield its stated expectation under every permutation of its `events` array ([UR-1](#rule-UR-1)).
 - **The corpus is incomplete.** It grows as rules are implemented. The absence of a rule from the corpus does not mean the rule is untestable or that an implementation may ignore it.

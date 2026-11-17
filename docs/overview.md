@@ -73,7 +73,7 @@ flowchart LR
     T --> W(["The user's view"])
 ```
 
-**Figure 2: From relay events to a user's view.** Verification and resolution run over all valid events. The trusted set is applied last, to the results.
+**Figure 2: From relay events to a user's view.** The trusted set is applied last, to the results.
 
 1. **Verify.** The client checks the signature and recomputes the event id. An event that fails is dropped.
 2. **Resolve chains.** It follows patch links from each root, applies the diffs in order, and stops at the first patch that does not apply. If the author published two patches for the same parent, the chain is in a self-fork: the client freezes at the shared parent and reports the self-fork.
