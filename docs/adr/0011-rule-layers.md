@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Accepted |
+| **Status** | Accepted; extended in 0.9.2 |
 | **Spec release** | 0.9.0 (current form) |
 | **Rules** | TR-1 and the Layer column of every table |
 
@@ -17,6 +17,12 @@ Rules are partitioned by what they constrain: V (is the event well-formed), A (d
 V rules take two forms. Exclusion rules say what is outside the valid set; inclusion rules, such as C2, C3 and C7, say what must not be treated as outside it. A consumer that is stricter than the grammar triggers no A or D rule, so without an inclusion rule nothing would forbid it.
 
 A rule about how an event is built is not a V rule. Context-line counts (P1), fence lengths (E4) and line endings (P3) are producer obligations: a consumer cannot observe a violation, or rejecting would be disproportionate where a gentler outcome exists. They stay in A and D. A fourth layer for them was rejected because it would change no consumer behavior (ADR-0009).
+
+The three producer rules named above, as they were argued in their rows before 0.9.2:
+
+- P1: `--unified=3` and its equivalents give a maximum that the tool supplies where the content affords it, never a minimum it guarantees, and "available" depends on the target event's content, which a validity check over a single event never sees.
+- E4: an opening fence of `max(3, N + 1)` backticks lets any payload be embedded unambiguously, including hunks over content that itself contains backtick fences. A consumer has nothing to check: a payload whose backtick run reached the fence length would have closed the block early (E3), and the bytes after it are not part of the payload at all (E5).
+- P3: a CRLF payload fails to match LF content, because PB-2 forbids normalizing the payload bytes, and T1 handles it as an ordinary failure to apply. Rejecting it in layer V would pre-empt that with a harsher outcome for the same defect.
 
 A test for placing a rule: could a consumer holding the event tell whether the rule was honored, and is rejection the outcome wanted when it was not? Two noes mean the rule is not a V rule.
 

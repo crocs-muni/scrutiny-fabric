@@ -45,7 +45,7 @@ SCRUTINY Fabric is that graph layer: permissionless, censorship-resistant, and a
 
 ## The protocol in brief
 
-All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every event carries exactly one `["t","scrutiny-fabric"]` tag, exactly one version tag (`scrutiny-v<MAJOR>.<MINOR>.<PATCH>`, e.g. `scrutiny-v0.9.1`), and exactly one event-type tag.
+All events are standard Nostr `kind:1` text notes, identified by `t` tags. Every event carries exactly one `["t","scrutiny-fabric"]` tag, exactly one version tag (`scrutiny-v<MAJOR>.<MINOR>.<PATCH>`, e.g. `scrutiny-v0.9.2`), and exactly one event-type tag.
 
 | Event type | Role |
 |---|---|
@@ -65,7 +65,7 @@ Trust is entirely the user's: each user maintains a set of trusted pubkeys, and 
 | Document | Contents |
 |---|---|
 | [docs/overview.md](docs/overview.md) | **Start here.** What the protocol is and how a client builds its view |
-| [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.9.1. Event types, diff format, trust admission, chain and overlay resolution, deletion, discovery, identifier registry |
+| [docs/protocol-spec.md](docs/protocol-spec.md) | **The specification.** v0.9.2. Event types, diff format, trust admission, chain and overlay resolution, deletion, discovery, identifier registry |
 | [rules.json](rules.json) | Every normative rule as one machine-readable list, generated from the rule tables of the specification |
 | [docs/guide/](docs/guide) | Worked example, git mapping, roadmap, optional signals (not normative) |
 | [docs/adr/](docs/adr/README.md) | Decision records: why the specification reads as it does |
@@ -76,7 +76,7 @@ The specification is the only normative source. Every normative rule has a stabl
 > [!WARNING]
 > **Work in progress — experimental.**
 >
-> The specification is a **draft at v0.9.1** and should not be relied on for production security decisions. Breaking changes are expected while the version remains below 1.0. Implementation feedback is actively shaping the specification, which is why the version number moves as often as it does.
+> The specification is a **draft at v0.9.2** and should not be relied on for production security decisions. Breaking changes are expected while the version remains below 1.0. Implementation feedback is actively shaping the specification, which is why the version number moves as often as it does.
 
 ## Status
 

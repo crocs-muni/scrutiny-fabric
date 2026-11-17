@@ -1,5 +1,5 @@
 {
-  "specVersion": "0.9.1",
+  "specVersion": "0.9.2",
   "rules": [
     {
       "id": "TAG-1",
@@ -520,7 +520,7 @@
       "layer": "A",
       "inherits": [],
       "section": "4.1",
-      "text": "**Variable-length fences.** Producers MUST choose an opening-fence length of `max(3, N + 1)`, where `N` is the longest run of consecutive backticks anywhere inside the payload bytes. This guarantees that any payload — including patches whose hunks operate on content that itself contains backtick fences (e.g., a Metadata event embedding a code-block PoC) — can be embedded unambiguously. This is a producer obligation, enforced when building an event: a consumer cannot observe a violation, because a payload whose backtick run reached the fence length would have closed the block early (E3) and the bytes after it are not part of the payload at all (E5). There is nothing left for a consumer to check."
+      "text": "**Variable-length fences.** Producers MUST choose an opening-fence length of `max(3, N + 1)`, where `N` is the longest run of consecutive backticks anywhere inside the payload bytes, so that any payload can be embedded unambiguously. This is a producer obligation enforced when building an event; a consumer has nothing to check (E3, E5, ADR-0011)."
     },
     {
       "id": "E5",
@@ -607,7 +607,7 @@
         "unified-diff"
       ],
       "section": "4.2",
-      "text": "A hunk line beginning with `\\` is a no-newline-at-end-of-file marker: it states that the immediately preceding hunk line has no line terminator (on the old side for a `-` line, on the new side for a `+` line, on both sides for a context line), and consumers MUST handle it so. For matching under T1 and for the resulting bytes, a line without a terminator differs from the same line with one. Consumers MUST key on the `\\` prefix; **the marker's text is informational and MUST NOT be relied upon**, because GNU diff and git translate it through gettext (`\\ No newline at end of file` under an English locale, `\\ Kein Zeilenumbruch am Dateiende` under `LANG=de_DE.UTF-8`). Matching the English text loses the signal on a payload produced under another locale, which changes the resulting bytes that PB-1 makes normative."
+      "text": "A hunk line beginning with `\\` is a no-newline-at-end-of-file marker: it states that the immediately preceding hunk line has no line terminator (on the old side for a `-` line, on the new side for a `+` line, on both sides for a context line), and consumers MUST handle it so. For matching under T1 and for the resulting bytes, a line without a terminator differs from the same line with one. Consumers MUST key on the `\\` prefix; the marker's text is informational and MUST NOT be relied upon (ADR-0018)."
     },
     {
       "id": "C6",
@@ -621,7 +621,7 @@
       "layer": "V",
       "inherits": [],
       "section": "4.2",
-      "text": "**Floor on acceptance.** Any patch payload matching the consumer grammar above **is valid**, including one carrying a header block and zero hunks (the header-only no-op shape, N2). A conforming consumer MUST accept every such payload and MUST NOT apply a stricter reading of the grammar than the grammar states. This is the inclusive counterpart to C1: C1 fixes what the valid set excludes, C7 fixes its lower bound. It is what forbids a consumer being stricter than the grammar on its own initiative, a case TR-1's second clause does not reach because no A or D rule is involved."
+      "text": "**Floor on acceptance.** Any patch payload matching the consumer grammar above is valid, including one carrying a header block and zero hunks (the header-only no-op shape, N2). A conforming consumer MUST accept every such payload and MUST NOT apply a stricter reading of the grammar than the grammar states. C1 fixes what the valid set excludes and C7 fixes its lower bound (ADR-0011)."
     },
     {
       "id": "C8",
@@ -630,7 +630,7 @@
         "unified-diff"
       ],
       "section": "4.2",
-      "text": "**Multiple file sections.** A payload MAY carry more than one `file-section`. A `---` line occurring where a hunk line could appear begins a new file section; it MUST NOT be interpreted as a removal line. Consumers MUST process the hunks of every section as a single sequence in document order, sequenced per §4.4 T3, and MUST NOT drop any section. Because §4.2 C1 constrains every section's paths to `a/content` / `b/content`, the sections address one and the same content."
+      "text": "**Multiple file sections.** A payload MAY carry more than one `file-section`. A `---` line occurring where a hunk line could appear begins a new file section; it MUST NOT be interpreted as a removal line. Consumers MUST process the hunks of every section as a single sequence in document order, sequenced per §4.4 T3, and MUST NOT drop any section (ADR-0018)."
     },
     {
       "id": "P1",
@@ -639,7 +639,7 @@
         "unified-diff"
       ],
       "section": "4.3",
-      "text": "**Context lines.** Producers SHOULD emit `min(3, available)` lines of context before and after each change block — three where the content affords it, and as many as exist where it does not. This is a **producer obligation, enforced when building a patch, not a validity criterion applied to a received one**: `--unified=3` and its equivalents specify a *maximum* the tool supplies where the content affords it, never a minimum it guarantees, and \"available\" depends on the target event's content, which a validity check over a single event never sees. Consumers MUST NOT reject a payload for carrying fewer context lines; a zero-context hunk is normal (see T2) and the §4.3 example below has none."
+      "text": "**Context lines.** Producers SHOULD emit `min(3, available)` lines of context before and after each change block: three where the content affords it, and as many as exist where it does not. This is a producer obligation, not a validity criterion applied to a received payload (ADR-0011). Consumers MUST NOT reject a payload for carrying fewer context lines; a zero-context hunk is normal (see T2) and the §4.3 example below has none."
     },
     {
       "id": "P2",
@@ -653,7 +653,7 @@
       "layer": "A",
       "inherits": [],
       "section": "4.3",
-      "text": "Producers MUST emit UTF-8 with LF line endings inside the payload. A producer obligation, enforced when building an event: a consumer MUST NOT reject a payload over its line endings, because PB-2 forbids normalising the payload bytes, so a CRLF payload simply fails to match LF content and is handled by the determinism requirement (T1) as an ordinary failure to apply. Rejecting it at the Validity layer instead would pre-empt that with a harsher outcome for the same defect."
+      "text": "Producers MUST emit UTF-8 with LF line endings inside the payload. This is a producer obligation enforced when building an event: a consumer MUST NOT reject a payload over its line endings, because PB-2 forbids normalising the payload bytes, so a CRLF payload fails to match LF content and is handled by the determinism requirement (T1) as an ordinary failure to apply."
     },
     {
       "id": "P4",
@@ -667,14 +667,14 @@
       "layer": "A",
       "inherits": [],
       "section": "4.4",
-      "text": "**Determinism (unambiguous context).** Each hunk's context lines together with its removed (`-`) lines MUST occur exactly once in the current content at the time of application. If the pattern occurs zero times, the patch is invalid (HALT, H1). If the pattern occurs two or more times, the patch is also invalid — the protocol does not rely on the hunk's `@@` line numbers for disambiguation, because production appliers (`git apply`, jsdiff) treat those line numbers as advisory and relocate hunks based on context match. Implementations MAY use the `@@` line numbers as a hint for the initial search position but MUST verify uniqueness across the full target content before applying. Occurrences may overlap: the pattern `a`, `a` occurs twice in `a`, `a`, `a`."
+      "text": "**Determinism (unambiguous context).** Each hunk's context lines together with its removed (`-`) lines MUST occur exactly once in the current content at the time of application. If the pattern occurs zero times, or two or more times, the patch is invalid (HALT, H1). Implementations MAY use the `@@` line numbers as a hint for the initial search position but MUST verify uniqueness across the full target content before applying. Occurrences may overlap: the pattern `a`, `a` occurs twice in `a`, `a`, `a`."
     },
     {
       "id": "T2",
       "layer": "A",
       "inherits": [],
       "section": "4.4",
-      "text": "**Insertion carve-out.** A hunk with no context lines and no `-` lines (e.g., `@@ -0,0 +1,N @@` against empty content, or any pure-insertion hunk) has no pattern to disambiguate. Such a hunk MUST apply at the position implied by its `@@` header's `-` line number; the T1 uniqueness check does not apply. For a pure-insertion hunk, `-L,0` designates the position after line L of the pre-application content, and `-0,0` the start. A pure-insertion hunk positioned after, or clamped to follow, a final line that has no terminator HALTs (H1). **That line number is interpreted in the coordinates of the patch's pre-application content, and MUST be carried forward by the net line delta of all prior hunks in the same patch whose header old range ends at or before line L.** Without the carry-forward this rule and T3 designate different positions the moment an earlier hunk in the same patch has added or removed lines, and the patch silently produces wrong content; with it, both rules hold simultaneously. This is what `git apply` and jsdiff both do. **If the implied position, after carry-forward, falls outside the current content's line range, it clamps: a position past the last line inserts the `+` lines after the final line, and one before the first line inserts them at the start.** The line count is the count of the content's own lines — a final newline terminates the last line and does not add one, so `a\\nb\\n` has two lines and a `@@ -3,0 +3,1 @@` hunk against it appends after `b`. Clamping defines the position; it is not a failed match, and it never reaches T1 or invokes H1. C6's context-match remedy cannot supply the missing semantics here — a pure-insertion hunk has no context lines by definition — so without this sentence an out-of-range header would be an input the grammar permits with three defensible dispositions (clamp here, clamp elsewhere, or HALT) and no named one."
+      "text": "**Insertion carve-out.** A hunk with no context lines and no `-` lines (e.g., `@@ -0,0 +1,N @@` against empty content, or any pure-insertion hunk) has no pattern to disambiguate. Such a hunk MUST apply at the position implied by its `@@` header's `-` line number; the T1 uniqueness check does not apply. For a pure-insertion hunk, `-L,0` designates the position after line L of the pre-application content, and `-0,0` the start. A pure-insertion hunk positioned after, or clamped to follow, a final line that has no terminator HALTs (H1). That line number is interpreted in the coordinates of the patch's pre-application content, and MUST be carried forward by the net line delta of all prior hunks in the same patch whose header old range ends at or before line L. If the implied position, after carry-forward, falls outside the current content's line range, it clamps: a position past the last line inserts the `+` lines after the final line, and one before the first line inserts them at the start. The line count is the count of the content's own lines (a final newline terminates the last line and does not add one, so `a\\nb\\n` has two lines and a `@@ -3,0 +3,1 @@` hunk against it appends after `b`). Clamping defines the position; it is not a failed match, and it never reaches T1 or invokes H1. See ADR-0013."
     },
     {
       "id": "T3",
@@ -753,7 +753,7 @@
       "layer": "A",
       "inherits": [],
       "section": "4.5",
-      "text": "**Chain disposition under a ceiling.** A chain whose application was stopped by a ceiling is reported as **aborted under a ceiling**, distinct from both `resolved` and HALT. Reporting it as `resolved` would name the last applied patch as the tip and claim a completeness the implementation does not have — which RC-3 then obliges service consumers to serve downstream. Reporting it as HALT is forbidden by RL-3. The report MUST identify the patch at which application stopped and the ceiling that was reached, and MUST NOT cite H1."
+      "text": "**Chain disposition under a ceiling.** A chain whose application was stopped by a ceiling is reported as **aborted under a ceiling**, distinct from both `resolved` and HALT. Reporting it as HALT is forbidden by RL-3. The report MUST identify the patch at which application stopped and the ceiling that was reached, and MUST NOT cite H1 (ADR-0019)."
     },
     {
       "id": "TR-1",
@@ -839,7 +839,7 @@
       "layer": "A",
       "inherits": [],
       "section": "6.1",
-      "text": "**Tip identification.** The tip is the last event of the applied chain: the root event, then each successfully applied patch in order. A chain that carries no patches therefore has the root as its tip. The tip is undefined where an unresolved self-fork (SF-1) or a ceiling (RL-5) is the earlier freeze point (SF-7), and defined where a HALT (H1) is: it is then the last successfully applied patch, or the root event if the first patch failed. This matters because §6.3's `clean` classification turns on whether the overlay's target *is* the tip: reading the tip as \"the last patch\" and nothing else makes an overlay on a root that has never been patched `stale`, asserting that the chain has advanced past a target it has not advanced past. That is the first overlay published against any new Product, so it is the common case."
+      "text": "**Tip identification.** The tip is the last event of the applied chain: the root event, then each successfully applied patch in order. A chain that carries no patches therefore has the root as its tip. The tip is undefined where an unresolved self-fork (SF-1) or a ceiling (RL-5) is the earlier freeze point (SF-7), and defined where a HALT (H1) is: it is then the last successfully applied patch, or the root event if the first patch failed. The `clean` classification of §6.3 turns on whether the overlay's target is the tip (ADR-0012)."
     },
     {
       "id": "SF-1",
@@ -890,7 +890,7 @@
       "layer": "A",
       "inherits": [],
       "section": "6.2",
-      "text": "**Precedence between a self-fork and a HALT.** Where a self-fork (SF-2) and a HALT (§4.4 H1) are both live, canonical bytes freeze at whichever point is earlier in chain order. A self-fork upstream of a HALT freezes at the shared parent, and the patches downstream of it — including the one that would have HALTed — are never evaluated, because the chain past an undefined point is not evaluated at all. A HALT upstream of a self-fork freezes at the last successfully applied patch; the fork is still surfaced per SF-3 though it did not determine the content. Implementations MUST NOT apply any patch past a HALT in order to reach a downstream fork parent: H1 admits no exception, and doing so would return different canonical bytes for the same event set than an implementation that did not."
+      "text": "**Precedence between a self-fork and a HALT.** Where a self-fork (SF-2) and a HALT (§4.4 H1) are both live, canonical bytes freeze at whichever point is earlier in chain order. A self-fork upstream of a HALT freezes at the shared parent, and the patches downstream of it, including the one that would have HALTed, are never evaluated. A HALT upstream of a self-fork freezes at the last successfully applied patch; the fork is still surfaced per SF-3 though it did not determine the content. Implementations MUST NOT apply any patch past a HALT in order to reach a downstream fork parent: H1 admits no exception. See ADR-0014."
     },
     {
       "id": "OV-1",
@@ -953,7 +953,7 @@
       "layer": "A",
       "inherits": [],
       "section": "6.3",
-      "text": "**Ceiling reached before classification.** If a §4.5 consumer ceiling is reached while classifying an overlay, the outcome is **unclassified** — a distinct fifth outcome, not one of the four classifications. Such an overlay MUST NOT be reported as `conflict` (no failure was established), as `orphaned` (the target is well defined and obtainable, and the α/β rule does not apply), or as `clean` or `stale` (the hunks were never shown to apply). It MUST be accompanied by the distinct resource-limit-exceeded annotation of RL-3, and MUST NOT cite H1."
+      "text": "**Ceiling reached before classification.** If a §4.5 consumer ceiling is reached while classifying an overlay, the outcome is **unclassified**, a distinct fifth outcome and not one of the four classifications. Such an overlay MUST NOT be reported as `conflict`, `orphaned`, `clean` or `stale`. It MUST be accompanied by the distinct resource-limit-exceeded annotation of RL-3, and MUST NOT cite H1 (ADR-0019)."
     },
     {
       "id": "OV-10",
@@ -1123,7 +1123,7 @@
       "layer": "D",
       "inherits": [],
       "section": "8.4",
-      "text": "A chain's patches are obtained with the root-anchored query `{\"kinds\":[1],\"#t\":[\"scrutiny-patch\"],\"#e\":[\"<root-event-id>\"]}`. Every patch names the chain root in an `e` tag with marker `root` (PT-1), so one query reaches the whole chain however deep it is. A consumer MUST keep only results whose `e` tag with marker `root` names the queried id, because the filter also matches events that merely mention it. A relay may truncate results (NIP-11 `max_limit`, `default_limit`), so a consumer MUST page until a query returns fewer events than the limit in force. Chain order comes from `e reply` parentage (PT-2), never from `created_at`."
+      "text": "A chain's patches are obtained with the root-anchored query `{\"kinds\":[1],\"#t\":[\"scrutiny-patch\"],\"#e\":[\"<root-event-id>\"]}`. Every patch names the chain root in an `e` tag with marker `root` (PT-1). A consumer MUST keep only results whose `e` tag with marker `root` names the queried id. A relay may truncate results (NIP-11 `max_limit`, `default_limit`), so a consumer MUST page until a query returns fewer events than the limit in force. Chain order comes from `e reply` parentage (PT-2), never from `created_at`."
     },
     {
       "id": "DQ-7",

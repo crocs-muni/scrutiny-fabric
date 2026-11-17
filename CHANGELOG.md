@@ -6,6 +6,22 @@ cross-cutting decisions and for long-running rules are in [docs/adr/](docs/adr/R
 0.9.1 cite sections, appendices and `DECISIONS.md` entries by the numbering of their own release; the
 tables under 0.9.1 map the old names to the new ones.
 
+## v0.9.2
+
+Shorter rule rows. **No requirement changed:** the 152 rules keep their IDs, layers, inheritance, and every
+MUST, SHOULD and MAY with its conditions. Thirteen rows lose the argument they carried inline (about 520
+words): C5, C7, C8, DQ-6, E4, OV-9, P1, P3, RC-5, RL-5, SF-7, T1 and T2. The argument is in
+[docs/adr/](docs/adr/README.md): ADR-0011 (P1, E4, P3, C7), ADR-0012 (RC-5), ADR-0013 (T1, T2), ADR-0014 (SF-7)
+and two new records, ADR-0018 (C5, C8) and ADR-0019 (RL-5, OV-9). DQ-6's reasons are in the
+discovery table of section 8.2. Rows cite an ADR by its number only, so `rules.json` stays plain text.
+
+- **Rows changed.** T2: the paragraph on why the position is carried forward, the remark that `git apply` and
+  jsdiff do the same, and the remark about C6 are removed. T1: the sentence on why line numbers do not
+  disambiguate is removed. RC-5, SF-7, P1, E4, P3, C7, C5, C8, RL-5, OV-9, DQ-6: reasons removed, rule
+  sentences kept as they were.
+- **Version.** Version tag `scrutiny-v0.9.1` → `scrutiny-v0.9.2`; `vectors/` is unchanged and its digests
+  still match section 10.1.
+
 ## v0.9.1
 
 Restructure. **No rule changed:** the 152 rules have the same IDs, layers, inheritance and wording as in
