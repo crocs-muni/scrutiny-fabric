@@ -54,11 +54,11 @@ CC certification report`"]:::metadata
     classDef metadata fill:#fff,stroke:#f15a24,stroke-width:3px,color:#000
 ```
 
-**Figure 1 — Products, Bindings and Metadata.** Each Binding joins one Product to one Metadata event; arrows show the direction of the edge from Metadata to Product. A Product can have many Bindings.
+**Figure 1: Products, Bindings and Metadata.** Each Binding joins one Product to one Metadata event; arrows show the direction of the edge from Metadata to Product. A Product can have many Bindings.
 
 ### Who may change what
 
-The author of a Product or Metadata event owns its content. Patches by that author form the **canonical chain**, the author's current statement. Patches by anyone else never change it. They appear as **overlays**: comments or proposed changes, shown next to the specific version of the text they were written against. Deletion uses the Nostr deletion request, so a retraction hides an event from default views and keeps it for audit.
+The author of a Product or Metadata event owns its content. Patches by that author form the **canonical chain**, the author's current statement. Patches by anyone else leave it unchanged and appear as **overlays**: comments or proposed changes, shown next to the version of the text they were written against. A deletion is a Nostr deletion request. It hides the event from default views and keeps it for audit.
 
 ## How a client builds its view
 
@@ -73,7 +73,7 @@ flowchart LR
     T --> W(["The user's view"])
 ```
 
-**Figure 2 — From relay events to a user's view.** Verification and resolution run over all valid events. The trusted set is applied last, to the results.
+**Figure 2: From relay events to a user's view.** Verification and resolution run over all valid events. The trusted set is applied last, to the results.
 
 1. **Verify.** The client checks the signature and recomputes the event id. An event that fails is dropped.
 2. **Resolve chains.** It follows patch links from each root, applies the diffs in order, and stops at the first patch that does not apply. If the author published two patches for the same parent, the chain is in a self-fork: the client freezes at the shared parent and shows the conflict.
@@ -84,9 +84,9 @@ Because clients see events in different orders, every step is designed so that t
 
 ## Trust, and what it does not do
 
-Each user keeps a set of trusted keys. An event is in the user's view if its author is trusted, or if a trusted author's Binding connects it to something in the view. A Binding by an untrusted key never adds anything, even when it points at trusted events. Foreign patches need their own author's key in the trusted set.
+Each user keeps a set of trusted keys. An event is in the user's view if its author is trusted, or if a trusted author's Binding connects it to something in the view. A Binding by an untrusted key adds nothing, even when it points at trusted events. Foreign patches need their own author's key in the trusted set.
 
-There is no global authority, no reputation score in the protocol and no revocation: if a key leaks, the remedy is social. The protocol does not say whether a trusted author's statement is true, and it does not stop a relay from withholding events. The [threat model](threat-model.md) states what is protected, against whom, and what remains.
+The protocol has no global authority, reputation score or key revocation. If a key leaks, the remedy is social. It cannot tell whether a trusted author's statement is true, and it cannot stop a relay from withholding events. The [threat model](threat-model.md) states what is protected, against whom, and what remains.
 
 ## Where to go next
 

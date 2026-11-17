@@ -8,7 +8,7 @@
 
 ## Context
 
-An overlay is `clean` when its target is the tip of the canonical chain. If the tip is defined as "the last patch" and nothing else, a root that was never patched has no tip, and the first overlay on any new Product would be `stale`. That asserts that the chain has advanced past a target it has not advanced past, and it is the most common case.
+An overlay is `clean` when its target is the tip of the canonical chain. If the tip is defined as "the last patch" and nothing else, a root that was never patched has no tip, and the first overlay on any new Product would be `stale`. That claims the chain has advanced past a target it has not advanced past, in the most common case.
 
 ## Decision
 
