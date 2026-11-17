@@ -10,7 +10,7 @@ Formats for security information already exist: CycloneDX and SPDX for SBOMs, CS
 
 SCRUTINY Fabric provides that graph layer. It does not define or parse payload formats. An event carries a payload as text or as an attached file, and the format stays the publisher's.
 
-Nostr fits because events are signed by their author's key, relays are interchangeable, and a statement published to several relays is hard to suppress. Every SCRUTINY event is an ordinary Nostr `kind: 1` note, so generic Nostr clients display the text and ignore the rest.
+Nostr fits because events are signed by their author's key, relays are interchangeable, and a statement published to several relays is hard to suppress. Every Fabric event is an ordinary Nostr `kind: 1` note, so generic Nostr clients display the text and ignore the rest.
 
 ## The four event types
 

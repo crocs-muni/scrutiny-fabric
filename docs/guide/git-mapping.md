@@ -2,7 +2,7 @@
 
 This note maps the concepts of git onto SCRUTINY Fabric for readers who know git. It is not normative: [the specification](../protocol-spec.md) defines every behavior.
 
-| Git concept | SCRUTINY counterpart | Notes |
+| Git concept | Fabric counterpart | Notes |
 |---|---|---|
 | Commit | Patch event | Carries a unified diff. |
 | Parent pointer | NIP-10 `e reply` marker | Threading serves as commit lineage. |
@@ -13,4 +13,4 @@ This note maps the concepts of git onto SCRUTINY Fabric for readers who know git
 | Merge conflict | Overlay in the *conflict* state | Shown to the user. There is no protocol-level resolution. |
 | Signing | Nostr event signature | Equivalent to commit signing. |
 
-SCRUTINY does not borrow branch names and refs, annotated tags, the index, the working tree, remotes and push or pull (relays are the transport), rebase, submodules, hooks, pack files or merges. Merges are on the [roadmap](roadmap.md).
+Fabric does not borrow branch names and refs, annotated tags, the index, the working tree, remotes and push or pull (relays are the transport), rebase, submodules, hooks, pack files or merges. Merges are on the [roadmap](roadmap.md).

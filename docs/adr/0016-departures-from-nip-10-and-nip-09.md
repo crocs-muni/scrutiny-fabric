@@ -1,4 +1,4 @@
-# ADR-0016: SCRUTINY-specific departures from NIP-10 and NIP-09
+# ADR-0016: Fabric-specific departures from NIP-10 and NIP-09
 
 | | |
 |---|---|
@@ -10,13 +10,13 @@
 
 Three behaviors of the protocol differ from the base layers it builds on, and a generic Nostr client meets all of them.
 
-1. NIP-10 advises against markup in `kind: 1` content, and SCRUTINY Patches carry a CommonMark fenced block.
-2. NIP-10 defines two `e` markers, `root` and `reply`, and SCRUTINY adds `link` (Bindings) and `supersedes` (Products and Metadata).
-3. NIP-09 asks relays to delete the referenced event, and SCRUTINY-aware relays keep the original beside the deletion request.
+1. NIP-10 advises against markup in `kind: 1` content, and Fabric Patches carry a CommonMark fenced block.
+2. NIP-10 defines two `e` markers, `root` and `reply`, and Fabric adds `link` (Bindings) and `supersedes` (Products and Metadata).
+3. NIP-09 asks relays to delete the referenced event, and Fabric-aware relays keep the original beside the deletion request.
 
 ## Decision
 
-Keep all three, and list them as SCRUTINY-specific in §3.2 of the specification. There is no wire change. A generic client shows the Patch text as written, may ignore or misread the new markers, and sees the same deletion request as any other. Using `kind: 1` is what makes Products and Metadata readable as ordinary notes; a separate kind would give up that property (design principle: render gracefully in generic clients).
+Keep all three, and list them as Fabric-specific in §3.2 of the specification. There is no wire change. A generic client shows the Patch text as written, may ignore or misread the new markers, and sees the same deletion request as any other. Using `kind: 1` is what makes Products and Metadata readable as ordinary notes; a separate kind would give up that property (design principle: render gracefully in generic clients).
 
 The deletion departure is limited to `scrutiny-fabric` events. The relay keeps the original because the author no longer stands by the content, and the audit trail stays visible to anyone who queries for it.
 

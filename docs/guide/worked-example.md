@@ -192,7 +192,7 @@ What follows:
 - `ddd444` leaves the canonical chain. Any root-author patch that replied to it would leave too; here there is none.
 - The canonical bytes of the Product revert to the root: two indexers and the original description.
 - `eee555` replied to `ddd444`, so it is now orphaned. If the client can still find `ddd444` (cached, on another relay, or through the "show deleted events" toggle), the overlay renders against `ddd444`'s resolved content (α). Otherwise it renders as a standalone artifact with its payload, author and target id (β). Either way the auditor's statement is kept.
-- A SCRUTINY-aware relay keeps `ddd444`, `eee555` and `fff666`, so an audit-mode query can recover the history.
+- A Fabric-aware relay keeps `ddd444`, `eee555` and `fff666`, so an audit-mode query can recover the history.
 
 The vendor may later publish a new patch, with a new id, that replies to `aaa111` and states the firmware information more clearly. The auditor may republish their patch against the new event if they still object.
 

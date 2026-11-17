@@ -17,7 +17,7 @@ Examples are not normative. Where an example and a rule disagree, the rule gover
 
 ## 1. Scope
 
-SCRUTINY Fabric is a discovery layer on Nostr `kind: 1` events. It binds security metadata to products: signed nodes (Products, Metadata) are joined by signed edges (Bindings), and a Patch event evolves the content of a node. This document defines the four event types and their tags, the diff format of Patches, how a consumer resolves chains and overlays, how a user's trusted set gates what the user sees, deletion, and the queries a consumer uses to find events.
+SCRUTINY Fabric ("Fabric" below) is a discovery layer on Nostr `kind: 1` events. It binds security metadata to products: signed nodes (Products, Metadata) are joined by signed edges (Bindings), and a Patch event evolves the content of a node. This document defines the four event types and their tags, the diff format of Patches, how a consumer resolves chains and overlays, how a user's trusted set gates what the user sees, deletion, and the queries a consumer uses to find events.
 
 Payload formats are out of scope: SBOMs, advisories and certificates travel as event `content` or as attachments, and the protocol does not parse them. So is the way a user builds a trusted set.
 
@@ -62,12 +62,12 @@ Each term has one meaning in this document. Rules use these words and no synonym
 
 **Events**
 
-- **SCRUTINY event**: a `kind: 1` event that carries a `scrutiny-fabric` `t` tag. Whether it is valid is decided by the V rules ([§5.1](#51-rule-layers)).
+- **Fabric event**: a `kind: 1` event that carries a `scrutiny-fabric` `t` tag. Whether it is valid is decided by the V rules ([§5.1](#51-rule-layers)).
 - **Product**, **Metadata**: root events. A **root event** is the Product or Metadata event that a chain of Patches is anchored to.
 - **Binding**: a signed edge between one Product and one Metadata event ([§3.4](#34-binding)).
 - **Patch**: a `scrutiny-patch` event that carries zero or one fenced unified diff ([§3.5](#35-patch)). The **patch payload** is the byte sequence inside that fenced block ([§4.1](#41-payload-and-envelope)).
 - **No-op patch**: a Patch with no fenced block, or a header-only block with no hunks. Its effect is the identity.
-- **SCRUTINY-aware relay**: a relay that implements the relay behavior of [DEL-11](#rule-DEL-11).
+- **Fabric-aware relay**: a relay that implements the relay behavior of [DEL-11](#rule-DEL-11).
 - **Deletion request**: a Nostr `kind: 5` event. It is **honored** when its `pubkey` equals the target's `pubkey`. A target that a honored deletion request removes from the default view is **retracted**. The **default view** hides retracted events; an **audit view** shows them with their deletion requests ([DEL-10](#rule-DEL-10)).
 - **Succession**, **final member**: the Products or Metadata events joined by `supersedes` links form a succession; its final member is the one that no other member supersedes ([§3.6](#36-supersession)).
 
@@ -101,29 +101,29 @@ Each term has one meaning in this document. Rules use these words and no synonym
 
 ## 3. Event model
 
-All SCRUTINY events are `kind: 1` Nostr events. `t` tags say which events are in scope and what type each is; the type decides which other tags the event carries.
+All Fabric events are `kind: 1` Nostr events. `t` tags say which events are in scope and what type each is; the type decides which other tags the event carries.
 
 ### 3.1 Identification and versioning
 
-A SCRUTINY event carries three kinds of `t` tag:
+A Fabric event carries three kinds of `t` tag:
 
 - `["t", "scrutiny-fabric"]`, which puts the event in scope.
 - `["t", "scrutiny-v<MAJOR>.<MINOR>.<PATCH>"]`, for example `["t", "scrutiny-v0.9.1"]`, which names the specification version.
 - One event-type tag: `scrutiny-product`, `scrutiny-metadata`, `scrutiny-binding` or `scrutiny-patch`.
 
-A `kind: 1` event that has `scrutiny-fabric` but breaks the cardinalities below is an invalid SCRUTINY event. An event without `scrutiny-fabric` is not a SCRUTINY event and this specification does not apply to it. Tag names use kebab-case; inside the version tag the three numbers are separated by dots.
+A `kind: 1` event that has `scrutiny-fabric` but breaks the cardinalities below is an invalid Fabric event. An event without `scrutiny-fabric` is not a Fabric event and this specification does not apply to it. Tag names use kebab-case; inside the version tag the three numbers are separated by dots.
 
 Version numbers are unpadded decimal integers with no digit-count ceiling. Versions order by comparing `MAJOR`, `MINOR` and `PATCH` in turn, each as a digit string, so no implementation depends on a host integer type ([ADR-0010](adr/0010-digit-string-version-ordering.md)). A consumer that meets a higher version than its own may store the event and make it discoverable, provided the event satisfies every V rule; it does not reject the event for its version tag alone.
 
 Before it processes any event, a consumer verifies the signature and recomputes the event `id`. A signature check alone is not enough, because the signature covers the `id`, so an event whose `content` or `tags` were altered while keeping the original `id` and `sig` still passes it. The check applies to every event a consumer reads, including kind 5 deletion requests and kind 1040 attestations: honoring a forged deletion request would remove canonical history, and relays are not trusted to have checked ([§9](#9-security-considerations)). An event that fails either check is not processed or rendered.
 
-Publishers MAY attach [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) OpenTimestamps attestations (kind 1040) to any SCRUTINY event. An attestation is evidence that an event existed before a Bitcoin block, which helps audits and disputes after a key compromise. The protocol has no `created_at`-based tip selection, and [OTS-1](#rule-OTS-1) keeps timestamps out of resolution. NIP-03 is marked `unrecommended` on its own page.
+Publishers MAY attach [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) OpenTimestamps attestations (kind 1040) to any Fabric event. An attestation is evidence that an event existed before a Bitcoin block, which helps audits and disputes after a key compromise. The protocol has no `created_at`-based tip selection, and [OTS-1](#rule-OTS-1) keeps timestamps out of resolution. NIP-03 is marked `unrecommended` on its own page.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
-| <a id="rule-TAG-1"></a>TAG-1 | V | — | Every SCRUTINY event MUST carry exactly one `["t","scrutiny-fabric"]` tag. |
-| <a id="rule-TAG-2"></a>TAG-2 | V | — | Every SCRUTINY event MUST carry exactly one version `t` tag matching `^scrutiny-v\d+\.\d+\.\d+$`. |
-| <a id="rule-TAG-3"></a>TAG-3 | V | — | Every SCRUTINY event MUST carry exactly one event-type `t` tag from `{scrutiny-product, scrutiny-metadata, scrutiny-binding, scrutiny-patch}`. |
+| <a id="rule-TAG-1"></a>TAG-1 | V | — | Every Fabric event MUST carry exactly one `["t","scrutiny-fabric"]` tag. |
+| <a id="rule-TAG-2"></a>TAG-2 | V | — | Every Fabric event MUST carry exactly one version `t` tag matching `^scrutiny-v\d+\.\d+\.\d+$`. |
+| <a id="rule-TAG-3"></a>TAG-3 | V | — | Every Fabric event MUST carry exactly one event-type `t` tag from `{scrutiny-product, scrutiny-metadata, scrutiny-binding, scrutiny-patch}`. |
 | <a id="rule-TAG-4"></a>TAG-4 | D | — | The `t` values this specification defines use kebab-case (`scrutiny-fabric`, `scrutiny-product`, …); underscored variants from older drafts are not defined. The rule does not constrain other tags: TAG-5 governs every unknown or inherited tag, whatever its spelling. |
 | <a id="rule-TAG-5"></a>TAG-5 | V | NIP-01 | Unknown tags MUST be ignored by parsers. |
 | <a id="rule-VER-1"></a>VER-1 | V | — | Ordering between two version tags is a per-field numeric tuple comparison of `(MAJOR, MINOR, PATCH)`. Each field compares as a decimal digit string — leading zeros ignored, the longer string the greater, equal lengths lexicographically — never by conversion to a host number type, and never as a lexicographic comparison of the whole tag value. |
@@ -135,34 +135,34 @@ Publishers MAY attach [NIP-03](https://github.com/nostr-protocol/nips/blob/maste
 
 ### 3.2 Base layers and inherited semantics
 
-SCRUTINY builds on Nostr and CommonMark. The table lists what it depends on.
+Fabric builds on Nostr and CommonMark. The table lists what it depends on.
 
 | Specification | Used for | Status |
 |---|---|---|
 | [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) | Event structure, signatures, relay protocol, single-letter tag indexing | Required |
 | [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) | Deletion requests (kind 5), [§7](#7-kind-5-deletion) | Required |
 | [NIP-10](https://github.com/nostr-protocol/nips/blob/master/10.md) | Threading: `e root` and `e reply` markers | Required |
-| [NIP-73](https://github.com/nostr-protocol/nips/blob/master/73.md) | `i` tag shape; SCRUTINY defines its own prefix registry ([§3.7](#37-indexers)) | Required |
+| [NIP-73](https://github.com/nostr-protocol/nips/blob/master/73.md) | `i` tag shape; Fabric defines its own prefix registry ([§3.7](#37-indexers)) | Required |
 | CommonMark §4.5 | Fenced code blocks: the patch payload envelope ([§4.1](#41-payload-and-envelope)) | Required |
 | [NIP-92](https://github.com/nostr-protocol/nips/blob/master/92.md), [NIP-94](https://github.com/nostr-protocol/nips/blob/master/94.md) | `imeta` attachments and their fields (`m`, `x`, `size`, `fallback`), [§3.8](#38-attachments) | Optional |
 | [NIP-03](https://github.com/nostr-protocol/nips/blob/master/03.md) | OpenTimestamps attestations, audit signal only ([§3.1](#31-identification-and-versioning)) | Optional |
 | [NIP-13](https://github.com/nostr-protocol/nips/blob/master/13.md), [NIP-18](https://github.com/nostr-protocol/nips/blob/master/18.md), [NIP-25](https://github.com/nostr-protocol/nips/blob/master/25.md), [NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md) | Ranking and spam signals, described in [optional signals](guide/optional-signals.md) | Optional |
 
-Behavior in these areas is inherited from the base layer. Implementations MUST defer to the base-layer specification rather than re-derive semantics for every row not marked SCRUTINY-specific below; in the marked rows this specification departs from or extends the base layer.
+Behavior in these areas is inherited from the base layer. Implementations MUST defer to the base-layer specification rather than re-derive semantics for every row not marked Fabric-specific below; in the marked rows this specification departs from or extends the base layer.
 
-| Topic | Base layer | Meaning for SCRUTINY |
+| Topic | Base layer | Meaning for Fabric |
 |---|---|---|
-| Event structure, JSON encoding, signatures, relay protocol, tag indexing (`#e`, `#t`, `#i`, `#k`) | NIP-01 | SCRUTINY events are kind 1 events. NIP-01 defines the signature scheme and the `id`; [SIG-1](#rule-SIG-1) requires that both be checked. Relays handle tag indexing. |
+| Event structure, JSON encoding, signatures, relay protocol, tag indexing (`#e`, `#t`, `#i`, `#k`) | NIP-01 | Fabric events are kind 1 events. NIP-01 defines the signature scheme and the `id`; [SIG-1](#rule-SIG-1) requires that both be checked. Relays handle tag indexing. |
 | Deletion: author match, several `e` tags, optional `k` scoping, relay honor semantics | NIP-09 | A kind 5 event may carry several `e` tags; each target is an independent request, gated by the author match. Kind 5 events usually carry no `scrutiny-fabric` tag, so discovery queries them by kind and `#e` ([§8](#8-discovery)). |
 | `e` tag grammar: `root` and `reply` markers, empty relay hint, advisory author hint | NIP-10 | An empty relay hint means no hint. A wrong author hint does not invalidate the Binding that carries it ([BD-12](#rule-BD-12)). |
-| Markup in `kind: 1` `content` | NIP-10 | **SCRUTINY-specific.** NIP-10 advises against markdown or HTML in kind 1 content. Patches carry a CommonMark fenced block ([§4.1](#41-payload-and-envelope)), and Product and Metadata `content` is free-form. A generic client shows the text as written. |
-| The `e` tag marker set | NIP-10 | **SCRUTINY-specific.** NIP-10 defines `root` and `reply`. Bindings also use `link` ([§3.4](#34-binding)), and Product and Metadata events may use `supersedes` ([§3.6](#36-supersession)). A generic client may ignore or misread them. |
-| Relay handling of deleted events | NIP-09 | **SCRUTINY-specific.** NIP-09 asks relays to delete the event. A relay SHOULD keep the original of a `scrutiny-fabric` event together with its deletion request, so the audit trail survives ([DEL-11](#rule-DEL-11)). |
-| `i` and `k` tags: external IDs as `<prefix>:<value>`, `k` as the kind of indexer | NIP-73 | Same tag shape and meaning, with SCRUTINY's own prefix registry ([§3.7](#37-indexers)). `k` is the set of indexer kinds present in the event. |
+| Markup in `kind: 1` `content` | NIP-10 | **Fabric-specific.** NIP-10 advises against markdown or HTML in kind 1 content. Patches carry a CommonMark fenced block ([§4.1](#41-payload-and-envelope)), and Product and Metadata `content` is free-form. A generic client shows the text as written. |
+| The `e` tag marker set | NIP-10 | **Fabric-specific.** NIP-10 defines `root` and `reply`. Bindings also use `link` ([§3.4](#34-binding)), and Product and Metadata events may use `supersedes` ([§3.6](#36-supersession)). A generic client may ignore or misread them. |
+| Relay handling of deleted events | NIP-09 | **Fabric-specific.** NIP-09 asks relays to delete the event. A relay SHOULD keep the original of a `scrutiny-fabric` event together with its deletion request, so the audit trail survives ([DEL-11](#rule-DEL-11)). |
+| `i` and `k` tags: external IDs as `<prefix>:<value>`, `k` as the kind of indexer | NIP-73 | Same tag shape and meaning, with Fabric's own prefix registry ([§3.7](#37-indexers)). `k` is the set of indexer kinds present in the event. |
 | Fenced blocks: info strings, variable-length fences | CommonMark §4.5 | Lookup, fence-length matching and the payload byte boundary are CommonMark's responsibility ([§4.1](#41-payload-and-envelope)). |
 | Eventual consistency across relays | Nostr operational model | Events arrive out of order, late or never. Canonical bytes, overlay states and self-fork detection are re-evaluated when the observed set changes ([§6.1](#61-root-author-and-canonical-chain)). |
 
-Where a base layer allows a choice, SCRUTINY may narrow it in the section that uses it, and says so there. [ADR-0016](adr/0016-departures-from-nip-10-and-nip-09.md) gives the reasons for the three SCRUTINY-specific rows.
+Where a base layer allows a choice, Fabric may narrow it in the section that uses it, and says so there. [ADR-0016](adr/0016-departures-from-nip-10-and-nip-09.md) gives the reasons for the three Fabric-specific rows.
 
 ### 3.3 Product and Metadata
 
@@ -232,7 +232,7 @@ A Binding has no update mechanism. To correct one, delete it ([§7](#7-kind-5-de
 | <a id="rule-BD-2"></a>BD-2 | V | NIP-10 | A Binding event MUST carry exactly one `e` tag with marker `link`. The `link` marker is defined by this specification; NIP-10 defines only `root` and `reply` (§3.2). |
 | <a id="rule-BD-3"></a>BD-3 | V | — | The `e root` endpoint MUST be a `scrutiny-product` event. |
 | <a id="rule-BD-4"></a>BD-4 | V | — | The `e link` endpoint MUST be a `scrutiny-metadata` event. |
-| <a id="rule-BD-5"></a>BD-5 | V | — | A Binding whose endpoints, once observed, do not satisfy BD-3/BD-4 is an invalid SCRUTINY event and MUST be rejected (TR-1). |
+| <a id="rule-BD-5"></a>BD-5 | V | — | A Binding whose endpoints, once observed, do not satisfy BD-3/BD-4 is an invalid Fabric event and MUST be rejected (TR-1). |
 | <a id="rule-BD-6"></a>BD-6 | D | — | A Binding whose endpoints are not yet observed MUST be treated as *pending*: stored locally but NOT rendered until both endpoints are observed. |
 | <a id="rule-BD-7"></a>BD-7 | V | — | A Binding whose observed endpoint contradicts BD-3/BD-4 transitions to permanently invalid; implementations SHOULD cache the rejection. |
 | <a id="rule-BD-8"></a>BD-8 | D | NIP-10 | The `<relay>` field in `e` tags is advisory. An empty string means "no hint." Implementations MUST NOT rely on relay hints exclusively and SHOULD query their configured relay set for referenced events; they MUST fall back to their full relay set if the event is not found on the hinted relay. |
@@ -348,7 +348,7 @@ To stay below typical relay event-size limits, a payload larger than about 30 KB
 
 The event signature covers the declared hash. Only the `x` hash checks the bytes that a host serves, so a consumer that skips verification loses the integrity guarantee of the attachment ([IM-1](#rule-IM-1)). The `size` field also bounds a download: a client can stop when the bytes exceed it.
 
-SCRUTINY uses `imeta` as a general attachment mechanism: an attachment need not be referenced from `content`, as NIP-92 envisions for inline media. This pattern is RECOMMENDED for SBOMs (CycloneDX, SPDX), CSAF advisories, in-toto and SLSA attestations, signed PDFs, certification reports and large test archives.
+Fabric uses `imeta` as a general attachment mechanism: an attachment need not be referenced from `content`, as NIP-92 envisions for inline media. This pattern is RECOMMENDED for SBOMs (CycloneDX, SPDX), CSAF advisories, in-toto and SLSA attestations, signed PDFs, certification reports and large test archives.
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
@@ -356,7 +356,7 @@ SCRUTINY uses `imeta` as a general attachment mechanism: an attachment need not 
 | <a id="rule-IM-2"></a>IM-2 | A | — | If a declared `size` is present, implementations SHOULD additionally compare fetched byte length against `size` and treat a mismatch as a verification failure of the same severity as a hash mismatch. |
 | <a id="rule-IM-3"></a>IM-3 | A | NIP-92, NIP-94 | An `imeta` tag names its primary source in `url` and MAY name alternates in `fallback` entries (NIP-94). Implementations SHOULD try the sources in order, `url` first, and accept the first whose fetched bytes match the declared `x` hash. Source selection MUST NOT influence the validity decision — only the hash check does. Additional `url` entries in one `imeta` tag are not alternates and are ignored. |
 | <a id="rule-IM-4"></a>IM-4 | A | — | Implementations MUST warn before displaying or processing unverified artifacts. |
-| <a id="rule-IM-5"></a>IM-5 | V | — | SCRUTINY extends NIP-92: `imeta` attachments are not required to be referenced in the event's `content` field. |
+| <a id="rule-IM-5"></a>IM-5 | V | — | Fabric extends NIP-92: `imeta` attachments are not required to be referenced in the event's `content` field. |
 
 ## 4. Patch format and application
 
@@ -377,7 +377,7 @@ To locate the payload, scan `content` for fenced blocks in document order and ta
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
-| <a id="rule-E1"></a>E1 | V | CommonMark §4.5, NIP-10 | The patch payload MUST be wrapped in a CommonMark §4.5 fenced code block using backtick (`` ` ``) fences. Tilde (`~`) fences are not recognized as SCRUTINY patch payloads. Markup in `kind:1` `content` is a SCRUTINY-specific departure from NIP-10 (§3.2). |
+| <a id="rule-E1"></a>E1 | V | CommonMark §4.5, NIP-10 | The patch payload MUST be wrapped in a CommonMark §4.5 fenced code block using backtick (`` ` ``) fences. Tilde (`~`) fences are not recognized as Fabric patch payloads. Markup in `kind:1` `content` is a Fabric-specific departure from NIP-10 (§3.2). |
 | <a id="rule-E2"></a>E2 | V | CommonMark §4.5 | The opening fence MUST consist of three or more consecutive backticks, followed by an info string whose first whitespace-delimited token, lowercased, is `diff` or `patch`. Any additional info-string tokens after the first are ignored. |
 | <a id="rule-E3"></a>E3 | V | CommonMark §4.5 | The closing fence MUST consist of at least as many backticks as the opening fence, on a line of its own (CommonMark §4.5 closing-fence rule). |
 | <a id="rule-E4"></a>E4 | A | — | **Variable-length fences.** Producers MUST choose an opening-fence length of `max(3, N + 1)`, where `N` is the longest run of consecutive backticks anywhere inside the payload bytes. This guarantees that any payload — including patches whose hunks operate on content that itself contains backtick fences (e.g., a Metadata event embedding a code-block PoC) — can be embedded unambiguously. This is a producer obligation, enforced when building an event: a consumer cannot observe a violation, because a payload whose backtick run reached the fence length would have closed the block early (E3) and the bytes after it are not part of the payload at all (E5). There is nothing left for a consumer to check. |
@@ -530,7 +530,7 @@ The position rules for pure-insertion hunks in [T2](#rule-T2) are argued in [ADR
 
 ### 4.5 Resource limits
 
-SCRUTINY is permissionless, so every consumer processes adversarial input. The determinism check T1 is the most expensive step: it scans the whole target content for each hunk, so cost grows with content length times hunk count.
+Fabric is permissionless, so every consumer processes adversarial input. The determinism check T1 is the most expensive step: it scans the whole target content for each hunk, so cost grows with content length times hunk count.
 
 [RL-1](#rule-RL-1) asks producers to keep to these bounds, which reflect limits that deployed relays enforce:
 
@@ -563,7 +563,7 @@ Every rule belongs to one of three layers. The layer follows from what the rule 
 
 | Layer | Question | Consequence of failing a rule |
 |---|---|---|
-| **V**, validity | Is this event a well-formed SCRUTINY event? | The event is rejected: it MUST NOT enter SCRUTINY processing or be rendered as a Product, Metadata, Binding or Patch. It may still be stored opaquely. |
+| **V**, validity | Is this event a well-formed Fabric event? | The event is rejected: it MUST NOT enter Fabric processing or be rendered as a Product, Metadata, Binding or Patch. It may still be stored opaquely. |
 | **A**, application | Given a V-valid event, does applying it to chain state work, and what does it produce? | The event is kept. The failure is reported as an annotation, and chain state freezes at the last successful application. |
 | **D**, discovery | How do consumers find, fetch, hide and show events across relays? | The event is kept and computed over. Only what the user sees changes. |
 
@@ -578,7 +578,7 @@ flowchart TD
     EV(["Event received"]) --> SIG{"SIG-1: signature and id verify?"}
     SIG -->|no| NP["Not processed"]
     SIG -->|yes| V{"V rules satisfied?"}
-    V -->|no| REJ["Rejected: not a SCRUTINY event"]
+    V -->|no| REJ["Rejected: not a Fabric event"]
     V -->|yes| A["A rules: resolve chains and overlays<br/>failure becomes an annotation; chain freezes"]
     A --> D["D rules: trusted set gates the view<br/>failure hides the event"]
     D --> VIEW(["User's view"])
@@ -588,7 +588,7 @@ flowchart TD
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
-| <a id="rule-TR-1"></a>TR-1 | V | — | V-invalid events MUST NOT enter SCRUTINY processing and MUST NOT be rendered. A V-valid event MUST NOT be rejected by an A or D rule (§5.1). |
+| <a id="rule-TR-1"></a>TR-1 | V | — | V-invalid events MUST NOT enter Fabric processing and MUST NOT be rendered. A V-valid event MUST NOT be rejected by an A or D rule (§5.1). |
 
 ### 5.2 Trust and admission
 
@@ -604,7 +604,7 @@ For example, a user who trusts only a vendor's pubkey, where the vendor publishe
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
-| <a id="rule-TR-2"></a>TR-2 | D | — | A SCRUTINY event is admitted to a user's view if its `pubkey` is trusted OR it is reachable via a trusted Binding (§5.2). |
+| <a id="rule-TR-2"></a>TR-2 | D | — | A Fabric event is admitted to a user's view if its `pubkey` is trusted OR it is reachable via a trusted Binding (§5.2). |
 | <a id="rule-TR-3"></a>TR-3 | D | — | A Binding event is admitted only if its `pubkey` is trusted. Trust does NOT flow transitively through the endpoints (§5.2). |
 | <a id="rule-TR-4"></a>TR-4 | D | — | When a Binding is admitted, both of its endpoints (`e root` and `e link`) become reachable and are admitted even if their authors are not directly trusted (§5.2) — for as long as the Binding is not retracted (§7, DEL-5). |
 | <a id="rule-TR-5"></a>TR-5 | D | — | When a root Product or Metadata is admitted, its canonical chain is admitted with it: root-author patches and root-author kind 5 events targeting them are admitted automatically — for as long as the root's own admission survives (§7, DEL-5). |
@@ -738,7 +738,7 @@ A consumer caches a classification as permanent only when no further observation
 
 ## 7. Kind 5 deletion
 
-SCRUTINY uses [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) kind 5 events as deletion requests and defines no retraction event of its own. A deletion request is honored only when its `pubkey` matches the target's `pubkey`, so nobody can delete another author's event.
+Fabric uses [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) kind 5 events as deletion requests and defines no retraction event of its own. A deletion request is honored only when its `pubkey` matches the target's `pubkey`, so nobody can delete another author's event.
 
 ```json
 {
@@ -787,7 +787,7 @@ flowchart TD
 
 **Figure 8: Effect of deleting a root-author patch.** The patch and its descendants leave the chain and the canonical bytes revert. Overlays on a removed patch are kept: they render by α when the patch can be found and by β when it cannot.
 
-A SCRUTINY-aware relay SHOULD inspect the target of a kind 5 event. If the target carries a `scrutiny-fabric` tag, the relay SHOULD store the deletion request next to the original and keep serving both ([DEL-11](#rule-DEL-11)). This departs from NIP-09, which asks relays to delete the original ([§3.2](#32-base-layers-and-inherited-semantics)).
+A Fabric-aware relay SHOULD inspect the target of a kind 5 event. If the target carries a `scrutiny-fabric` tag, the relay SHOULD store the deletion request next to the original and keep serving both ([DEL-11](#rule-DEL-11)). This departs from NIP-09, which asks relays to delete the original ([§3.2](#32-base-layers-and-inherited-semantics)).
 
 Before applying a deletion request, a consumer checks that its `pubkey` matches the target's. If the target is not yet observed, the request is recorded and applied on arrival, and the canonical bytes are recomputed then. A consumer MUST cache the deletion requests it receives and apply them while building the chain, whether or not the queried relay reports them ([DEL-9](#rule-DEL-9)).
 
@@ -803,11 +803,11 @@ Before applying a deletion request, a consumer checks that its `pubkey` matches 
 | <a id="rule-DEL-8"></a>DEL-8 | A | — | If a kind 5 deletion's target is not yet observed, the deletion event is recorded and applied when the target is observed. Canonical bytes MUST be recomputed when a previously unobserved deletion target arrives. |
 | <a id="rule-DEL-9"></a>DEL-9 | A | — | Implementations MUST cache locally received kind 5 deletion events and apply them during chain construction, regardless of whether the queried relay reports the deletion. |
 | <a id="rule-DEL-10"></a>DEL-10 | D | — | Clients SHOULD offer a "show deleted events" toggle that, when enabled, surfaces deleted events and all their descendants (patches against a deleted root, overlays against deleted patches, etc.) so users can inspect the historical state. |
-| <a id="rule-DEL-11"></a>DEL-11 | D | NIP-09 | SCRUTINY-aware relays SHOULD inspect the `e` tag target of a kind 5 event; if the target event carries a `scrutiny-fabric` `t` tag, the relay SHOULD store the deletion alongside the original and surface it to SCRUTINY-aware queriers. Keeping the original departs from NIP-09's request that relays delete it (§3.2). |
+| <a id="rule-DEL-11"></a>DEL-11 | D | NIP-09 | Fabric-aware relays SHOULD inspect the `e` tag target of a kind 5 event; if the target event carries a `scrutiny-fabric` `t` tag, the relay SHOULD store the deletion alongside the original and surface it to Fabric-aware queriers. Keeping the original departs from NIP-09's request that relays delete it (§3.2). |
 
 ## 8. Discovery
 
-All queries assume relays that support [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) `#t`, `#e` and `#i` filters. A discovery query selects SCRUTINY events by `#t:["scrutiny-fabric"]` or by an event-type value ([DQ-1](#rule-DQ-1)). A relay returns whatever matches, so a consumer verifies [TAG-1](#rule-TAG-1) on every result. [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md) `search` support is optional; a client SHOULD check the relay's [NIP-11](https://github.com/nostr-protocol/nips/blob/master/11.md) document before relying on it.
+All queries assume relays that support [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) `#t`, `#e` and `#i` filters. A discovery query selects Fabric events by `#t:["scrutiny-fabric"]` or by an event-type value ([DQ-1](#rule-DQ-1)). A relay returns whatever matches, so a consumer verifies [TAG-1](#rule-TAG-1) on every result. [NIP-50](https://github.com/nostr-protocol/nips/blob/master/50.md) `search` support is optional; a client SHOULD check the relay's [NIP-11](https://github.com/nostr-protocol/nips/blob/master/11.md) document before relying on it.
 
 ### 8.1 Finding events by what they are
 
@@ -825,7 +825,7 @@ A user who knows an indexer (CPE, CVE, PURL, …) starts with the most specific 
    {"kinds": [1], "#t": ["scrutiny-fabric"], "#i": ["cpe:2.3:h:infineon:m7794a12:-:*:*:*:*:*:*:*", "cpe:2.3:h:infineon:m7794a12:*", "cpe:2.3:h:infineon:*"]}
    ```
 
-3. **Free text** (NIP-50), if indexer search fails. Support, tokenization and ranking vary by relay, and results are sorted by relevance, not by `created_at`. The client verifies that results carry valid SCRUTINY tags and match what the user asked for ([DQ-3](#rule-DQ-3)).
+3. **Free text** (NIP-50), if indexer search fails. Support, tokenization and ranking vary by relay, and results are sorted by relevance, not by `created_at`. The client verifies that results carry valid Fabric tags and match what the user asked for ([DQ-3](#rule-DQ-3)).
 
    ```json
    {"kinds": [1], "#t": ["scrutiny-fabric"], "search": "Infineon M7794A12"}
@@ -852,7 +852,7 @@ Metadata discovery follows the same ladder with `cve:`, `cwe:` and other metadat
 
 For every chain root, patch and Binding it caches, a client SHOULD issue the deletion query at first sight and periodically afterwards ([DQ-2](#rule-DQ-2)). Bindings are included because deleting one revokes the admission it conferred ([DEL-5](#rule-DEL-5)).
 
-A `#t` list MUST NOT combine `scrutiny-fabric` with another SCRUTINY value ([DQ-5](#rule-DQ-5)): NIP-01 matches any listed value and every SCRUTINY event carries the fabric tag, so the combination selects every SCRUTINY event.
+A `#t` list MUST NOT combine `scrutiny-fabric` with another Fabric value ([DQ-5](#rule-DQ-5)): NIP-01 matches any listed value and every Fabric event carries the fabric tag, so the combination selects every Fabric event.
 
 ```mermaid
 sequenceDiagram
@@ -889,7 +889,7 @@ Three kinds of query have no cheap indexed form and need content parsing or NIP-
 | <a id="rule-DQ-2"></a>DQ-2 | D | NIP-09 | Clients SHOULD issue `{kinds:[5], #e:[<id>]}` for every chain root, every patch, and every Binding they cache, both at first sight and periodically thereafter, to guard against relays that store deletions but omit them from default filter results. Binding deletions are required because retraction revokes conferred admission (§7, DEL-5). |
 | <a id="rule-DQ-3"></a>DQ-3 | D | NIP-50 | When falling back to NIP-50 free-text `search` queries (§8.1 step 3), clients MUST verify returned events carry valid `scrutiny-fabric` tags (per §3.1) and match the user's intent. NIP-50 ranking is relay-dependent and untrusted. |
 | <a id="rule-DQ-4"></a>DQ-4 | D | NIP-10 | When traversing `e`-tag references (§3.4, §8.2), the query MUST select the expected event-type `t` value, results MUST be filtered locally for that tag, and the `e` tag markers (`root`, `link`, `reply`, `supersedes`) MUST be inspected to determine each result's role relative to the queried event. |
-| <a id="rule-DQ-5"></a>DQ-5 | D | NIP-01 | A `#t` filter list MUST NOT combine `scrutiny-fabric` with any other SCRUTINY `t` value (an event-type value or a version value). NIP-01 matches any listed value and every SCRUTINY event carries the fabric tag, so the combination selects every SCRUTINY event and voids the other constraint. |
+| <a id="rule-DQ-5"></a>DQ-5 | D | NIP-01 | A `#t` filter list MUST NOT combine `scrutiny-fabric` with any other Fabric `t` value (an event-type value or a version value). NIP-01 matches any listed value and every Fabric event carries the fabric tag, so the combination selects every Fabric event and voids the other constraint. |
 | <a id="rule-DQ-6"></a>DQ-6 | D | — | A chain's patches are obtained with the root-anchored query `{"kinds":[1],"#t":["scrutiny-patch"],"#e":["<root-event-id>"]}`. Every patch names the chain root in an `e` tag with marker `root` (PT-1), so one query reaches the whole chain however deep it is. A consumer MUST keep only results whose `e` tag with marker `root` names the queried id, because the filter also matches events that merely mention it. A relay may truncate results (NIP-11 `max_limit`, `default_limit`), so a consumer MUST page until a query returns fewer events than the limit in force. Chain order comes from `e reply` parentage (PT-2), never from `created_at`. |
 | <a id="rule-DQ-7"></a>DQ-7 | D | NIP-01 | Events whose ids are known are fetched with `{"ids":["<event-id>", ...]}`. DQ-1 does not apply to such a fetch: the id fixes the event, and its signature and id are verified under SIG-1. |
 | <a id="rule-DQ-8"></a>DQ-8 | D | NIP-01 | The events that supersede a known event are found with `{"kinds":[1],"#t":["<event type of the known event>"],"#e":["<event-id>"],"authors":["<pubkey of the known event>"]}`. Only results carrying a `supersedes` marker that names the id count (SUP-1). |

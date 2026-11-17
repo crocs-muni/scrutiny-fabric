@@ -10,7 +10,9 @@ tables under 0.9.1 map the old names to the new ones.
 
 Restructure. **No rule changed:** the 151 rules have the same IDs, layers, inheritance and wording as in
 0.9.0, and `vectors/` is byte-identical. The only edits inside rule rows are the section references
-they contain, updated to the new numbering (28 rows). Section titles and numbers changed, so citations
+they contain, updated to the new numbering (28 rows), and the product name: "SCRUTINY event" is now "Fabric event",
+"SCRUTINY-aware" is "Fabric-aware" and "SCRUTINY-specific" is "Fabric-specific" (SCRUTINY is the umbrella of tools; the protocol
+is SCRUTINY Fabric). Together these touch 36 rows. Section titles and numbers changed, so citations
 of sections need updating; rule IDs are stable.
 
 - **One normative file.** `docs/protocol-spec.md` holds the rule tables as the only statement of each
