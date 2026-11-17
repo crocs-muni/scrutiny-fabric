@@ -135,7 +135,9 @@ Publishers MAY attach [NIP-03](https://github.com/nostr-protocol/nips/blob/maste
 
 ### 3.2 Base layers and inherited semantics
 
-SCRUTINY builds on Nostr and CommonMark. | Specification | Used for | Status |
+SCRUTINY builds on Nostr and CommonMark. The table lists what it depends on.
+
+| Specification | Used for | Status |
 |---|---|---|
 | [NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md) | Event structure, signatures, relay protocol, single-letter tag indexing | Required |
 | [NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md) | Deletion requests (kind 5), [§7](#7-kind-5-deletion) | Required |
