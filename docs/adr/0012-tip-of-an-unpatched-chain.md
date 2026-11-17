@@ -12,7 +12,7 @@ An overlay is `clean` when its target is the tip of the canonical chain. If the 
 
 ## Decision
 
-The tip is the last event in the canonical chain: the last patch where the chain has patches, and the root event itself where it has none. A chain with no patches is not a chain without a tip. While an unresolved self-fork leaves the chain undefined, the tip is undefined too.
+The tip is the last event of the applied chain: the root event where the chain has no patches, otherwise the last successfully applied patch. A chain with no patches is not a chain without a tip. The tip is undefined while an unresolved self-fork or a ceiling is the earlier freeze point (RC-5, OV-10).
 
 ## Consequences
 

@@ -282,7 +282,7 @@
       "layer": "V",
       "inherits": [],
       "section": "3.5",
-      "text": "A Patch event MUST carry zero or one fenced `diff` / `patch` code block."
+      "text": "A Patch event carries zero or one patch payload; further fenced `diff` / `patch` blocks are prose (PT-4, E6)."
     },
     {
       "id": "PT-4",
@@ -303,14 +303,14 @@
       "layer": "A",
       "inherits": [],
       "section": "3.5",
-      "text": "A root-author patch's `e reply` MUST point at the root event or another root-author patch. A root-author patch replying to a foreign patch is ignored for canonical-chain construction (§6.3). While the target is unobserved this rule cannot be evaluated — the parent's authorship class is unknown — so the patch is neither included in nor excluded from the chain on its basis; it is retained and held per §6.4 (UR-4)."
+      "text": "A root-author patch's `e reply` MUST point at the root event or another root-author patch of the same root. A root-author patch whose `e reply` names any other event (a foreign patch, a Binding, an event outside its chain) is ignored for canonical-chain construction (§6.3). While the target is unobserved this rule cannot be evaluated — the parent's authorship class is unknown — so the patch is neither included in nor excluded from the chain on its basis; it is retained and held per §6.4 (UR-4)."
     },
     {
       "id": "PT-7",
       "layer": "V",
       "inherits": [],
       "section": "3.5",
-      "text": "A foreign patch's `e reply` MUST point at the root event or a root-author patch. Overlay-to-overlay reply is invalid (§6.3)."
+      "text": "A foreign patch's `e reply` MUST point at the root event or a root-author patch of the same root. A foreign patch whose observed `e reply` target is any other event is invalid; this includes overlay-to-overlay reply (§6.3). While the target is unobserved the patch is pending (as UR-2 for an unobserved root), is retained and re-evaluated when the target arrives, and renders as an orphaned overlay (OV-3)."
     },
     {
       "id": "PT-8",
@@ -401,7 +401,7 @@
       "layer": "V",
       "inherits": [],
       "section": "3.7",
-      "text": "Prefix is lowercase ASCII matching `[a-z0-9-]+`."
+      "text": "Prefix is lowercase ASCII matching `[a-z0-9-]+`. An `i` value with no `:` has no prefix and breaks this rule."
     },
     {
       "id": "IR-2",
@@ -571,7 +571,7 @@
       "layer": "V",
       "inherits": [],
       "section": "4.2",
-      "text": "The `---` and `+++` header path tokens MUST be exactly `a/content` and `b/content` respectively. A payload with any other path tokens is invalid."
+      "text": "The `---` and `+++` header path tokens MUST be exactly `a/content` and `b/content` respectively. A payload with any other path tokens is invalid. A path-token failure is a `---` line and a `+++` line whose first tokens are not `a/content` and `b/content`. Any other failure of the consumer grammar or of the hunk-length rule of C6, apart from the lines P2 forbids, leaves the payload V-valid: in the canonical chain it fails pre-validation and HALTs (H1), and a foreign patch's overlay is `conflict`."
     },
     {
       "id": "C2",
@@ -580,7 +580,7 @@
         "unified-diff"
       ],
       "section": "4.2",
-      "text": "A payload carrying trailing data on its `---`, `+++`, `diff --git`, or `@@` lines (timestamps as emitted by `patch -u` / GNU `diff -u`, whitespace, etc.) **is valid**; consumers MUST tolerate that data and MUST ignore it."
+      "text": "A payload carrying trailing data on its `---`, `+++`, `diff --git`, or `@@` lines (timestamps as emitted by `patch -u` / GNU `diff -u`, whitespace, etc.) **is valid**; consumers MUST tolerate that data and MUST ignore it. A trailing CR on such a line is part of that data."
     },
     {
       "id": "C3",
@@ -607,14 +607,14 @@
         "unified-diff"
       ],
       "section": "4.2",
-      "text": "A hunk line beginning with `\\` is a no-newline-at-end-of-file marker: it signals the absence of a trailing newline in the corresponding side of the diff, and consumers MUST handle it per the unified-diff spec. Consumers MUST key on the `\\` prefix; **the marker's text is informational and MUST NOT be relied upon**, because GNU diff and git translate it through gettext (`\\ No newline at end of file` under an English locale, `\\ Kein Zeilenumbruch am Dateiende` under `LANG=de_DE.UTF-8`). Matching the English text loses the signal on a payload produced under another locale, which changes the resulting bytes that PB-1 makes normative."
+      "text": "A hunk line beginning with `\\` is a no-newline-at-end-of-file marker: it states that the immediately preceding hunk line has no line terminator (on the old side for a `-` line, on the new side for a `+` line, on both sides for a context line), and consumers MUST handle it so. For matching under T1 and for the resulting bytes, a line without a terminator differs from the same line with one. Consumers MUST key on the `\\` prefix; **the marker's text is informational and MUST NOT be relied upon**, because GNU diff and git translate it through gettext (`\\ No newline at end of file` under an English locale, `\\ Kein Zeilenumbruch am Dateiende` under `LANG=de_DE.UTF-8`). Matching the English text loses the signal on a payload produced under another locale, which changes the resulting bytes that PB-1 makes normative."
     },
     {
       "id": "C6",
       "layer": "A",
       "inherits": [],
       "section": "4.2",
-      "text": "Hunk `@@` line numbers are advisory. Consumers MUST locate each hunk by context match against the current content, subject to the determinism requirement in §4.4."
+      "text": "Hunk `@@` line numbers are advisory; the `@@` counts are authoritative for the length of the hunk. A hunk consists of exactly as many old-side lines (context and `-` lines) and new-side lines (context and `+` lines) as its counts declare, an omitted count meaning 1. While a hunk's counts are unmet, an empty line is an empty context line and a `\\` line is attached to the preceding line and not counted; a line that begins a new `@@` hunk or file section (C8), or the end of the payload, while a count is unmet makes the payload malformed (HALT, H1). Once the counts are met, empty lines and `\\` markers are skipped up to the next `@@` line, file-section header or the end of the payload; any other line there makes the payload malformed. Consumers MUST locate each hunk by context match against the current content, subject to the determinism requirement in §4.4."
     },
     {
       "id": "C7",
@@ -667,14 +667,14 @@
       "layer": "A",
       "inherits": [],
       "section": "4.4",
-      "text": "**Determinism (unambiguous context).** Each hunk's context lines together with its removed (`-`) lines MUST occur exactly once in the current content at the time of application. If the pattern occurs zero times, the patch is invalid (HALT, H1). If the pattern occurs two or more times, the patch is also invalid — the protocol does not rely on the hunk's `@@` line numbers for disambiguation, because production appliers (`git apply`, jsdiff) treat those line numbers as advisory and relocate hunks based on context match. Implementations MAY use the `@@` line numbers as a hint for the initial search position but MUST verify uniqueness across the full target content before applying."
+      "text": "**Determinism (unambiguous context).** Each hunk's context lines together with its removed (`-`) lines MUST occur exactly once in the current content at the time of application. If the pattern occurs zero times, the patch is invalid (HALT, H1). If the pattern occurs two or more times, the patch is also invalid — the protocol does not rely on the hunk's `@@` line numbers for disambiguation, because production appliers (`git apply`, jsdiff) treat those line numbers as advisory and relocate hunks based on context match. Implementations MAY use the `@@` line numbers as a hint for the initial search position but MUST verify uniqueness across the full target content before applying. Occurrences may overlap: the pattern `a`, `a` occurs twice in `a`, `a`, `a`."
     },
     {
       "id": "T2",
       "layer": "A",
       "inherits": [],
       "section": "4.4",
-      "text": "**Insertion carve-out.** A hunk with no context lines and no `-` lines (e.g., `@@ -0,0 +1,N @@` against empty content, or any pure-insertion hunk) has no pattern to disambiguate. Such a hunk MUST apply at the position implied by its `@@` header's `-` line number; the T1 uniqueness check does not apply. **That line number is interpreted in the coordinates of the patch's pre-application content, and MUST be carried forward by the net line delta of all prior hunks in the same patch.** Without the carry-forward this rule and T3 designate different positions the moment an earlier hunk in the same patch has added or removed lines, and the patch silently produces wrong content; with it, both rules hold simultaneously. This is what `git apply` and jsdiff both do. **If the implied position, after carry-forward, falls outside the current content's line range, it clamps: a position past the last line inserts the `+` lines after the final line, and one before the first line inserts them at the start.** The line count is the count of the content's own lines — a final newline terminates the last line and does not add one, so `a\\nb\\n` has two lines and a `@@ -3,0 +3,1 @@` hunk against it appends after `b`. Clamping defines the position; it is not a failed match, and it never reaches T1 or invokes H1. C6's context-match remedy cannot supply the missing semantics here — a pure-insertion hunk has no context lines by definition — so without this sentence an out-of-range header would be an input the grammar permits with three defensible dispositions (clamp here, clamp elsewhere, or HALT) and no named one."
+      "text": "**Insertion carve-out.** A hunk with no context lines and no `-` lines (e.g., `@@ -0,0 +1,N @@` against empty content, or any pure-insertion hunk) has no pattern to disambiguate. Such a hunk MUST apply at the position implied by its `@@` header's `-` line number; the T1 uniqueness check does not apply. For a pure-insertion hunk, `-L,0` designates the position after line L of the pre-application content, and `-0,0` the start. A pure-insertion hunk positioned after, or clamped to follow, a final line that has no terminator HALTs (H1). **That line number is interpreted in the coordinates of the patch's pre-application content, and MUST be carried forward by the net line delta of all prior hunks in the same patch whose header old range ends at or before line L.** Without the carry-forward this rule and T3 designate different positions the moment an earlier hunk in the same patch has added or removed lines, and the patch silently produces wrong content; with it, both rules hold simultaneously. This is what `git apply` and jsdiff both do. **If the implied position, after carry-forward, falls outside the current content's line range, it clamps: a position past the last line inserts the `+` lines after the final line, and one before the first line inserts them at the start.** The line count is the count of the content's own lines — a final newline terminates the last line and does not add one, so `a\\nb\\n` has two lines and a `@@ -3,0 +3,1 @@` hunk against it appends after `b`. Clamping defines the position; it is not a failed match, and it never reaches T1 or invokes H1. C6's context-match remedy cannot supply the missing semantics here — a pure-insertion hunk has no context lines by definition — so without this sentence an out-of-range header would be an input the grammar permits with three defensible dispositions (clamp here, clamp elsewhere, or HALT) and no named one."
     },
     {
       "id": "T3",
@@ -839,7 +839,7 @@
       "layer": "A",
       "inherits": [],
       "section": "6.1",
-      "text": "**Tip identification.** The tip is the last event in the canonical chain: the last patch where the chain carries patches, and the root event itself where it carries none. An unresolved self-fork leaves the chain undefined (SF-1) and the tip undefined with it. This matters because §6.3's `clean` classification turns on whether the overlay's target *is* the tip: reading the tip as \"the last patch\" and nothing else makes an overlay on a root that has never been patched `stale`, asserting that the chain has advanced past a target it has not advanced past. That is the first overlay published against any new Product, so it is the common case."
+      "text": "**Tip identification.** The tip is the last event of the applied chain: the root event, then each successfully applied patch in order. A chain that carries no patches therefore has the root as its tip. The tip is undefined where an unresolved self-fork (SF-1) or a ceiling (RL-5) is the earlier freeze point (SF-7), and defined where a HALT (H1) is: it is then the last successfully applied patch, or the root event if the first patch failed. This matters because §6.3's `clean` classification turns on whether the overlay's target *is* the tip: reading the tip as \"the last patch\" and nothing else makes an overlay on a root that has never been patched `stale`, asserting that the chain has advanced past a target it has not advanced past. That is the first overlay published against any new Product, so it is the common case."
     },
     {
       "id": "SF-1",
@@ -911,7 +911,7 @@
       "layer": "A",
       "inherits": [],
       "section": "6.3",
-      "text": "If the overlay's `e reply` target has no defined resolved content (downstream of HALT, inside an unresolved self-fork, itself a sibling in such a fork, or held pending an unobserved reply parent per UR-4), the overlay MUST be treated as **orphaned** and MUST NOT be classified as clean / conflict / stale."
+      "text": "If the overlay's `e reply` target has no defined resolved content (at or beyond the patch at which application HALTed, inside an unresolved self-fork, itself a sibling in such a fork, held pending an unobserved reply parent per UR-4, or at or beyond the patch at which application stopped under a ceiling per RL-5), the overlay MUST be treated as **orphaned** and MUST NOT be classified as clean / conflict / stale."
     },
     {
       "id": "OV-4",
@@ -956,6 +956,13 @@
       "text": "**Ceiling reached before classification.** If a §4.5 consumer ceiling is reached while classifying an overlay, the outcome is **unclassified** — a distinct fifth outcome, not one of the four classifications. Such an overlay MUST NOT be reported as `conflict` (no failure was established), as `orphaned` (the target is well defined and obtainable, and the α/β rule does not apply), or as `clean` or `stale` (the hunks were never shown to apply). It MUST be accompanied by the distinct resource-limit-exceeded annotation of RL-3, and MUST NOT cite H1."
     },
     {
+      "id": "OV-10",
+      "layer": "A",
+      "inherits": [],
+      "section": "6.3",
+      "text": "**No tip, no `clean`.** While the tip is undefined (an unresolved self-fork, SF-1, or a chain stopped by a ceiling, RL-5), no overlay is `clean`: an overlay whose target is a defined position (the root, or a patch applied before the freeze or stop) and whose hunks apply against it is `stale`; if they fail, `conflict` (OV-9 applies when a ceiling is reached first). An overlay on a position that is not defined is `orphaned` (OV-3)."
+    },
+    {
       "id": "UR-1",
       "layer": "A",
       "inherits": [],
@@ -981,7 +988,7 @@
       "layer": "A",
       "inherits": [],
       "section": "6.4",
-      "text": "A root-author patch whose `e reply` target is unobserved MUST be retained and re-evaluated on the target's arrival. It does not participate in canonical-chain construction or self-fork detection until then; PT-6 is evaluated if and when the target is observed."
+      "text": "A root-author patch whose `e reply` target is unobserved MUST be retained and re-evaluated on the target's arrival. It does not participate in canonical-chain construction or self-fork detection until then; PT-6 is evaluated if and when the target is observed. A root-author patch that replies to a held patch is held too."
     },
     {
       "id": "DEL-1",

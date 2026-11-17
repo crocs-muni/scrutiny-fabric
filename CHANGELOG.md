@@ -8,7 +8,7 @@ tables under 0.9.1 map the old names to the new ones.
 
 ## v0.9.1
 
-Restructure. **No rule changed:** the 151 rules have the same IDs, layers, inheritance and wording as in
+Restructure. **No rule changed:** the 152 rules have the same IDs, layers, inheritance and wording as in
 0.9.0, and `vectors/` is byte-identical. The only edits inside rule rows are the section references
 they contain, updated to the new numbering (28 rows). Section titles and numbers changed, so citations
 of sections need updating; rule IDs are stable.
