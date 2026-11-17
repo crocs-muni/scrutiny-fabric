@@ -775,7 +775,7 @@ A user who knows an indexer (CPE, CVE, PURL, …) starts with the most specific 
    {"kinds": [1], "#t": ["scrutiny-fabric"], "search": "Infineon M7794A12"}
    ```
 
-4. **Full scan**, as a last resort. Fetch all Products and Metadata events and parse their content locally. Narrow the list to one type when the target type is known. The filter selects only Products and Metadata events; Bindings and Patches are fetched by `#e` ([§8.2](#82-following-edges-from-a-known-event)).
+4. **Full scan**, as a last resort. Fetch all Products and Metadata events and parse their content locally. Narrow the list to one type when the target type is known. Bindings and Patches are fetched by `#e` ([§8.2](#82-following-edges-from-a-known-event)).
 
    ```json
    {"kinds": [1], "#t": ["scrutiny-product", "scrutiny-metadata"]}
@@ -840,7 +840,7 @@ The form follows [RFC 3552](https://www.rfc-editor.org/rfc/rfc3552). The [threat
 
 **Assumptions.** Schnorr signatures and SHA-256 hold. Relays are untrusted for completeness and integrity: a relay can omit events, serve them late, ignore filters or stop answering. At least one relay a consumer queries is honest. No attacker controls a user's trusted set. Artifact hosts are untrusted, and attachment bytes are checked against their declared hash. Event content is untrusted input to any renderer or language model that reads it.
 
-**What signatures give.** A signature binds an event to its pubkey: only the key holder can produce one, and any change to the event invalidates it. A signature says nothing about time: an author can set any `created_at`. [CA-1](#rule-CA-1) asks publishers not to backdate; only a relay that sets timestamp bounds can enforce it, and only within those bounds.
+**What signatures give.** A signature binds an event to its pubkey: only the key holder can produce one, and any change to the event invalidates it. A signature says nothing about time: an author can set any `created_at`, and only a relay that sets timestamp bounds can limit it ([CA-1](#rule-CA-1)).
 
 **Attacks the protocol addresses.**
 
@@ -851,9 +851,9 @@ The form follows [RFC 3552](https://www.rfc-editor.org/rfc/rfc3552). The [threat
 - *Hiding conflicts.* Trust filtering runs after chain construction ([TR-7](#rule-TR-7)), so a self-fork or HALT in an admitted chain is always surfaced.
 - *Admission that outlives a Binding.* A retracted Binding stops conferring admission ([DEL-5](#rule-DEL-5)), so a holder of a trusted key cannot leave an event in a user's view by publishing a Binding and deleting it.
 
-**Out of scope.** The mechanism for building a trusted set. Key revocation. Payload semantics: SBOM and advisory contents are not validated. Metadata that is signed but false. Privacy of queries and of relay selection.
+**Out of scope.** Building a trusted set, key revocation, the semantics of payloads (SBOM and advisory contents are not validated), metadata that is signed but false, and the privacy of queries and of relay selection.
 
-**Residual risk.** A leaked key gives the attacker control of every chain of that pubkey: false patches, deletion of legitimate history, forced self-forks, Bindings that look genuine. Without a timestamp attestation, events signed before the leak cannot be told from events signed after it. An OpenTimestamps attestation ([§3.1](#31-identification-and-versioning)) shows that an event existed before a given Bitcoin block, but later events under the same key are indistinguishable from genuine ones. This version has no revocation. The remedy is social: announce the compromise out of band, rotate to a new key and have the community move its trust.
+**Residual risk.** A leaked key gives the attacker control of every chain of that pubkey: false patches, deletion of legitimate history, forced self-forks, Bindings that look genuine. Events signed before the leak cannot be told from events signed after it, unless an OpenTimestamps attestation ([§3.1](#31-identification-and-versioning)) shows that an event existed before a given Bitcoin block; later events under the same key look genuine. This version has no revocation, so the remedy is social: announce the compromise out of band, rotate to a new key and have the community move its trust.
 
 ## 10. Conformance vectors
 
@@ -900,4 +900,4 @@ A case that depends on a ceiling ([§4.5](#45-resource-limits)) carries an `opti
 - **Halt reasons are advisory.** For an `apply` case that expects `halt`, the `reason` field records why the reference implementation halted. This specification defines no vocabulary of halt reasons, so conformance requires only agreement that application halted and, where it succeeded, on the resulting bytes.
 - **Signatures and event IDs are not exercised.** Events in the A-layer vectors are well-formed, but their `id` and `sig` are placeholders. These vectors presuppose that SIG-1 and V-layer validity already succeeded; they do not test either.
 - **Confluence is asserted over the whole corpus.** Every `chain` case MUST yield its stated expectation under every permutation of its `events` array ([UR-1](#rule-UR-1)).
-- **The corpus is incomplete.** It grows as rules are implemented. The absence of a rule from the corpus does not mean the rule is untestable or that an implementation may ignore it.
+- **The corpus is incomplete.** It grows as rules are implemented. A rule without a case still binds.
