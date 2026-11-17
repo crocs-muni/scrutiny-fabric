@@ -291,6 +291,15 @@ fork-resolution path and the admission gap; the rules above are the corrected fo
 word "pending" and the diagnostic sense of "annotation" stay; the other senses moved. "Indexer"
 keeps its meaning for `i` values; the service sense is "index service".
 
+**Implementer-test gaps (G1–G14).** Writing an implementation from the rule text alone showed
+fourteen places where the vectors could only be passed by guessing. Where the vectors and the
+reference library already agreed (counts bound a hunk, the tip under a HALT, overlapping T1
+occurrences, a foreign patch awaiting its reply target is pending) the rule now says so. Two choices
+were not forced by them. First, a chain stopped by a ceiling has no tip, as RL-5 already implied by
+refusing the word `resolved`; OV-10 therefore gives such a chain the fork treatment (nothing `clean`,
+applied targets `stale`, targets past the stop `orphaned`), which differs from the library, which
+still names a tip there. Second, an `i` value with no colon breaks IR-1 (no prefix), not IR-3.
+
 **Deferred.** Issue #48 (a machine-readable prefix vocabulary) needs census evidence that lives with
 the pilot corpus. It ships as its own change with the pointer sentence in §9.
 

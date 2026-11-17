@@ -7,9 +7,9 @@ as it does lives inline in the spec, next to that rule. Cross-cutting rationale 
 
 ## v0.9.0
 
-- **Why 0.9.0.** New rules (SUP-1..4, DQ-5..8, IR-5) and amended rule text (TAG-4, BD-2, BD-5, BD-6,
+- **Why 0.9.0.** New rules (SUP-1..4, DQ-5..8, IR-5, OV-10) and amended rule text (TAG-4, BD-2, BD-5, BD-6,
   PT-6, PT-11, VER-2, SF-1..SF-6, DEL-2, DEL-4, DEL-8, DEL-11, DQ-1, DQ-4, DQ-5, DQ-6, IM-3, CA-1,
-  RC-3..RC-5, E1, H1, RL-5). One release carries every change to normative wording; the restructure
+  RC-3..RC-5, E1, H1, RL-5, C1, C2, C5, C6, T1, T2, OV-3, PT-3, PT-7, UR-4, IR-1). One release carries every change to normative wording; the restructure
   that follows moves text without changing any rule.
 - **Keywords and conformance (DECISIONS S1).** The BCP 14 boilerplate, the three roles (producer,
   consumer, relay), a sentence mapping the words rules use ("publishers", "clients", "implementations")
@@ -57,8 +57,22 @@ as it does lives inline in the spec, next to that rule. Cross-cutting rationale 
   sources, ignores additional `url` entries, and NIP-94 joins the references. E1 and BD-2 list NIP-10
   as an inheritance. CA-1 and §4 cite NIP-11's `created_at` limits, §3.1 notes that NIP-03 is marked
   `unrecommended` upstream, and both deletion examples carry a `k` tag.
-- **Corpus.** `vectors/validity.json` gains four cases (19 → 23) and `vectors/application.json` two
-  (48 → 50); digests and G.1 are re-pinned. Vectors for SUP-1..3 and DQ-5..8 are not yet published
+- **Implementer-test gaps (G1–G14).** A fresh implementation written from the rule text alone passed
+  every vector only after guessing at fourteen points; each is now stated. C6: the `@@` counts bound a
+  hunk, the line numbers stay advisory, a payload that ends early HALTs, and blank lines after the
+  counts are ignored. C1: only a wrong path token is V-invalid; every other grammar failure HALTs. The
+  grammar's trailing data allows a tab or a CR. C5: a `\` line says the preceding line has no
+  terminator, and a line with one differs from the same line without. T1: overlapping occurrences
+  count. T2: `-L,0` is the position after line L, and the carry-forward counts only hunks that lie
+  entirely before the insertion. RC-5: the tip under a HALT is the last applied patch, and undefined
+  under a ceiling. New OV-10: with no tip no overlay is `clean`, and a defined, applying target is
+  `stale`; OV-3 adds targets beyond a ceiling stop to the orphaned cases. UR-4: holds are transitive.
+  PT-7: a foreign patch awaiting its reply target is `pending`; PT-6 and PT-7 say "of the same root"
+  and cover a reply to any other event. PT-3 no longer contradicts PT-4 and E6. IR-1: an `i` value
+  with no colon breaks it. G.2 gains a Reporting paragraph and the vocabulary of `expect`, and
+  `chain/root-only`'s `why` is corrected.
+- **Corpus.** `vectors/validity.json` gains seven cases (19 → 26) and `vectors/application.json` four
+  (48 → 52); digests and G.1 are re-pinned. Vectors for SUP-1..3 and DQ-5..8 are not yet published
   (G.3: the corpus is incomplete by design). The `specVersion` field stays at `0.6.1`.
 - Version tag `scrutiny-v0.8.1` → `scrutiny-v0.9.0`. §3's forward-compatibility example moved from
   `scrutiny-v0.9.0` to `scrutiny-v0.9.1`.

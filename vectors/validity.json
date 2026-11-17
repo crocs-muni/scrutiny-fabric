@@ -1206,6 +1206,186 @@
       "expect": {
         "status": "valid"
       }
+    },
+    {
+      "name": "patch/second-fenced-block-is-prose",
+      "rule": "PT-3",
+      "why": "A second matching fenced block is prose under PT-4 and E6; the event is not invalid for carrying it.",
+      "event": {
+        "id": "f100000000000000000000000000000000000000000000000000000000000000",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "5000000000000000000000000000000000000000000000000000000000000000",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "5000000000000000000000000000000000000000000000000000000000000000",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "```diff\n--- a/content\n+++ b/content\n@@ -1 +1 @@\n-old\n+new\n```\n\n```diff\n--- a/content\n+++ b/content\n@@ -1 +1 @@\n-old\n+ignored\n```",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "5000000000000000000000000000000000000000000000000000000000000000",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "patch/foreign-pending-while-its-reply-target-is-unobserved",
+      "rule": "PT-7",
+      "why": "A foreign patch cannot be judged against PT-7 until its reply target is observed, so the verdict is pending.",
+      "event": {
+        "id": "f200000000000000000000000000000000000000000000000000000000000000",
+        "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "5000000000000000000000000000000000000000000000000000000000000000",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "9000000000000000000000000000000000000000000000000000000000000000",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "```diff\n--- a/content\n+++ b/content\n@@ -1 +1 @@\n-old\n+new\n```",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "5000000000000000000000000000000000000000000000000000000000000000",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "pending",
+        "awaiting": [
+          "9000000000000000000000000000000000000000000000000000000000000000"
+        ]
+      }
+    },
+    {
+      "name": "product/i-value-without-a-colon-has-no-prefix",
+      "rule": "IR-1",
+      "why": "An i value with no colon has no prefix, so IR-1 is broken.",
+      "event": {
+        "id": "f300000000000000000000000000000000000000000000000000000000000000",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "i",
+            "nocolonhere"
+          ],
+          [
+            "k",
+            "nocolonhere"
+          ]
+        ],
+        "content": "A product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "invalid",
+        "mustEmit": [
+          "IR-1"
+        ]
+      }
     }
   ]
 }

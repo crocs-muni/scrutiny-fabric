@@ -346,7 +346,7 @@ A Patch is a NIP-10 reply to a Product, Metadata, or another Patch. It carries a
 
 Patches are append-only: a patch can only be published as a child of an existing event via NIP-10 `e reply`. Patches cannot be inserted between two existing patches, nor can their parent pointer be changed after publication (Nostr events are cryptographically immutable). The only way to remove a patch is kind 5 deletion (§10), and only the patch's own author can delete it ([NIP-09](https://github.com/nostr-protocol/nips/blob/master/09.md)).
 
-A patch event MUST carry zero or one fenced `diff` / `patch` code block. If multiple fenced `diff` / `patch` blocks appear in a patch event's `content`, only the first (in appearance order) is the patch payload; subsequent blocks are ignored (treated as prose). This rule defends against confusion where a renderer-quoted example accidentally appears as a second block.
+A patch event carries zero or one patch payload. If multiple fenced `diff` / `patch` blocks appear in a patch event's `content`, only the first (in appearance order) is the patch payload; subsequent blocks are ignored (treated as prose). This rule defends against confusion where a renderer-quoted example accidentally appears as a second block.
 
 | Tag | Cardinality | Requirement | Description |
 | :--- | :--- | :--- | :--- |
@@ -385,11 +385,11 @@ A patch event MUST carry zero or one fenced `diff` / `patch` code block. If mult
 |---|---|---|---|
 | PT-1 | V | NIP-10 | A Patch event MUST carry exactly one `e` tag with marker `root` (pointing at the root Product or Metadata). |
 | PT-2 | V | NIP-10 | A Patch event MUST carry exactly one `e` tag with marker `reply` (pointing at its immediate target). |
-| PT-3 | V | — | A Patch event MUST carry zero or one fenced `diff` / `patch` code block. |
+| PT-3 | V | — | A Patch event carries zero or one patch payload; further fenced `diff` / `patch` blocks are prose (PT-4, E6). |
 | PT-4 | V | — | If multiple fenced `diff` / `patch` blocks appear, only the first (document order) is the patch payload; subsequent blocks MUST be treated as prose. |
 | PT-5 | A | — | Authorship classification: a **root-author patch** has `pubkey` equal to the root event's `pubkey`; a **foreign patch** does not. |
-| PT-6 | A | — | A root-author patch's `e reply` MUST point at the root event or another root-author patch. A root-author patch replying to a foreign patch is ignored for canonical-chain construction (§7.3). While the target is unobserved this rule cannot be evaluated — the parent's authorship class is unknown — so the patch is neither included in nor excluded from the chain on its basis; it is retained and held per §7.6 (UR-4). |
-| PT-7 | V | — | A foreign patch's `e reply` MUST point at the root event or a root-author patch. Overlay-to-overlay reply is invalid (§7.3). |
+| PT-6 | A | — | A root-author patch's `e reply` MUST point at the root event or another root-author patch of the same root. A root-author patch whose `e reply` names any other event (a foreign patch, a Binding, an event outside its chain) is ignored for canonical-chain construction (§7.3). While the target is unobserved this rule cannot be evaluated — the parent's authorship class is unknown — so the patch is neither included in nor excluded from the chain on its basis; it is retained and held per §7.6 (UR-4). |
+| PT-7 | V | — | A foreign patch's `e reply` MUST point at the root event or a root-author patch of the same root. A foreign patch whose observed `e reply` target is any other event is invalid; this includes overlay-to-overlay reply (§7.3). While the target is unobserved the patch is pending (UR-2) and renders as an orphaned overlay (OV-3). |
 | PT-8 | A | — | A no-op patch (no fenced block, or header-only fenced block per §5.2 N1/N2) participates in chain topology but contributes no content change. |
 | PT-9 | A | — | Patches are append-only. A patch cannot be inserted between two existing patches, and its parent pointer cannot be changed after publication. Removal is only via kind 5 deletion by the patch's own author (§10). |
 | PT-10 | V | — | The event referenced by `e root` MUST be a `scrutiny-product` or `scrutiny-metadata` event. |
@@ -534,7 +534,7 @@ hunk-header    = "@@ -" lineno [ "," count ] " +" lineno [ "," count ] " @@" tra
 hunk-line      = ( " " / "+" / "-" / "\" ) line-content LF
                / LF                ; a context line that is itself empty
 line-content   = *( %x00-09 / %x0B-FF )   ; any octet sequence except LF
-trailing       = [ SP line-content ]  ; tolerated, ignored: timestamps, whitespace, etc.
+trailing       = [ ( SP / HTAB / CR ) line-content ]  ; tolerated, ignored: timestamps, whitespace, a trailing CR
 ```
 
 Four properties of this grammar are easy to misread and are therefore stated explicitly:
@@ -548,12 +548,12 @@ Normative consumer rules:
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
-| C1 | V | — | The `---` and `+++` header path tokens MUST be exactly `a/content` and `b/content` respectively. A payload with any other path tokens is invalid. |
-| C2 | V | unified-diff | A payload carrying trailing data on its `---`, `+++`, `diff --git`, or `@@` lines (timestamps as emitted by `patch -u` / GNU `diff -u`, whitespace, etc.) **is valid**; consumers MUST tolerate that data and MUST ignore it. |
+| C1 | V | — | The `---` and `+++` header path tokens MUST be exactly `a/content` and `b/content` respectively. A payload with any other path tokens is invalid. A payload that fails the consumer grammar or the hunk-length rule of C6 for any other reason is V-valid but fails pre-validation and HALTs (H1); it is not V-invalid. |
+| C2 | V | unified-diff | A payload carrying trailing data on its `---`, `+++`, `diff --git`, or `@@` lines (timestamps as emitted by `patch -u` / GNU `diff -u`, whitespace, etc.) **is valid**; consumers MUST tolerate that data and MUST ignore it. A trailing CR on such a line is part of that data. |
 | C3 | V | unified-diff | A payload carrying the `Index:` preamble (capital `I`, followed by an `===…` separator line) **is valid**; the preamble MAY appear and consumers MUST tolerate it. It is *not* the same as the `index <sha>..<sha>` line emitted by `git diff` by default, which is forbidden (see P2). |
 | C4 | V | unified-diff | A payload carrying a `diff --git a/content b/content` line before the headers **is valid**; the line MAY appear and consumers MUST tolerate it. It is not required. |
-| C5 | A | unified-diff | A hunk line beginning with `\` is a no-newline-at-end-of-file marker: it signals the absence of a trailing newline in the corresponding side of the diff, and consumers MUST handle it per the unified-diff spec. Consumers MUST key on the `\` prefix; **the marker's text is informational and MUST NOT be relied upon**, because GNU diff and git translate it through gettext (`\ No newline at end of file` under an English locale, `\ Kein Zeilenumbruch am Dateiende` under `LANG=de_DE.UTF-8`). Matching the English text loses the signal on a payload produced under another locale, which changes the resulting bytes that PB-1 makes normative. |
-| C6 | A | — | Hunk `@@` line numbers are advisory. Consumers MUST locate each hunk by context match against the current content, subject to the determinism requirement in §5.3. |
+| C5 | A | unified-diff | A hunk line beginning with `\` is a no-newline-at-end-of-file marker: it states that the immediately preceding line on its side has no line terminator, and consumers MUST handle it so. For matching under T1 and for the resulting bytes, a line without a terminator differs from the same line with one. Consumers MUST key on the `\` prefix; **the marker's text is informational and MUST NOT be relied upon**, because GNU diff and git translate it through gettext (`\ No newline at end of file` under an English locale, `\ Kein Zeilenumbruch am Dateiende` under `LANG=de_DE.UTF-8`). Matching the English text loses the signal on a payload produced under another locale, which changes the resulting bytes that PB-1 makes normative. |
+| C6 | A | — | Hunk `@@` line numbers are advisory; the `@@` counts are authoritative for the length of the hunk. A hunk consists of exactly as many old-side lines (context and `-` lines) and new-side lines (context and `+` lines) as its counts declare, an omitted count meaning 1. A payload that ends before the counts are met is malformed (HALT, H1), and empty lines after the counts of a hunk are met, up to the next `@@` line or the end of the payload, are ignored. Consumers MUST locate each hunk by context match against the current content, subject to the determinism requirement in §5.3. |
 | C7 | V | — | **Floor on acceptance.** Any patch payload matching the consumer grammar above **is valid**, including one carrying a header block and zero hunks (the header-only no-op shape, N2). A conforming consumer MUST accept every such payload and MUST NOT apply a stricter reading of the grammar than the grammar states. This is the inclusive counterpart to C1: C1 fixes what the valid set excludes, C7 fixes its lower bound. It is what forbids a consumer being stricter than the grammar on its own initiative, a case TR-1's second clause does not reach because no A or D rule is involved. |
 | C8 | A | unified-diff | **Multiple file sections.** A payload MAY carry more than one `file-section`. A `---` line occurring where a hunk line could appear begins a new file section; it MUST NOT be interpreted as a removal line. Consumers MUST process the hunks of every section as a single sequence in document order, sequenced per §5.3 T3, and MUST NOT drop any section. Because §5.2 C1 constrains every section's paths to `a/content` / `b/content`, the sections address one and the same content. |
 
@@ -646,8 +646,8 @@ The determinism, HALT, and chain-building rules for the procedure above:
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
-| T1 | A | — | **Determinism (unambiguous context).** Each hunk's context lines together with its removed (`-`) lines MUST occur exactly once in the current content at the time of application. If the pattern occurs zero times, the patch is invalid (HALT, H1). If the pattern occurs two or more times, the patch is also invalid — the protocol does not rely on the hunk's `@@` line numbers for disambiguation, because production appliers (`git apply`, jsdiff) treat those line numbers as advisory and relocate hunks based on context match. Implementations MAY use the `@@` line numbers as a hint for the initial search position but MUST verify uniqueness across the full target content before applying. |
-| T2 | A | — | **Insertion carve-out.** A hunk with no context lines and no `-` lines (e.g., `@@ -0,0 +1,N @@` against empty content, or any pure-insertion hunk) has no pattern to disambiguate. Such a hunk MUST apply at the position implied by its `@@` header's `-` line number; the T1 uniqueness check does not apply. **That line number is interpreted in the coordinates of the patch's pre-application content, and MUST be carried forward by the net line delta of all prior hunks in the same patch.** Without the carry-forward this rule and T3 designate different positions the moment an earlier hunk in the same patch has added or removed lines, and the patch silently produces wrong content; with it, both rules hold simultaneously. This is what `git apply` and jsdiff both do. **If the implied position, after carry-forward, falls outside the current content's line range, it clamps: a position past the last line inserts the `+` lines after the final line, and one before the first line inserts them at the start.** The line count is the count of the content's own lines — a final newline terminates the last line and does not add one, so `a\nb\n` has two lines and a `@@ -3,0 +3,1 @@` hunk against it appends after `b`. Clamping defines the position; it is not a failed match, and it never reaches T1 or invokes H1. C6's context-match remedy cannot supply the missing semantics here — a pure-insertion hunk has no context lines by definition — so without this sentence an out-of-range header would be an input the grammar permits with three defensible dispositions (clamp here, clamp elsewhere, or HALT) and no named one. |
+| T1 | A | — | **Determinism (unambiguous context).** Each hunk's context lines together with its removed (`-`) lines MUST occur exactly once in the current content at the time of application. If the pattern occurs zero times, the patch is invalid (HALT, H1). If the pattern occurs two or more times, the patch is also invalid — the protocol does not rely on the hunk's `@@` line numbers for disambiguation, because production appliers (`git apply`, jsdiff) treat those line numbers as advisory and relocate hunks based on context match. Implementations MAY use the `@@` line numbers as a hint for the initial search position but MUST verify uniqueness across the full target content before applying. Occurrences may overlap: the pattern `a`, `a` occurs twice in `a`, `a`, `a`. |
+| T2 | A | — | **Insertion carve-out.** A hunk with no context lines and no `-` lines (e.g., `@@ -0,0 +1,N @@` against empty content, or any pure-insertion hunk) has no pattern to disambiguate. Such a hunk MUST apply at the position implied by its `@@` header's `-` line number; the T1 uniqueness check does not apply. For a pure-insertion hunk, `-L,0` designates the position after line L of the pre-application content, and `-0,0` the start. **That line number is interpreted in the coordinates of the patch's pre-application content, and MUST be carried forward by the net line delta of all prior hunks in the same patch whose old-side range lies entirely before it.** Without the carry-forward this rule and T3 designate different positions the moment an earlier hunk in the same patch has added or removed lines, and the patch silently produces wrong content; with it, both rules hold simultaneously. This is what `git apply` and jsdiff both do. **If the implied position, after carry-forward, falls outside the current content's line range, it clamps: a position past the last line inserts the `+` lines after the final line, and one before the first line inserts them at the start.** The line count is the count of the content's own lines — a final newline terminates the last line and does not add one, so `a\nb\n` has two lines and a `@@ -3,0 +3,1 @@` hunk against it appends after `b`. Clamping defines the position; it is not a failed match, and it never reaches T1 or invokes H1. C6's context-match remedy cannot supply the missing semantics here — a pure-insertion hunk has no context lines by definition — so without this sentence an out-of-range header would be an input the grammar permits with three defensible dispositions (clamp here, clamp elsewhere, or HALT) and no named one. |
 | T3 | A | — | **Multi-hunk sequencing.** When a patch carries multiple hunks, the T1 check for each hunk is evaluated against the content as produced after all prior hunks in the **same patch** have already been applied. Hunks are processed in document order, across every `file-section` of the payload (C8). A hunk that would satisfy T1 against the pre-patch content but fails after an earlier hunk in the same patch has shifted matching positions causes the patch to HALT (H1). A pure-insertion hunk has no pattern and so is never subject to this check; its position is governed by T2's carry-forward instead. |
 | H1 | A | — | **HALT semantics.** If pre-validation fails for a patch in the canonical chain, the canonical bytes are the state after the last successfully applied patch (or the root state, if the first patch is invalid). No later patches are applied, even if they might themselves be individually valid. HALT is reevaluated whenever the chain topology changes — most commonly when the invalid patch is kind 5 deleted by its author (§10), removing it from the chain. |
 | H2 | A | — | **Protocol error annotation.** Implementations MUST surface an invalid patch as a protocol error annotation, including the event ID, author, and the failure reason. |
@@ -824,7 +824,7 @@ The canonical chain is what the root author is "currently saying" about their Pr
 | RC-2 | A | — | Canonical bytes are computed strictly from the root event plus the canonical chain. Foreign overlays are NOT part of canonical bytes. |
 | RC-3 | A | — | Service consumers MUST recompute canonical bytes and overlay states whenever their observed event set changes in a way that affects events they serve. |
 | RC-4 | A | — | Interactive consumers SHOULD recompute on observed-set change. |
-| RC-5 | A | — | **Tip identification.** The tip is the last event in the canonical chain: the last patch where the chain carries patches, and the root event itself where it carries none. An unresolved self-fork leaves the chain undefined (SF-1) and the tip undefined with it. This matters because §7.3's `clean` classification turns on whether the overlay's target *is* the tip: reading the tip as "the last patch" and nothing else makes an overlay on a root that has never been patched `stale`, asserting that the chain has advanced past a target it has not advanced past. That is the first overlay published against any new Product, so it is the common case. |
+| RC-5 | A | — | **Tip identification.** The tip is the last event in the canonical chain: the last patch where the chain carries patches, and the root event itself where it carries none. An unresolved self-fork leaves the chain undefined (SF-1) and the tip undefined with it. This matters because §7.3's `clean` classification turns on whether the overlay's target *is* the tip: reading the tip as "the last patch" and nothing else makes an overlay on a root that has never been patched `stale`, asserting that the chain has advanced past a target it has not advanced past. That is the first overlay published against any new Product, so it is the common case. Where application HALTs (H1), the tip is the last successfully applied patch, or the root event if the first patch failed; patches after it are not part of the applied chain. Under a ceiling (RL-5) the tip is undefined, as for an unresolved self-fork. |
 
 ### 7.2 Root self-fork (invalid state)
 
@@ -882,13 +882,14 @@ Foreign overlays are always rendered against their original `e reply` target's r
 |---|---|---|---|
 | OV-1 | — | — | *Reserved.* Foreign-patch reply-target validity is normative under **PT-7** (§4.4). This ID is retained for cross-reference stability. |
 | OV-2 | A | — | **Target-state snapshot.** An overlay is interpreted against the target's resolved content — the canonical bytes computed by applying the canonical chain up to and including the foreign patch's `e reply` target. This is the byte sequence the overlay author signed against, and the only sequence the overlay is evaluated against. |
-| OV-3 | A | — | If the overlay's `e reply` target has no defined resolved content (downstream of HALT, inside an unresolved self-fork, itself a sibling in such a fork, or held pending an unobserved reply parent per UR-4), the overlay MUST be treated as **orphaned** and MUST NOT be classified as clean / conflict / stale. |
+| OV-3 | A | — | If the overlay's `e reply` target has no defined resolved content (downstream of HALT, inside an unresolved self-fork, itself a sibling in such a fork, held pending an unobserved reply parent per UR-4, or beyond the patch at which application stopped under a ceiling per RL-5), the overlay MUST be treated as **orphaned** and MUST NOT be classified as clean / conflict / stale. |
 | OV-4 | A | — | Overlay classification against its target is a pure function of (overlay payload, target's resolved content) and MUST be deterministic across compliant clients. Given fixed ceilings, this holds for OV-9's `unclassified` outcome too; because ceilings are local and configurable (RL-2), two clients with *different* ceilings MAY reach different outcomes, and that is the one permitted source of divergence. |
 | OV-5 | D | — | Clients SHOULD expose the classification (clean / conflict / stale / orphaned, or `unclassified` per OV-9) through their API/data layer so downstream tooling can read it. Visual rendering remains client-defined. |
 | OV-6 | A | — | A foreign overlay is rendered against its original `e reply` target's resolved content. Clients MAY additionally offer a "rebase preview" against the current canonical tip; this is informational and outside the protocol's normative surface. |
 | OV-7 | D | — | A foreign patch is visible to the user only if its `pubkey` is in the user's trusted set. The trust set gates which overlays appear; it does not affect the canonical chain. |
 | OV-8 | A | — | A root-author patch whose `e reply` points at a foreign patch is ignored for canonical-chain construction. |
 | OV-9 | A | — | **Ceiling reached before classification.** If a §5.4 consumer ceiling is reached while classifying an overlay, the outcome is **unclassified** — a distinct fifth outcome, not one of the four classifications. Such an overlay MUST NOT be reported as `conflict` (no failure was established), as `orphaned` (the target is well defined and obtainable, and the α/β rule does not apply), or as `clean` or `stale` (the hunks were never shown to apply). It MUST be accompanied by the distinct resource-limit-exceeded annotation of RL-3, and MUST NOT cite H1. |
+| OV-10 | A | — | **No tip, no `clean`.** While the tip is undefined (an unresolved self-fork, SF-1, or a chain stopped by a ceiling, RL-5), no overlay is `clean`: an overlay whose target is a defined position (the root, or a patch applied before the freeze or stop) and whose hunks apply against it is `stale`. An overlay on a position that is not defined is `orphaned` (OV-3). |
 
 ### 7.4 Computing the canonical bytes
 
@@ -940,7 +941,7 @@ Under the eventual-consistency model of §3.2, an event may be observed before t
 | UR-1 | A | — | Ingestion MUST be confluent: the state an implementation reaches depends only on the set of events observed, never on arrival order. |
 | UR-2 | A | — | A Patch whose `e root` is unobserved MUST be retained and re-evaluated on the root's arrival. It does not participate in the canonical chain until then. |
 | UR-3 | D | — | A classification MAY be cached as permanent only when no further observation could change it. A Patch's authorship class MUST NOT be cached while its root is unobserved. |
-| UR-4 | A | — | A root-author patch whose `e reply` target is unobserved MUST be retained and re-evaluated on the target's arrival. It does not participate in canonical-chain construction or self-fork detection until then; PT-6 is evaluated if and when the target is observed. |
+| UR-4 | A | — | A root-author patch whose `e reply` target is unobserved MUST be retained and re-evaluated on the target's arrival. It does not participate in canonical-chain construction or self-fork detection until then; PT-6 is evaluated if and when the target is observed. A patch that replies to a held patch is held too. |
 
 ---
 
@@ -1097,7 +1098,7 @@ The registry above is a baseline; SCRUTINY does not mandate a closed set. New pr
 
 | # | Layer | Inherits from | Rule |
 |---|---|---|---|
-| IR-1 | V | — | Prefix is lowercase ASCII matching `[a-z0-9-]+`. |
+| IR-1 | V | — | Prefix is lowercase ASCII matching `[a-z0-9-]+`. An `i` value with no `:` has no prefix and breaks this rule. |
 | IR-2 | V | — | Value is the source authority's canonical form, preserved verbatim (case, punctuation, separators all as the issuing body writes them). |
 | IR-3 | V | NIP-73 | Parsers split on the **first** `:` only; values containing colons (e.g., `cpe:2.3:...`) work transparently. |
 | IR-4 | V | — | Unknown prefixes are valid; parsers pass them through and treat them as opaque indexers. |
@@ -1473,11 +1474,11 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | <a id="rule-BD-12"></a>BD-12 | 4.3 | V | NIP-10 | Author-hint mismatch does NOT invalidate the referencing Binding. |
 | <a id="rule-PT-1"></a>PT-1 | 4.4 | V | NIP-10 | Exactly one `e root` tag. |
 | <a id="rule-PT-2"></a>PT-2 | 4.4 | V | NIP-10 | Exactly one `e reply` tag. |
-| <a id="rule-PT-3"></a>PT-3 | 4.4 | V | — | Zero or one fenced `diff` / `patch` block. |
+| <a id="rule-PT-3"></a>PT-3 | 4.4 | V | — | Zero or one patch payload; further matching blocks are prose. |
 | <a id="rule-PT-4"></a>PT-4 | 4.4 | V | — | Multiple fenced blocks → only the first is the payload. |
 | <a id="rule-PT-5"></a>PT-5 | 4.4 | A | — | Root-author vs foreign classification by `pubkey`. |
-| <a id="rule-PT-6"></a>PT-6 | 4.4 | A | — | Root-author patch `e reply` MUST point at root or root-author patch (otherwise ignored for chain); unevaluable while the target is unobserved — held per UR-4. |
-| <a id="rule-PT-7"></a>PT-7 | 4.4 | V | — | Foreign patch `e reply` MUST point at root or root-author patch; no overlay-to-overlay. |
+| <a id="rule-PT-6"></a>PT-6 | 4.4 | A | — | Root-author patch `e reply` MUST point at root or root-author patch of the same root (otherwise ignored for chain); unevaluable while the target is unobserved — held per UR-4. |
+| <a id="rule-PT-7"></a>PT-7 | 4.4 | V | — | Foreign patch `e reply` MUST point at root or root-author patch of the same root, else invalid (no overlay-to-overlay); pending while unobserved. |
 | <a id="rule-PT-8"></a>PT-8 | 4.4 | A | — | No-op patch participates in chain topology but contributes no change. |
 | <a id="rule-PT-9"></a>PT-9 | 4.4 | A | — | Patches append-only; removal only via author's own kind 5. |
 | <a id="rule-PT-10"></a>PT-10 | 4.4 | V | — | `e root` MUST reference a `scrutiny-product` or `scrutiny-metadata` event. |
@@ -1507,12 +1508,12 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | <a id="rule-N1"></a>N1 | 5.2 | A | — | Prose-only patch is a valid no-op. |
 | <a id="rule-N2"></a>N2 | 5.2 | A | — | Header-only fenced block (valid headers, zero hunks) is a valid no-op. |
 | <a id="rule-N3"></a>N3 | 5.2 | A | — | Both no-op shapes MUST be treated as successful no-op application. |
-| <a id="rule-C1"></a>C1 | 5.2 | V | — | `---`/`+++` path tokens MUST be exactly `a/content` and `b/content`. |
+| <a id="rule-C1"></a>C1 | 5.2 | V | — | `---`/`+++` path tokens MUST be exactly `a/content` and `b/content`; other grammar failures HALT, they are not V-invalid. |
 | <a id="rule-C2"></a>C2 | 5.2 | V | unified-diff | Trailing data on header/`@@` lines leaves a payload valid; tolerate and ignore it. |
 | <a id="rule-C3"></a>C3 | 5.2 | V | unified-diff | An `Index:` preamble leaves a payload valid; it MAY appear and MUST be tolerated. |
 | <a id="rule-C4"></a>C4 | 5.2 | V | unified-diff | A `diff --git` line leaves a payload valid; it MAY appear and MUST be tolerated. |
 | <a id="rule-C5"></a>C5 | 5.2 | A | unified-diff | A hunk line beginning with `\` is a no-newline marker; key on the prefix, not the (localised) text. |
-| <a id="rule-C6"></a>C6 | 5.2 | A | — | `@@` line numbers advisory; consumers locate hunks by context match. |
+| <a id="rule-C6"></a>C6 | 5.2 | A | — | `@@` line numbers advisory, `@@` counts bound the hunk; consumers locate hunks by context match. |
 | <a id="rule-C7"></a>C7 | 5.2 | V | — | Floor on acceptance: any payload matching the §5.2 grammar is valid, zero-hunk included; no stricter reading. |
 | <a id="rule-C8"></a>C8 | 5.2 | A | unified-diff | Multiple file sections permitted; a `---` at hunk-line position starts a section, not a removal. |
 | <a id="rule-P1"></a>P1 | 5.2 | A | unified-diff | Producers SHOULD emit `min(3, available)` context lines; not a validity criterion for consumers. |
@@ -1543,7 +1544,7 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | <a id="rule-RC-2"></a>RC-2 | 7.1 | A | — | Canonical bytes computed from root + canonical chain; overlays excluded. |
 | <a id="rule-RC-3"></a>RC-3 | 7.1 | A | — | Service consumers MUST recompute on observed-set change. |
 | <a id="rule-RC-4"></a>RC-4 | 7.1 | A | — | Interactive consumers SHOULD recompute on observed-set change. |
-| <a id="rule-RC-5"></a>RC-5 | 7.1 | A | — | The tip is the last chain event — the root itself where the chain carries no patches. |
+| <a id="rule-RC-5"></a>RC-5 | 7.1 | A | — | The tip is the last chain event — the root itself where the chain carries no patches; the last applied patch under a HALT; undefined under a fork or a ceiling. |
 | <a id="rule-SF-1"></a>SF-1 | 7.2 | A | — | Root self-fork: two root-author patches at same parent → chain undefined; a shared pending parent holds both (UR-4), no fork yet. |
 | <a id="rule-SF-2"></a>SF-2 | 7.2 | A | — | Freeze canonical bytes at shared parent while unresolved. |
 | <a id="rule-SF-3"></a>SF-3 | 7.2 | A | — | Surface self-fork as an explicit error condition. |
@@ -1560,10 +1561,11 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | <a id="rule-OV-7"></a>OV-7 | 7.3 | D | — | Foreign overlay visible only if its `pubkey` is in the user's trusted set. |
 | <a id="rule-OV-8"></a>OV-8 | 7.3 | A | — | Root-author patch replying to foreign patch ignored for chain construction. |
 | <a id="rule-OV-9"></a>OV-9 | 7.3 | A | — | Ceiling reached before classification → `unclassified`; never conflict, orphaned, clean or stale. |
+| <a id="rule-OV-10"></a>OV-10 | 7.3 | A | — | No tip (fork or ceiling) → no overlay is `clean`; a defined, applying target is `stale`, an undefined one `orphaned`. |
 | <a id="rule-UR-1"></a>UR-1 | 7.6 | A | — | Ingestion MUST be confluent: state depends on the observed set, never on arrival order. |
 | <a id="rule-UR-2"></a>UR-2 | 7.6 | A | — | Patch with unobserved `e root` is retained and re-evaluated on the root's arrival. |
 | <a id="rule-UR-3"></a>UR-3 | 7.6 | D | — | Classification cached as permanent only when no further observation could change it. |
-| <a id="rule-UR-4"></a>UR-4 | 7.6 | A | — | Root-author patch with unobserved `e reply` target is retained and re-evaluated on arrival; no chain or fork participation until then. |
+| <a id="rule-UR-4"></a>UR-4 | 7.6 | A | — | Root-author patch with unobserved `e reply` target is retained and re-evaluated on arrival; no chain or fork participation until then; a patch replying to a held patch is held. |
 | <a id="rule-DQ-1"></a>DQ-1 | 8 | D | NIP-01 | Discovery queries assume NIP-01 `#t`/`#e`/`#i` filters; include `#t:["scrutiny-fabric"]` unless selecting by an event-type `t` value; verify TAG-1 on every result. |
 | <a id="rule-DQ-2"></a>DQ-2 | 8 | D | NIP-09 | SHOULD issue `{kinds:[5], #e:[<id>]}` per cached root, patch, and Binding, periodically. |
 | <a id="rule-DQ-3"></a>DQ-3 | 8 | D | NIP-50 | NIP-50 search results MUST be verified for valid `scrutiny-fabric` tags and intent match. |
@@ -1572,7 +1574,7 @@ A flat sortable index of every mnemonic rule ID defined in this specification. E
 | <a id="rule-DQ-6"></a>DQ-6 | 8 | D | — | A chain's patches come from one root-anchored query on `#t:["scrutiny-patch"]` and `#e:[root]`; order from `e reply`, never `created_at`. |
 | <a id="rule-DQ-7"></a>DQ-7 | 8 | D | NIP-01 | Known ids are fetched with `{"ids":[...]}`; DQ-1 does not apply. |
 | <a id="rule-DQ-8"></a>DQ-8 | 8 | D | NIP-01 | Successors of a known event are found by an `#e` query restricted to its author; only `supersedes` markers count. |
-| <a id="rule-IR-1"></a>IR-1 | 9 | V | — | `i` prefix is lowercase ASCII matching `[a-z0-9-]+`. |
+| <a id="rule-IR-1"></a>IR-1 | 9 | V | — | `i` prefix is lowercase ASCII matching `[a-z0-9-]+`; a value with no `:` has no prefix. |
 | <a id="rule-IR-2"></a>IR-2 | 9 | V | — | `i` value is the source authority's canonical form, preserved verbatim. |
 | <a id="rule-IR-3"></a>IR-3 | 9 | V | NIP-73 | Parsers split on the first `:` only. |
 | <a id="rule-IR-4"></a>IR-4 | 9 | V | — | Unknown prefixes valid; pass through as opaque indexers. |
@@ -1603,8 +1605,8 @@ The vectors live in this repository under `vectors/`, one file per rule category
 
 | File | Category | Layer | Cases | SHA-256 |
 |---|---|---|---|---|
-| `vectors/application.json` | application | A | 50 | `6bc9d8e2b86698e53b28af0be5080f92cec7a8bf25bede3e87bd508f6a430381` |
-| `vectors/validity.json` | validity | V | 23 | `a3ddcbf6d393abb826aec25585135f60f3587bc41a1c0f840f02499b46b5c365` |
+| `vectors/application.json` | application | A | 52 | `00aa08e07062787336820c4ee41e07995079f817aa97ee24b4a13671370fb2ed` |
+| `vectors/validity.json` | validity | V | 26 | `721fa55d7b46cc067d7ee2c02968d1d51e90856830c470d447136649f273158a` |
 
 Two further categories are reserved and not yet published: `vectors/discovery.json` (D-layer) and `vectors/serialization.json` (§3 event-id serialization). Their absence is not a statement that the D layer is untestable.
 
@@ -1624,14 +1626,30 @@ Every case in every file carries three common fields:
 
 - `status` — one of `valid`, `invalid`, `pending`, `not-scrutiny`. Normative.
 - `mustEmit` / `mustNotEmit` — rule IDs the implementation is required to report, or required not to report. **Containment, not equality:** an implementation reporting additional advisory issues still conforms. Only the listed codes are constrained.
-- `awaiting` — for `pending`, the event IDs the verdict is waiting on.
+- `awaiting` — for `pending`, the event IDs the verdict is waiting on. `pending` is the verdict for a Binding with unobserved endpoints (BD-6), for a Patch whose `e root` is unobserved (UR-2) and for a foreign patch whose `e reply` target is unobserved (PT-7).
+
+**Reporting.** A validator reports the ID of each rule the event breaks, and of each advisory rule that it does not satisfy and that a vector names, such as PR-4 for a missing `k`. A Binding whose endpoint has the wrong type reports BD-3 (root) or BD-4 (link), BD-5 for the Binding and BD-7 once the rejection is cached; an author-hint mismatch reports BD-12 as advisory; a higher-version event that violates a V rule reports VER-3 together with the rule it violates; an `i` value with no `:` reports IR-1.
 
 **`application.json`** — two case shapes, discriminated by `kind`:
 
 - `kind: "apply"` — §5.3 application of one `payload` against one `content` string. `expect.outcome` is `applied`, `noop` or `halt`; for `applied`, `expect.content` is the resulting byte sequence and is normative under PB-1.
 - `kind: "chain"` — §7 resolution over an `events` set, rooted at `rootId`. `expect.chain` pins the chain state and only those fields the case is about; `expect.overlays` pins overlay classification per §7.3; `expect.annotations` / `expect.noAnnotations` list the rule IDs whose annotation must, or must not, be present.
 
-Where a case depends on a §5.4 ceiling, it carries an explicit `options` object stating the ceiling assumed. Ceilings are local and configurable (RL-2), so a vector that did not state its ceiling would not be reproducible.
+**Vocabulary of `expect`.** A `chain` case names these fields, each only where the case is about it:
+
+| Field | Meaning |
+|---|---|
+| `chain.status` | `resolved`, `forked` (an unresolved self-fork, SF-1), `halted` (H1), `aborted` (a ceiling, RL-5), or `absent` (the root is unobserved). |
+| `chain.content` | The canonical bytes, or the bytes frozen at the fork parent, the last applied patch, or the stop point. |
+| `chain.tipId` | The tip (RC-5); omitted where it is undefined. |
+| `chain.applied` | The ids of the applied patches, in chain order. |
+| `chain.forkParentId`, `chain.branchIds` | The shared parent of a self-fork and the ids of its siblings (the key keeps its earlier name). |
+| `chain.haltedAt`, `chain.abortedAt` | The patch at which application HALTed or stopped. |
+| `chain.reason` | Advisory text (G.3). |
+| `pending` | An exact set: the ids of root-author patches held by UR-2 or UR-4, in any order. |
+| `overlays[]` | Per overlay: `id`, `state` (`clean`, `conflict`, `stale`, `orphaned`, `unclassified`) and, for `orphaned`, `degradation` (`alpha` or `beta`, DEL-7). |
+
+Where a case depends on a §5.4 ceiling, it carries an explicit `options` object stating the ceiling assumed (`options.apply.maxHunks`). Ceilings are local and configurable (RL-2), so a vector that did not state its ceiling would not be reproducible.
 
 ### G.3 What the vectors do and do not establish
 
