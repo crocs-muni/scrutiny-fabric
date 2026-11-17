@@ -6,21 +6,21 @@
       "layer": "V",
       "inherits": [],
       "section": "3.1",
-      "text": "Every Fabric event MUST carry exactly one `[\"t\",\"scrutiny-fabric\"]` tag."
+      "text": "Every SCRUTINY event MUST carry exactly one `[\"t\",\"scrutiny-fabric\"]` tag."
     },
     {
       "id": "TAG-2",
       "layer": "V",
       "inherits": [],
       "section": "3.1",
-      "text": "Every Fabric event MUST carry exactly one version `t` tag matching `^scrutiny-v\\d+\\.\\d+\\.\\d+$`."
+      "text": "Every SCRUTINY event MUST carry exactly one version `t` tag matching `^scrutiny-v\\d+\\.\\d+\\.\\d+$`."
     },
     {
       "id": "TAG-3",
       "layer": "V",
       "inherits": [],
       "section": "3.1",
-      "text": "Every Fabric event MUST carry exactly one event-type `t` tag from `{scrutiny-product, scrutiny-metadata, scrutiny-binding, scrutiny-patch}`."
+      "text": "Every SCRUTINY event MUST carry exactly one event-type `t` tag from `{scrutiny-product, scrutiny-metadata, scrutiny-binding, scrutiny-patch}`."
     },
     {
       "id": "TAG-4",
@@ -204,7 +204,7 @@
       "layer": "V",
       "inherits": [],
       "section": "3.4",
-      "text": "A Binding whose endpoints, once observed, do not satisfy BD-3/BD-4 is an invalid Fabric event and MUST be rejected (TR-1)."
+      "text": "A Binding whose endpoints, once observed, do not satisfy BD-3/BD-4 is an invalid SCRUTINY event and MUST be rejected (TR-1)."
     },
     {
       "id": "BD-6",
@@ -471,7 +471,7 @@
       "layer": "V",
       "inherits": [],
       "section": "3.8",
-      "text": "Fabric extends NIP-92: `imeta` attachments are not required to be referenced in the event's `content` field."
+      "text": "SCRUTINY extends NIP-92: `imeta` attachments are not required to be referenced in the event's `content` field."
     },
     {
       "id": "PB-1",
@@ -495,7 +495,7 @@
         "NIP-10"
       ],
       "section": "4.1",
-      "text": "The patch payload MUST be wrapped in a CommonMark §4.5 fenced code block using backtick (`` ` ``) fences. Tilde (`~`) fences are not recognized as Fabric patch payloads. Markup in `kind:1` `content` is a Fabric-specific departure from NIP-10 (§3.2)."
+      "text": "The patch payload MUST be wrapped in a CommonMark §4.5 fenced code block using backtick (`` ` ``) fences. Tilde (`~`) fences are not recognized as SCRUTINY patch payloads. Markup in `kind:1` `content` is a SCRUTINY-specific departure from NIP-10 (§3.2)."
     },
     {
       "id": "E2",
@@ -760,14 +760,14 @@
       "layer": "V",
       "inherits": [],
       "section": "5.1",
-      "text": "V-invalid events MUST NOT enter Fabric processing and MUST NOT be rendered. A V-valid event MUST NOT be rejected by an A or D rule (§5.1)."
+      "text": "V-invalid events MUST NOT enter SCRUTINY processing and MUST NOT be rendered. A V-valid event MUST NOT be rejected by an A or D rule (§5.1)."
     },
     {
       "id": "TR-2",
       "layer": "D",
       "inherits": [],
       "section": "5.2",
-      "text": "A Fabric event is admitted to a user's view if its `pubkey` is trusted OR it is reachable via a trusted Binding (§5.2)."
+      "text": "A SCRUTINY event is admitted to a user's view if its `pubkey` is trusted OR it is reachable via a trusted Binding (§5.2)."
     },
     {
       "id": "TR-3",
@@ -1109,7 +1109,7 @@
         "NIP-01"
       ],
       "section": "8.4",
-      "text": "A `#t` filter list MUST NOT combine `scrutiny-fabric` with any other Fabric `t` value (an event-type value or a version value). NIP-01 matches any listed value and every Fabric event carries the fabric tag, so the combination selects every Fabric event and voids the other constraint."
+      "text": "A `#t` filter list MUST NOT combine `scrutiny-fabric` with any other SCRUTINY `t` value (an event-type value or a version value). NIP-01 matches any listed value and every SCRUTINY event carries the fabric tag, so the combination selects every SCRUTINY event and voids the other constraint."
     },
     {
       "id": "DQ-6",

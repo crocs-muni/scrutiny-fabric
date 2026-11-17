@@ -10,7 +10,7 @@ Formats for security information already exist: CycloneDX and SPDX for SBOMs, CS
 
 SCRUTINY Fabric answers those two questions by linking documents to products with signed events. An event carries the document as text or as an attached file; the protocol leaves the format to the publisher and does not parse it.
 
-Nostr fits because events are signed by their author's key, relays are interchangeable, and a statement published to several relays is hard to suppress. Every Fabric event is an ordinary Nostr `kind: 1` note, so generic Nostr clients display the text and ignore the rest.
+Nostr fits because events are signed by their author's key, relays are interchangeable, and a statement published to several relays is hard to suppress. Every SCRUTINY event is an ordinary Nostr `kind: 1` note, so generic Nostr clients display the text and ignore the rest.
 
 ## The four event types
 

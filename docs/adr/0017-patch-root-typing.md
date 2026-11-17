@@ -8,7 +8,7 @@
 
 ## Context
 
-A Binding's endpoints are typed: root is a Product, link is a Metadata event (BD-3 to BD-5). A Patch's `e root` had no type constraint, so a Patch could claim a chain anchored in a Binding, another Patch or a non-Fabric event.
+A Binding's endpoints are typed: root is a Product, link is a Metadata event (BD-3 to BD-5). A Patch's `e root` had no type constraint, so a Patch could claim a chain anchored in a Binding, another Patch or a non-SCRUTINY event.
 
 ## Decision
 

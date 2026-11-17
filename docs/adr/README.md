@@ -21,5 +21,5 @@ A record explains why the specification reads as it does and is not normative. R
 | [0013](0013-pure-insertion-position-and-carry-forward.md) | Position of a pure-insertion hunk | Accepted |
 | [0014](0014-self-fork-and-halt-precedence.md) | Self-fork and HALT precedence; deleting a sibling | Accepted |
 | [0015](0015-confluence-and-unobserved-references.md) | Ingestion is confluent; unobserved references are held | Accepted |
-| [0016](0016-departures-from-nip-10-and-nip-09.md) | Fabric-specific departures from NIP-10 and NIP-09 | Accepted |
+| [0016](0016-departures-from-nip-10-and-nip-09.md) | SCRUTINY-specific departures from NIP-10 and NIP-09 | Accepted |
 | [0017](0017-patch-root-typing.md) | A Patch's root must be a Product or Metadata event | Accepted |

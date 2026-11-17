@@ -1,8 +1,8 @@
 # Git mapping
 
-This note is not normative; [the specification](../protocol-spec.md) defines every behavior. For readers who know git, each row pairs a git concept with its Fabric counterpart.
+This note is not normative; [the specification](../protocol-spec.md) defines every behavior. For readers who know git, each row pairs a git concept with its SCRUTINY counterpart.
 
-| Git concept | Fabric counterpart | Notes |
+| Git concept | SCRUTINY counterpart | Notes |
 |---|---|---|
 | Commit | Patch event | Carries a unified diff. |
 | Parent pointer | NIP-10 `e reply` marker | The reply chain is the commit lineage. |
@@ -13,4 +13,4 @@ This note is not normative; [the specification](../protocol-spec.md) defines eve
 | Merge conflict | Overlay in the *conflict* state | The overlay is classified `conflict` and exposed through the client's API. The protocol has no merge. |
 | Signing | Nostr event signature | Every event is signed, as a signed commit is. |
 
-Git concepts not in the table have no Fabric counterpart. Merges are on the [roadmap](roadmap.md).
+Git concepts not in the table have no SCRUTINY counterpart. Merges are on the [roadmap](roadmap.md).
