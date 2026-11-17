@@ -3308,6 +3308,405 @@
           ]
         }
       }
+    },
+    {
+      "kind": "chain",
+      "name": "chain/self-fork-deleting-below-a-sibling-leaves-the-fork",
+      "rule": "SF-5",
+      "why": "Deleting a patch below one sibling removes only that patch, so two siblings still reply to the shared parent and the fork stands.",
+      "rootId": "003580e200000000000000000000000000000000000000000000000000000000",
+      "events": [
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "a\n",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "003580e200000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,1 +1,2 @@\n a\n+b\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "00000dc110000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "00000dc110000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,2 +1,3 @@\n a\n b\n+LEFT\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "0032a007ef000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "00000dc110000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,2 +1,3 @@\n a\n b\n+RIGHT\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "0677c21c00000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "0677c21c00000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,3 +1,4 @@\n a\n b\n RIGHT\n+MORE\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "0000d1e5ce000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 5,
+          "tags": [
+            [
+              "e",
+              "0000d1e5ce000000000000000000000000000000000000000000000000000000"
+            ]
+          ],
+          "content": "Retracting the descendant.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "0001840be1000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "chain": {
+          "status": "forked",
+          "content": "a\nb\n",
+          "forkParentId": "00000dc110000000000000000000000000000000000000000000000000000000",
+          "branchIds": [
+            "0032a007ef000000000000000000000000000000000000000000000000000000",
+            "0677c21c00000000000000000000000000000000000000000000000000000000"
+          ]
+        },
+        "annotations": [
+          "SF-3"
+        ]
+      }
+    },
+    {
+      "kind": "chain",
+      "name": "chain/self-fork-resolved-by-deleting-a-sibling-with-descendants",
+      "rule": "SF-5",
+      "why": "Deleting a sibling removes its whole subtree, including the descendant, so exactly one sibling remains and the chain resolves onto it.",
+      "rootId": "003580e200000000000000000000000000000000000000000000000000000000",
+      "events": [
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "a\n",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "003580e200000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,1 +1,2 @@\n a\n+b\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "00000dc110000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "00000dc110000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,2 +1,3 @@\n a\n b\n+LEFT\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "0032a007ef000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "00000dc110000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,2 +1,3 @@\n a\n b\n+RIGHT\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "0677c21c00000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-patch"
+            ],
+            [
+              "e",
+              "003580e200000000000000000000000000000000000000000000000000000000",
+              "",
+              "root",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ],
+            [
+              "e",
+              "0677c21c00000000000000000000000000000000000000000000000000000000",
+              "",
+              "reply",
+              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            ]
+          ],
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,3 +1,4 @@\n a\n b\n RIGHT\n+MORE\n\n```",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "0000d1e5ce000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 5,
+          "tags": [
+            [
+              "e",
+              "0677c21c00000000000000000000000000000000000000000000000000000000"
+            ]
+          ],
+          "content": "Retracting the sibling.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+          "id": "0001840be2000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "chain": {
+          "status": "resolved",
+          "content": "a\nb\nLEFT\n",
+          "tipId": "0032a007ef000000000000000000000000000000000000000000000000000000"
+        }
+      }
     }
   ]
 }

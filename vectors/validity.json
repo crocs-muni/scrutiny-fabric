@@ -198,7 +198,7 @@
     {
       "name": "version/higher-version-admitted-opaquely",
       "rule": "VER-2",
-      "why": "A higher-version event satisfying every V invariant is admitted, never dropped for its tag.",
+      "why": "A higher-version event satisfying every V invariant is processed opaquely, never dropped for its tag.",
       "event": {
         "id": "000000000000000000000000000000000000000000000000000000000000000d",
         "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1038,7 +1038,7 @@
     {
       "name": "tags/inherited-tag-is-ignored",
       "rule": "TAG-5",
-      "why": "Tags defined by other NIPs are ignored under TAG-5 whatever their spelling; TAG-4 does not constrain them.",
+      "why": "Tags defined by other NIPs (here NIP-23's published_at and title) are ignored under TAG-5 whatever their spelling; TAG-4 does not constrain them.",
       "event": {
         "id": "00000000000000000000000000000000000000000000000000000000000000e2",
         "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -1058,17 +1058,151 @@
             "scrutiny-product"
           ],
           [
-            "published_at",
-            "1714000000"
+            "title",
+            "A product"
           ],
           [
-            "D",
-            "2024-04-25"
+            "published_at",
+            "1714000000"
           ]
         ],
         "content": "A product.",
         "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
       },
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "supersedes/product-carrying-the-marker-is-valid",
+      "rule": "SUP-4",
+      "why": "A supersedes marker on a Product is a lineage statement, not a validity condition.",
+      "event": {
+        "id": "00000000000000000000000000000000000000000000000000000000000000e3",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-product"
+          ],
+          [
+            "e",
+            "00000000000000000000000000000000000000000000000000000000000000e4",
+            "",
+            "supersedes",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "A replacement product.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expect": {
+        "status": "valid"
+      }
+    },
+    {
+      "name": "supersedes/marker-is-not-a-binding-endpoint",
+      "rule": "SUP-4",
+      "why": "An e tag with the marker supersedes counts toward neither BD-1 nor BD-2, so a Binding with exactly one root and one link plus a supersedes tag is still well formed.",
+      "event": {
+        "id": "00000000000000000000000000000000000000000000000000000000000000e5",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-binding"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000003",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000004",
+            "",
+            "link",
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ],
+          [
+            "e",
+            "00000000000000000000000000000000000000000000000000000000000000e4",
+            "",
+            "supersedes",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "An edge.",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000003",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        },
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000004",
+          "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-metadata"
+            ]
+          ],
+          "content": "Some metadata.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
       "expect": {
         "status": "valid"
       }

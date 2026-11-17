@@ -274,14 +274,18 @@ non-normative: its rule census must equal v0.9.0's.
 
 **Layers stay three (closes #36).** A fourth layer for producer obligations was considered and
 rejected. After v0.6.1 moved the producer rules out of V, TAG-4 was the only remaining misfit, and
-moving it to D removes the contradiction with TAG-5. A new layer would touch 14 rules, the vectors'
+moving it to D removes the contradiction with TAG-5. A new layer would touch about a dozen rules, the vectors'
 layer metadata and the tools library, and add a concept, for no change in behavior.
 
 **`supersedes` is defined, graph-ordered.** The issue proposed resolving to the newest member, which
-needs `created_at` ordering the specification forbids elsewhere (SF-4, RC-1). The head of a lineage
-is the member nothing supersedes; two successors fork the lineage and are surfaced, never chosen
-between. Nothing attached to a superseded event moves to its replacement: carrying Bindings and
-overlays across would give a key authority over statements other people signed.
+needs `created_at` ordering the specification forbids elsewhere (SF-4, §4.4). The final member of a
+succession is the one nothing supersedes; two non-deleted successors fork it and are surfaced, never
+chosen between; a deleted final member retracts the succession rather than reviving its predecessor.
+Successions run over all valid events and trust applies to the result, so a link grants no
+admission. Nothing attached to a superseded event moves to its replacement: carrying Bindings and
+overlays across would give a key authority over statements other people signed. An independent
+review of the first draft found the kind 5 interaction, the undefined "earlier", the missing
+fork-resolution path and the admission gap; the rules above are the corrected form.
 
 **Vocabulary.** The vectors use `pending` as a verdict and `annotations` as a field, so the Binding
 word "pending" and the diagnostic sense of "annotation" stay; the other senses moved. "Indexer"

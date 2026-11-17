@@ -7,47 +7,59 @@ as it does lives inline in the spec, next to that rule. Cross-cutting rationale 
 
 ## v0.9.0
 
-- **Why 0.9.0.** New rules (SUP-1..4, DQ-5..7, IR-5) and amended rule text (TAG-4, BD-5, BD-6, PT-6,
-  PT-11, VER-2, SF-1..SF-6, DEL-2, DEL-4, DEL-8, DEL-11, DQ-1, IM-3, CA-1, RC-3..RC-5, E1, BD-2, H1,
-  RL-5). One release
-  carries every change to normative wording; the restructure that follows moves text without
-  changing any rule.
+- **Why 0.9.0.** New rules (SUP-1..4, DQ-5..8, IR-5) and amended rule text (TAG-4, BD-2, BD-5, BD-6,
+  PT-6, PT-11, VER-2, SF-1..SF-6, DEL-2, DEL-4, DEL-8, DEL-11, DQ-1, DQ-4, DQ-5, DQ-6, IM-3, CA-1,
+  RC-3..RC-5, E1, H1, RL-5). One release carries every change to normative wording; the restructure
+  that follows moves text without changing any rule.
 - **Keywords and conformance (DECISIONS S1).** The BCP 14 boilerplate, the three roles (producer,
-  consumer, relay), and one sentence on what conformance means now open the specification.
+  consumer, relay), a sentence mapping the words rules use ("publishers", "clients", "implementations")
+  to roles, and what conformance means. A SHOULD may be departed from only for a documented reason.
+  A service consumer is any consumer that is not interactive.
 - **Query legs (F19, F20, F21).** DQ-1 now says an event-type `t` value satisfies the fabric-tag
-  requirement. DQ-5 forbids combining the two in one `#t` list. DQ-6 writes the chain-root → patches
-  filter and DQ-7 the by-id fetch; §8.2 shows both legs.
-- **Supersession (F22).** New §4.7, SUP-1..4: the `supersedes` marker on a Product or Metadata `e` tag,
-  honored only for the same pubkey and event type. A lineage's head is the member nothing supersedes,
-  two successors fork the lineage and the fork is surfaced, never resolved by `created_at`. Bindings,
-  patches and overlays are not transferred. §11's patch-redo entry is renamed so one name no longer
-  carries two designs.
-- **Spelling and counts (F23).** IR-5: an `i` value is a spelling, and a widened count discloses the
-  spellings it covers.
+  requirement at the relay and that a consumer still verifies TAG-1 on every result. DQ-4 requires a
+  traversal query to select the event-type value. DQ-5 forbids combining `scrutiny-fabric` with any
+  other SCRUTINY `t` value. DQ-6 writes the chain-root → patches filter, requires keeping only results
+  whose `e root` names the root, and requires paging past relay limits. DQ-7 writes the by-id fetch.
+  DQ-8 and §8.2 add the successors leg. The §8.1 and §4.3 examples now carry a typed or fabric filter.
+- **Supersession (F22).** New §4.7, SUP-1..4. A `supersedes` marker links an event to an observed,
+  V-valid, same-type event by the same pubkey; a deleted but retained event still counts. Events so
+  linked form a succession whose final member is the current version. Two non-deleted successors fork
+  it and the fork is surfaced, never resolved by `created_at`; a deleted final member retracts the
+  succession. Successions are computed over all valid events and trust is applied to the result, so a
+  link confers no admission. Bindings, patches and overlays are not transferred. §11's patch-redo
+  entry is renamed so one name no longer carries two designs.
+- **Spelling and counts (F23).** IR-5: an `i` value is a spelling, and a service consumer that widens a
+  count across spellings discloses them.
 - **Legacy version tag (F24).** No rule change. Vector `tags/legacy-three-digit-version-tag` pins
-  `scrutiny-v059` as invalid.
+  `scrutiny-v059` as invalid; the reference library still accepts it until its own fix lands.
 - **TAG-4 (F25, #36).** TAG-4 moves from V to D and is scoped to the `t` values this specification
-  defines; TAG-5 governs every other tag. Vector `tags/inherited-tag-is-ignored` pins a NIP-23
-  `published_at` tag as valid. §6.0 now states why producer obligations stay in A and D, which closes
-  the V-layer note.
-- **Unobserved targets (F26).** §7.6 opens with the paragraph that names the three surfaces (pending
-  Binding, held Patch, late deletion) as one rule. No rule changes.
+  defines; TAG-5 governs every other tag. Vector `tags/inherited-tag-is-ignored` pins NIP-23
+  `published_at` and `title` tags as valid. §6.0 states why producer obligations stay in A and D,
+  which closes the V-layer note.
+- **Unobserved targets (F26).** §7.6 opens with one paragraph naming the four places the condition
+  shows (pending Binding, held Patch, held `supersedes` marker, late deletion). No rule changes.
 - **Self-fork resolution (SF-5, §7.2).** A deletion must target a sibling, meaning a patch that
   replies directly to the shared parent. Deleting a patch below a sibling removes only that patch and
-  leaves the fork in place. The existing vector deletes a sibling, so conformant behavior is
-  unchanged. SF-1 names the patches *siblings* and the word "branch" is retired.
+  leaves the fork in place; deleting the shared parent or an ancestor removes both siblings. The
+  existing vector deletes a sibling and the reference library already cascades per DEL-2, so both
+  agree with the corrected text; an implementation of the old wording, which resolved a fork by
+  deleting any patch in an arm, must change. Two vectors pin the boundary. SF-1 names the patches
+  *siblings* and the word "branch" is retired from rule text. (The vector field `branchIds` keeps
+  its name.)
 - **Vocabulary.** "Admitted" belongs to the trust gate only (BD-5, PT-11 and VER-2 now say rejected or
   processed; BD-6 and PT-6 reworded; §6.0 is "Rule layers"). "Patched content" is canonical bytes.
   "UI" and "non-UI" consumers are interactive and service consumers. "Topology cascade" is the kind 5
   cascade. "Annotation" no longer means a foreign patch; it remains the diagnostic attached to an
-  outcome (H2, RL-3, OV-9).
+  outcome (H2, RL-3, OV-9). Appendix C gains sibling, succession and the two consumer classes.
 - **Inherited semantics.** §3.2 marks three SCRUTINY-specific departures: markup in `kind:1` content
-  (NIP-10), the `link` and `supersedes` markers (NIP-10), and keeping the original of a deleted event
-  (NIP-09). IM-3 now names `fallback` entries (NIP-94) for alternate sources and NIP-94 joins the
-  references. CA-1 and §4 cite NIP-11's `created_at` limits, §3.1 notes that NIP-03 is marked
-  `unrecommended` upstream, and the §10 deletion example carries a `k` tag.
-- **Corpus.** `vectors/validity.json` gains two cases (19 → 21); its digest and G.1 are re-pinned.
-  `application.json` is unchanged. The `specVersion` field stays at `0.6.1`.
+  and the `link` and `supersedes` markers (NIP-10), and keeping the original of a deleted event
+  (NIP-09). Its preamble now excepts them. IM-3 names `fallback` entries (NIP-94) for alternate
+  sources, ignores additional `url` entries, and NIP-94 joins the references. E1 and BD-2 list NIP-10
+  as an inheritance. CA-1 and §4 cite NIP-11's `created_at` limits, §3.1 notes that NIP-03 is marked
+  `unrecommended` upstream, and both deletion examples carry a `k` tag.
+- **Corpus.** `vectors/validity.json` gains four cases (19 → 23) and `vectors/application.json` two
+  (48 → 50); digests and G.1 are re-pinned. Vectors for SUP-1..3 and DQ-5..8 are not yet published
+  (G.3: the corpus is incomplete by design). The `specVersion` field stays at `0.6.1`.
 - Version tag `scrutiny-v0.8.1` → `scrutiny-v0.9.0`. §3's forward-compatibility example moved from
   `scrutiny-v0.9.0` to `scrutiny-v0.9.1`.
 
