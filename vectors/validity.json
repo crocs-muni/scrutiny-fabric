@@ -1386,6 +1386,74 @@
           "IR-1"
         ]
       }
+    },
+    {
+      "name": "patch/header-trailing-tab-and-cr-are-tolerated",
+      "rule": "C2",
+      "why": "Trailing data on a header line may start with a tab or be a bare CR; it is ignored and the payload stays valid.",
+      "event": {
+        "id": "f400000000000000000000000000000000000000000000000000000000000000",
+        "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": 1714000000,
+        "kind": 1,
+        "tags": [
+          [
+            "t",
+            "scrutiny-fabric"
+          ],
+          [
+            "t",
+            "scrutiny-v0.7.0"
+          ],
+          [
+            "t",
+            "scrutiny-patch"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "root",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          [
+            "e",
+            "0000000000000000000000000000000000000000000000000000000000000005",
+            "",
+            "reply",
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        ],
+        "content": "```diff\n--- a/content\t2026-01-01 00:00:00 +0000\r\n+++ b/content\r\n@@ -1 +1 @@\n-old\n+new\n```",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "observed": [
+        {
+          "id": "0000000000000000000000000000000000000000000000000000000000000005",
+          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "created_at": 1714000000,
+          "kind": 1,
+          "tags": [
+            [
+              "t",
+              "scrutiny-fabric"
+            ],
+            [
+              "t",
+              "scrutiny-v0.7.0"
+            ],
+            [
+              "t",
+              "scrutiny-product"
+            ]
+          ],
+          "content": "A product.",
+          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expect": {
+        "status": "valid"
+      }
     }
   ]
 }

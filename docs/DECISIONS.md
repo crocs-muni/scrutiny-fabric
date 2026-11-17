@@ -298,7 +298,15 @@ occurrences, a foreign patch awaiting its reply target is pending) the rule now 
 were not forced by them. First, a chain stopped by a ceiling has no tip, as RL-5 already implied by
 refusing the word `resolved`; OV-10 therefore gives such a chain the fork treatment (nothing `clean`,
 applied targets `stale`, targets past the stop `orphaned`), which differs from the library, which
-still names a tip there. Second, an `i` value with no colon breaks IR-1 (no prefix), not IR-3.
+still names a tip there. Second, an `i` value with no colon breaks IR-1 (no prefix), not IR-3, so a
+NIP-73 style value such as a bare hashtag is V-invalid here.
+
+Where the reference library differs from the amended rules, the rules follow the vectors and the
+library is the follow-up: it makes an empty or headerless payload V-invalid (the vector
+`malformed/empty-fenced-block` expects HALT); it shifts T2's carry-forward by all prior hunks, not only
+those that end at or before the insertion; it appends after an unterminated final line where T2 now
+HALTs; it does not check "of the same root" in PT-6 and PT-7; and it reports a tip for a chain stopped
+by a ceiling. No vector covers the last four.
 
 **Deferred.** Issue #48 (a machine-readable prefix vocabulary) needs census evidence that lives with
 the pilot corpus. It ships as its own change with the pointer sentence in §9.

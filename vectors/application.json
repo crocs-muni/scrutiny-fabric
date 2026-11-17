@@ -257,7 +257,7 @@
     {
       "kind": "chain",
       "name": "chain/root-only",
-      "rule": "RC-1",
+      "rule": "RC-5",
       "why": "With no patches the canonical bytes are the root content and the tip is the root event (RC-5).",
       "rootId": "003580e200000000000000000000000000000000000000000000000000000000",
       "events": [
@@ -3884,7 +3884,9 @@
       ],
       "expect": {
         "chain": {
-          "status": "forked"
+          "status": "forked",
+          "forkParentId": "00000dc110000000000000000000000000000000000000000000000000000000",
+          "content": "a\nb\n"
         },
         "overlays": [
           {
@@ -3896,9 +3898,9 @@
     },
     {
       "kind": "chain",
-      "name": "chain/overlay-on-a-fork-sibling-is-orphaned",
-      "rule": "OV-3",
-      "why": "A sibling of an unresolved self-fork has no defined resolved content, so an overlay on it is orphaned, not conflict or stale.",
+      "name": "chain/hold-is-transitive-among-root-author-patches",
+      "rule": "UR-4",
+      "why": "p1 replies to an event nothing has delivered and p2 replies to p1, so neither takes a position in the chain: both are held and the chain stays at the root.",
       "rootId": "003580e200000000000000000000000000000000000000000000000000000000",
       "events": [
         {
@@ -3949,7 +3951,7 @@
             ],
             [
               "e",
-              "003580e200000000000000000000000000000000000000000000000000000000",
+              "0dead00000000000000000000000000000000000000000000000000000000000",
               "",
               "reply",
               "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -3957,7 +3959,7 @@
           ],
           "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,1 +1,2 @@\n a\n+b\n\n```",
           "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-          "id": "00000dc110000000000000000000000000000000000000000000000000000000"
+          "id": "0b01000000000000000000000000000000000000000000000000000000000000"
         },
         {
           "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -3985,99 +3987,26 @@
             ],
             [
               "e",
-              "00000dc110000000000000000000000000000000000000000000000000000000",
+              "0b01000000000000000000000000000000000000000000000000000000000000",
               "",
               "reply",
               "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             ]
           ],
-          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,2 +1,3 @@\n a\n b\n+LEFT\n\n```",
+          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,1 +1,2 @@\n a\n+b\n\n```",
           "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-          "id": "0032a007ef000000000000000000000000000000000000000000000000000000"
-        },
-        {
-          "pubkey": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          "created_at": 1714000000,
-          "kind": 1,
-          "tags": [
-            [
-              "t",
-              "scrutiny-fabric"
-            ],
-            [
-              "t",
-              "scrutiny-v0.7.0"
-            ],
-            [
-              "t",
-              "scrutiny-patch"
-            ],
-            [
-              "e",
-              "003580e200000000000000000000000000000000000000000000000000000000",
-              "",
-              "root",
-              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-            ],
-            [
-              "e",
-              "00000dc110000000000000000000000000000000000000000000000000000000",
-              "",
-              "reply",
-              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-            ]
-          ],
-          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,2 +1,3 @@\n a\n b\n+RIGHT\n\n```",
-          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-          "id": "0677c21c00000000000000000000000000000000000000000000000000000000"
-        },
-        {
-          "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-          "created_at": 1714000000,
-          "kind": 1,
-          "tags": [
-            [
-              "t",
-              "scrutiny-fabric"
-            ],
-            [
-              "t",
-              "scrutiny-v0.7.0"
-            ],
-            [
-              "t",
-              "scrutiny-patch"
-            ],
-            [
-              "e",
-              "003580e200000000000000000000000000000000000000000000000000000000",
-              "",
-              "root",
-              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-            ],
-            [
-              "e",
-              "0032a007ef000000000000000000000000000000000000000000000000000000",
-              "",
-              "reply",
-              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-            ]
-          ],
-          "content": "```diff\n--- a/content\n+++ b/content\n@@ -1,3 +1,3 @@\n a\n b\n-LEFT\n+Left\n```",
-          "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-          "id": "0aa2000000000000000000000000000000000000000000000000000000000000"
+          "id": "0b02000000000000000000000000000000000000000000000000000000000000"
         }
       ],
       "expect": {
         "chain": {
-          "status": "forked"
+          "status": "resolved",
+          "content": "a\n",
+          "tipId": "003580e200000000000000000000000000000000000000000000000000000000"
         },
-        "overlays": [
-          {
-            "id": "0aa2000000000000000000000000000000000000000000000000000000000000",
-            "state": "orphaned",
-            "degradation": "alpha"
-          }
+        "pending": [
+          "0b01000000000000000000000000000000000000000000000000000000000000",
+          "0b02000000000000000000000000000000000000000000000000000000000000"
         ]
       }
     }

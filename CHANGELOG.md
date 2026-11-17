@@ -59,19 +59,24 @@ as it does lives inline in the spec, next to that rule. Cross-cutting rationale 
   `unrecommended` upstream, and both deletion examples carry a `k` tag.
 - **Implementer-test gaps (G1–G14).** A fresh implementation written from the rule text alone passed
   every vector only after guessing at fourteen points; each is now stated. C6: the `@@` counts bound a
-  hunk, the line numbers stay advisory, a payload that ends early HALTs, and blank lines after the
-  counts are ignored. C1: only a wrong path token is V-invalid; every other grammar failure HALTs. The
-  grammar's trailing data allows a tab or a CR. C5: a `\` line says the preceding line has no
+  hunk, the line numbers stay advisory, while counts are unmet an empty line is context and a `\` line
+  is attached, an early `@@` or section header or the payload's end is malformed (HALT), and after the
+  counts only empty lines and `\` markers may precede the next hunk. C1: only a wrong path token is
+  V-invalid (P2's forbidden lines are the other V case); every other grammar failure HALTs, or makes a
+  foreign patch's overlay `conflict`. The grammar's trailing data allows a tab or a CR, and `lineno`
+  and `count` are defined. C5: a `\` line says the preceding line has no
   terminator, and a line with one differs from the same line without. T1: overlapping occurrences
-  count. T2: `-L,0` is the position after line L, and the carry-forward counts only hunks that lie
-  entirely before the insertion. RC-5: the tip under a HALT is the last applied patch, and undefined
-  under a ceiling. New OV-10: with no tip no overlay is `clean`, and a defined, applying target is
-  `stale`; OV-3 adds targets beyond a ceiling stop to the orphaned cases. UR-4: holds are transitive.
+  count. T2: `-L,0` is the position after line L, the carry-forward counts only hunks whose header
+  range ends at or before L, and an insertion after an unterminated final line HALTs. RC-5: the tip is
+  the last event of the applied chain, the last applied patch under a HALT, and undefined where a fork
+  or a ceiling is the earlier freeze point. New OV-10: with no tip no overlay is `clean`, a defined,
+  applying target is `stale` and a failing one `conflict`; OV-3 and the §7.3 table cover targets at or
+  beyond a HALT or a ceiling stop. UR-4: holds are transitive among root-author patches.
   PT-7: a foreign patch awaiting its reply target is `pending`; PT-6 and PT-7 say "of the same root"
   and cover a reply to any other event. PT-3 no longer contradicts PT-4 and E6. IR-1: an `i` value
   with no colon breaks it. G.2 gains a Reporting paragraph and the vocabulary of `expect`, and
   `chain/root-only`'s `why` is corrected.
-- **Corpus.** `vectors/validity.json` gains seven cases (19 → 26) and `vectors/application.json` four
+- **Corpus.** `vectors/validity.json` gains eight cases (19 → 27) and `vectors/application.json` four
   (48 → 52); digests and G.1 are re-pinned. Vectors for SUP-1..3 and DQ-5..8 are not yet published
   (G.3: the corpus is incomplete by design). The `specVersion` field stays at `0.6.1`.
 - Version tag `scrutiny-v0.8.1` → `scrutiny-v0.9.0`. §3's forward-compatibility example moved from
