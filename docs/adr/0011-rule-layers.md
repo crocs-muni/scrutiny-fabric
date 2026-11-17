@@ -1,0 +1,25 @@
+# ADR-0011: Three rule layers (V, A, D) and tolerance outside V
+
+| | |
+|---|---|
+| **Status** | Accepted |
+| **Spec release** | 0.9.0 (current form) |
+| **Rules** | TR-1 and the Layer column of every table |
+
+## Context
+
+An event can fail in different ways, and a consumer's response differs. A malformed event must not be processed. A patch that fails to apply must be reported and must freeze the chain, but the event is real. An event that breaks a discovery convention is still a valid event. A single "invalid" outcome would hide these differences, and implementations would converge on different ones.
+
+## Decision
+
+Rules are partitioned by what they constrain, not by normative strength: V (is the event well-formed), A (does it apply to chain state), D (how consumers find and show it). The consequences differ: reject, annotate and freeze, hide. A V-valid event is never rejected by an A or D rule (TR-1). The tolerance is deliberate and bounded, in the sense of RFC 9413: what a consumer accepts is stated, so tolerance does not become silent acceptance of ambiguity.
+
+V rules have two voices. Exclusion rules say what is outside the valid set; inclusion rules, such as C2, C3 and C7, say what must not be treated as outside it. A consumer that is stricter than the grammar triggers no A or D rule, so without an inclusion rule nothing would forbid it.
+
+A rule that constrains how an event is built, not what it is, is not a V rule. Context-line counts (P1), fence lengths (E4) and line endings (P3) are producer obligations: a consumer cannot observe a violation, or rejecting would be disproportionate where a gentler outcome exists. They stay in A and D. A fourth layer for them was rejected because it would add a name and no behavior (ADR-0009).
+
+A test for placing a rule: could a consumer holding the event tell whether the rule was honored, and is rejection the outcome wanted when it was not? Two noes mean the rule is not a V rule.
+
+## Consequences
+
+An earlier draft listed "manifests" of rule IDs for each layer next to the tables. A manifest that disagreed with a table swept two rules into the wrong layer for three releases. The Layer column of each rule table is now the only authority, and `rules.json` lists every rule's layer.

@@ -1,0 +1,109 @@
+# SCRUTINY Fabric overview
+
+SCRUTINY Fabric is a discovery layer for security metadata. It lets anyone publish a signed statement about a product, and lets a user find the statements about the products they care about and decide whose statements to see. It runs on Nostr, so there is no central server and no one who can refuse to carry a statement.
+
+This page explains the ideas. The rules are in the [protocol specification](protocol-spec.md), which is the only normative document.
+
+## The problem
+
+Formats for security information already exist: CycloneDX and SPDX for SBOMs, CSAF for advisories, Common Criteria certificates, in-toto attestations. What is missing is a way to answer "which of these documents are about the product I use?" and "who says so?". Vendors and researchers need a way to publish that context openly, and users need a way to find it without asking anyone's permission.
+
+SCRUTINY Fabric provides that graph layer. It does not define or parse payload formats. An event carries a payload as text or as an attached file, and the format stays the publisher's.
+
+Nostr fits because events are signed by their author's key, relays are interchangeable, and a statement published to several relays is hard to suppress. Every SCRUTINY event is an ordinary Nostr `kind: 1` note, so generic Nostr clients display the text and ignore the rest.
+
+## The four event types
+
+All four are identified by `t` tags (`scrutiny-fabric`, a version, and one type tag).
+
+- A **Product** names a thing: a smartcard chip, a software package, a device. It carries identifiers such as a CPE, a PURL or a Common Criteria certificate number in `i` tags, so that a relay can answer "all events about this identifier" with one filter.
+- **Metadata** says something about a Product: a vulnerability, an SBOM, a certification report, a test result. It has the same shape as a Product.
+- A **Binding** connects one Metadata event to one Product. It is an immutable signed edge, and the signer takes responsibility for the connection. Anyone can publish a Binding, and the reader's trusted set decides which Bindings count.
+- A **Patch** changes the text of a Product or Metadata event, the way a commit changes a file. It carries a unified diff.
+
+```mermaid
+graph RL
+    P["`**Product**
+
+Infineon M7794A12 — BSI-DSZ-CC-0814-2012`"]:::product
+
+    B1(["`**Binding**`"]):::binding
+    B2(["`**Binding**`"]):::binding
+    B3(["`**Binding**`"]):::binding
+
+    M1["`**Metadata**
+
+CVE-2017-15361 (ROCA)`"]:::metadata
+    M2["`**Metadata**
+
+CycloneDX SBOM`"]:::metadata
+    M3["`**Metadata**
+
+CC certification report`"]:::metadata
+
+    B1 -->|e root| P
+    B2 -->|e root| P
+    B3 -->|e root| P
+
+    M1 -->|e link| B1
+    M2 -->|e link| B2
+    M3 -->|e link| B3
+
+    classDef product fill:#fff,stroke:#1f77b4,stroke-width:3px,color:#000
+    classDef binding fill:#fff,stroke:#8cc63f,stroke-width:3px,color:#000
+    classDef metadata fill:#fff,stroke:#f15a24,stroke-width:3px,color:#000
+```
+
+**Figure 1 — Products, Bindings and Metadata.** Each Binding joins one Product to one Metadata event. A Product can have many Bindings.
+
+### Who may change what
+
+The author of a Product or Metadata event owns its content. Patches by that author form the **canonical chain**, the author's current statement. Patches by anyone else never change it. They appear as **overlays**: comments or proposed changes, shown next to the specific version of the text they were written against. Deletion uses the Nostr deletion request, so a retraction hides an event from default views and keeps it for audit.
+
+## How a client builds its view
+
+A client gathers events from several relays and then does the work itself. Nothing in this pipeline depends on a relay being honest, because each step uses only signed data.
+
+```mermaid
+flowchart LR
+    R["Events from relays"] --> V["Verify signature and id"]
+    V --> C["Resolve chains:<br/>apply patches, detect forks"]
+    C --> O["Classify overlays"]
+    O --> T["Apply the user's trusted set"]
+    T --> W(["The user's view"])
+```
+
+**Figure 2 — From relay events to a user's view.** Verification and resolution run over all valid events. The trusted set is applied last, to the results.
+
+1. **Verify.** The client checks the signature and recomputes the event id. An event that fails is dropped.
+2. **Resolve chains.** It follows patch links from each root, applies the diffs in order, and stops at the first patch that does not apply. If the author published two patches for the same parent, the chain is in a self-fork: the client freezes at the shared parent and shows the conflict.
+3. **Classify overlays.** Each foreign patch is checked against the text it was written for. It is clean, stale, in conflict, orphaned (its target is gone) or unclassified (the client ran out of budget).
+4. **Gate by trust.** Only now does the client hide whatever the user's trusted set does not admit.
+
+Because clients see events in different orders, every step is designed so that the same set of events always gives the same result.
+
+## Trust, and what it does not do
+
+Each user keeps a set of trusted keys. An event is in the user's view if its author is trusted, or if a trusted author's Binding connects it to something in the view. A Binding by an untrusted key never adds anything, even when it points at trusted events. Foreign patches need their own author's key in the trusted set.
+
+There is no global authority, no reputation score in the protocol and no revocation: if a key leaks, the remedy is social. The protocol does not say whether a trusted author's statement is true, and it does not stop a relay from withholding events. The [threat model](threat-model.md) states what is protected, against whom, and what remains.
+
+## Where to go next
+
+| Document | Read it to |
+|---|---|
+| [Protocol specification](protocol-spec.md) | implement a producer, consumer or relay |
+| [Worked example](guide/worked-example.md) | follow six events from publication to retraction |
+| [Git mapping](guide/git-mapping.md) | relate patches, chains and overlays to git |
+| [Optional signals](guide/optional-signals.md) | use proof of work, reposts, reactions or zaps |
+| [Roadmap](guide/roadmap.md) | see what may come later |
+| [Decision records](adr/README.md) | learn why a rule reads as it does |
+| [Threat model](threat-model.md) | review the security analysis |
+| [`vectors/`](../vectors) | test an implementation against the conformance corpus |
+
+### Reader paths
+
+- **Producer.** Read §3 (event model) and §4.3 (producer output) of the specification, then the worked example.
+- **Consumer.** Read §3 to §8 in order, run the vectors, and read §9 on what a client may not trust.
+- **Relay operator.** Read §3.1 (verification), §7 (retaining deletion requests) and §8 (queries relays must support).
+- **Auditor.** Read the threat model with §5 and §9 of the specification beside it.

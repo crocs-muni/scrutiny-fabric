@@ -1,9 +1,70 @@
 # Changelog
 
 Release history for the SCRUTINY Fabric protocol specification (`docs/protocol-spec.md`). Entries
-are terse and cite the affected rule IDs (Appendix F); the rationale for why a *specific rule* reads
-as it does lives inline in the spec, next to that rule. Cross-cutting rationale not tied to one rule
-— licensing, versioning, tooling decisions — lives in [docs/DECISIONS.md](docs/DECISIONS.md).
+are terse and cite the affected rule IDs; [`rules.json`](rules.json) lists every rule. The reasons for
+cross-cutting decisions and for long-running rules are in [docs/adr/](docs/adr/README.md). Entries before
+0.9.1 cite sections, appendices and `DECISIONS.md` entries by the numbering of their own release; the
+tables under 0.9.1 map the old names to the new ones.
+
+## v0.9.1
+
+Restructure. **No rule changed:** the 151 rules have the same IDs, layers, inheritance and wording as in
+0.9.0, and `vectors/` is byte-identical. The only edits inside rule rows are the section references
+they contain, updated to the new numbering (28 rows). Section titles and numbers changed, so citations
+of sections need updating; rule IDs are stable.
+
+- **One normative file.** `docs/protocol-spec.md` holds the rule tables as the only statement of each
+  rule. Appendix F is dropped and `rules.json` is generated from the tables by `tools/gen-rules.mjs`;
+  `tools/verify-corpus.mjs` checks that it is current. Rule anchors (`#rule-BD-3`) are unchanged.
+- **New documents.** `docs/overview.md`; `docs/guide/` (worked example, git mapping, roadmap, optional
+  signals); `docs/adr/` with 17 decision records. `docs/DECISIONS.md` is removed: S1 to S10 are ADR-0001
+  to ADR-0009 (S4 and S7 are merged into ADR-0004).
+- **Terms and figures.** Section 2 defines every term once (the old Appendix C glossary). The specification
+  carries nine figures: event graph, Binding lifecycle, successions, application pipeline, where each layer
+  acts, self-fork states, overlay classification, deletion and α/β rendering, a discovery session.
+- **Rule-layer prose.** The layer "manifests" of the old section 6.0 are removed; the Layer column is the
+  only authority. The argument for the layers is ADR-0011.
+- **Prose that carried no rule ID.** Four sentences with a SHOULD or MAY that no rule row stated are now plain
+  statements: query several relays and cross-check (section 9), warn when a trust expansion admits many
+  new keys (section 9), check the relay information document before using NIP-50 search (section 8), and
+  inspect relay information documents before publishing with proof of work (optional signals). A later
+  normative release may give them rule IDs.
+
+Section map (old to new):
+
+| Old | New |
+|---|---|
+| Keywords and conformance | Keywords and conformance |
+| 1 Abstract, 2 Motivation | 1 Scope; [overview](docs/overview.md) |
+| 3 Versioning and identification | 3.1 |
+| 3.1 NIP dependencies, 3.2 inherited semantics | 3.2; optional signals in [guide](docs/guide/optional-signals.md) |
+| 4.1, 4.2 Product, Metadata | 3.3 |
+| 4.3 Binding | 3.4 |
+| 4.4 Patch | 3.5 |
+| 4.5 Indexer discipline | 3.7 |
+| 4.6 Payload attachments | 3.8 |
+| 4.7 Supersession | 3.6 |
+| 5.1, 5.2 Patch payload and format | 4.1, 4.2, 4.3 |
+| 5.3 Application, 7.4 Computing the canonical bytes | 4.4 |
+| 5.4 Resource limits | 4.5 |
+| 6.0 Rule layers | 5.1 |
+| 6.1 to 6.4 Trust and admission | 5.2 |
+| 7.1 Root author and canonical chain | 6.1 |
+| 7.2 Root self-fork | 6.2 |
+| 7.3 Foreign overlays | 6.3 |
+| 7.5 Trust model and assumptions | 9 Security considerations |
+| 7.6 Unresolved references | 6.4 |
+| 8 Discovery and queries | 8 |
+| 9 Canonical indexer registry | 3.7 |
+| 10 Kind 5 deletion | 7 |
+| 11 Future work | [roadmap](docs/guide/roadmap.md) |
+| Appendix A Companion CLI | removed; the tools repository documents it |
+| Appendix B Git mapping | [guide](docs/guide/git-mapping.md) |
+| Appendix C Glossary | 2 Terms |
+| Appendix D Worked example | [guide](docs/guide/worked-example.md) |
+| Appendix E Interop validation | one sentence in 4.2 |
+| Appendix F Rule registry | [`rules.json`](rules.json) |
+| Appendix G Conformance vectors | 10 |
 
 ## v0.9.0
 
