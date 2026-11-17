@@ -90,7 +90,7 @@ Issues and pull requests are welcome, particularly:
 
 - **Ambiguities.** Two implementers reading a rule differently is a specification bug, not an implementation bug. Report it as one.
 - **Implementation experience.** If a rule is impractical, expensive, or unimplementable on real relays, that matters more than elegance.
-- **Indexer prefixes.** The identifier registry (specification §3.7) is a baseline, not a closed set. New prefixes follow the convention "lowercase prefix, authority-canonical value."
+- **Indexer prefixes.** The indexer registry (specification §3.7) is a baseline, not a closed set. New prefixes follow the convention "lowercase prefix, authority-canonical value."
 
 When citing the specification, use the rule IDs, for example `BD-3`.
 

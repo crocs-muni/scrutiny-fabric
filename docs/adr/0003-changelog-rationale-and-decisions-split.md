@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Accepted; amended by ADR-0009 and the restructure of 0.9.1 |
+| **Status** | Accepted; extended in 0.9.1 |
 | **Spec release** | 0.6.1 |
 | **Former record** | DECISIONS S3 |
 
@@ -13,8 +13,8 @@ The inline changelog had grown to 13% of the specification's words. Its entries 
 ## Decision
 
 - `CHANGELOG.md` holds terse release notes, one entry per version, citing rule IDs.
-- A decision record in `docs/adr/` holds the argument for a cross-cutting choice or a long-running rule. A rule row keeps at most one sentence of rationale and links to the record.
+- Per-rule rationale stays inline in the specification, next to the rule. Cross-cutting rationale not tied to one rule lives in a decision record.
 
 ## Consequences
 
-Since 0.9.1 the specification holds no history and no extended argument, and its rule tables are the rules. Records are append-only: a changed decision gets a new record that supersedes the old one.
+In 0.9.1 the decision records moved from `DECISIONS.md` to `docs/adr/`, and the arguments that sat in the specification body moved to records 0010 to 0017. Rule rows keep their inline rationale and may be trimmed in a later normative release. Records are append-only: a changed decision gets a new record that supersedes the old one.

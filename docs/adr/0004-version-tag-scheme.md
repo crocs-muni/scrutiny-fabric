@@ -20,4 +20,4 @@ The version tag value is `MAJOR.MINOR.PATCH` with unpadded decimal integers and 
 
 ## Consequences
 
-The vectors were regenerated with the unpadded form; their `id` and `sig` fields were placeholders, so no cryptographic relationship changed. The tools library had pinned the old digests and re-vendored later. See ADR-0010 for how versions compare.
+The vectors were regenerated with the unpadded form; their `id` and `sig` fields were placeholders, so no cryptographic relationship changed. The tools library had pinned the old digests, which went stale until it re-vendored. See ADR-0010 for how versions compare.

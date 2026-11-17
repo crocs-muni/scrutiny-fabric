@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | Accepted |
-| **Spec release** | 0.7.1 |
+| **Spec release** | 0.5.x (carve-out), 0.7.1 (clamp) |
 | **Rules** | T2, T3, C6 |
 
 ## Context

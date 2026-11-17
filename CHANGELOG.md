@@ -24,11 +24,22 @@ of sections need updating; rule IDs are stable.
   acts, self-fork states, overlay classification, deletion and α/β rendering, a discovery session.
 - **Rule-layer prose.** The layer "manifests" of the old section 6.0 are removed; the Layer column is the
   only authority. The argument for the layers is ADR-0011.
-- **Prose that carried no rule ID.** Four sentences with a SHOULD or MAY that no rule row stated are now plain
-  statements: query several relays and cross-check (section 9), warn when a trust expansion admits many
-  new keys (section 9), check the relay information document before using NIP-50 search (section 8), and
-  inspect relay information documents before publishing with proof of work (optional signals). A later
-  normative release may give them rule IDs.
+- **Normative sentences outside rule rows.** The old prose carried requirements that no rule row states.
+  They keep their keywords where they now stand: MUST defer to the base layers (3.2), MAY attach NIP-03
+  attestations (3.1), SHOULD publish a competing Binding (3.4), SHOULD produce grammar-conforming payloads
+  (4.3), SHOULD query several relays and cross-check, SHOULD warn when a trust expansion admits many new keys
+  (9), SHOULD check NIP-11 before NIP-50 search (8.1), MUST NOT outlive (7: admission and its assertion),
+  SHOULD verify the vector digest in CI, MUST NOT use the A-layer vectors for SIG-1, and the per-permutation
+  MUST (10). The proof-of-work advice stays in the optional-signals guide. A later normative release may give
+  them rule IDs. Where a rule row owns the requirement (RL-1, RL-2, RC-4, DEL-11, DQ-2, IM-1, IX-1, IX-4),
+  the prose now names the rule and no longer restates the keyword.
+- **Two prose clarifications.** Section 8.2 now says the `#t` list is not to combine `scrutiny-fabric` with
+  another SCRUTINY value (DQ-5), as the rule does; section 4.4 steps now say honored deletion requests, two or
+  more siblings, and give the annotation (H2) and the RL-4 consequence.
+- **Known gaps carried over.** The threat model still cites the 0.8.1 numbering and `tools/verify-tm-sync.mjs`
+  does not run until the threat model is rewritten. A test implementation written from sections 3 to 8 found
+  gaps in the rule wording itself (for example how the `@@` counts bound a hunk); they are listed for the next
+  normative release and are not changed here.
 
 Section map (old to new):
 
@@ -62,7 +73,7 @@ Section map (old to new):
 | Appendix B Git mapping | [guide](docs/guide/git-mapping.md) |
 | Appendix C Glossary | 2 Terms |
 | Appendix D Worked example | [guide](docs/guide/worked-example.md) |
-| Appendix E Interop validation | one sentence in 4.2 |
+| Appendix E Interop validation | one sentence in 4.2; the findings stay in the tools repository |
 | Appendix F Rule registry | [`rules.json`](rules.json) |
 | Appendix G Conformance vectors | 10 |
 

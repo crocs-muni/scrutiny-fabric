@@ -543,7 +543,7 @@
       "layer": "A",
       "inherits": [],
       "section": "4.1",
-      "text": "If no fenced block matching E2 is present in `content`, the patch is a no-op (see §3.5, Prose-only and no-op patches)."
+      "text": "If no fenced block matching E2 is present in `content`, the patch is a no-op (see §3.5)."
     },
     {
       "id": "N1",
@@ -1072,7 +1072,7 @@
       "inherits": [
         "NIP-01"
       ],
-      "section": "8.3",
+      "section": "8.4",
       "text": "All discovery queries assume relays supporting NIP-01 `#t`, `#e`, and `#i` filters. A query that selects by an event-type `t` value satisfies the fabric-tag requirement at the relay; any other discovery query MUST include `#t:[\"scrutiny-fabric\"]`. A relay returns whatever matches, so a consumer MUST verify TAG-1 on every result. Kind 5 lookups are exempt, because kind 5 events typically do not carry `scrutiny-fabric` tags."
     },
     {
@@ -1081,7 +1081,7 @@
       "inherits": [
         "NIP-09"
       ],
-      "section": "8.3",
+      "section": "8.4",
       "text": "Clients SHOULD issue `{kinds:[5], #e:[<id>]}` for every chain root, every patch, and every Binding they cache, both at first sight and periodically thereafter, to guard against relays that store deletions but omit them from default filter results. Binding deletions are required because retraction revokes conferred admission (§7, DEL-5)."
     },
     {
@@ -1090,7 +1090,7 @@
       "inherits": [
         "NIP-50"
       ],
-      "section": "8.3",
+      "section": "8.4",
       "text": "When falling back to NIP-50 free-text `search` queries (§8.1 step 3), clients MUST verify returned events carry valid `scrutiny-fabric` tags (per §3.1) and match the user's intent. NIP-50 ranking is relay-dependent and untrusted."
     },
     {
@@ -1099,7 +1099,7 @@
       "inherits": [
         "NIP-10"
       ],
-      "section": "8.3",
+      "section": "8.4",
       "text": "When traversing `e`-tag references (§3.4, §8.2), the query MUST select the expected event-type `t` value, results MUST be filtered locally for that tag, and the `e` tag markers (`root`, `link`, `reply`, `supersedes`) MUST be inspected to determine each result's role relative to the queried event."
     },
     {
@@ -1108,14 +1108,14 @@
       "inherits": [
         "NIP-01"
       ],
-      "section": "8.3",
+      "section": "8.4",
       "text": "A `#t` filter list MUST NOT combine `scrutiny-fabric` with any other SCRUTINY `t` value (an event-type value or a version value). NIP-01 matches any listed value and every SCRUTINY event carries the fabric tag, so the combination selects every SCRUTINY event and voids the other constraint."
     },
     {
       "id": "DQ-6",
       "layer": "D",
       "inherits": [],
-      "section": "8.3",
+      "section": "8.4",
       "text": "A chain's patches are obtained with the root-anchored query `{\"kinds\":[1],\"#t\":[\"scrutiny-patch\"],\"#e\":[\"<root-event-id>\"]}`. Every patch names the chain root in an `e` tag with marker `root` (PT-1), so one query reaches the whole chain however deep it is. A consumer MUST keep only results whose `e` tag with marker `root` names the queried id, because the filter also matches events that merely mention it. A relay may truncate results (NIP-11 `max_limit`, `default_limit`), so a consumer MUST page until a query returns fewer events than the limit in force. Chain order comes from `e reply` parentage (PT-2), never from `created_at`."
     },
     {
@@ -1124,7 +1124,7 @@
       "inherits": [
         "NIP-01"
       ],
-      "section": "8.3",
+      "section": "8.4",
       "text": "Events whose ids are known are fetched with `{\"ids\":[\"<event-id>\", ...]}`. DQ-1 does not apply to such a fetch: the id fixes the event, and its signature and id are verified under SIG-1."
     },
     {
@@ -1133,7 +1133,7 @@
       "inherits": [
         "NIP-01"
       ],
-      "section": "8.3",
+      "section": "8.4",
       "text": "The events that supersede a known event are found with `{\"kinds\":[1],\"#t\":[\"<event type of the known event>\"],\"#e\":[\"<event-id>\"],\"authors\":[\"<pubkey of the known event>\"]}`. Only results carrying a `supersedes` marker that names the id count (SUP-1)."
     }
   ]

@@ -8,7 +8,7 @@ Pubkeys are abbreviated:
 - `researcher_pk` is a security researcher, who publishes the Metadata event and the Binding.
 - `auditor_pk` is a third-party auditor, who publishes a foreign patch.
 
-Event IDs are short labels (`aaa111`); real Nostr IDs are 64-character hex strings. Each step ends with a diagram of the state after it.
+Event IDs are short labels (`aaa111`) and the version tag appears in template form (`scrutiny-v<MAJOR>.<MINOR>.<PATCH>`); real events carry 64-character hex IDs and a concrete version. Each step ends with a diagram of the state after it.
 
 ## 1. Product (`aaa111`)
 
@@ -126,7 +126,7 @@ The vendor updates the Product's description with a firmware revision. The patch
 }
 ```
 
-After `ddd444` applies, the canonical bytes of the Product carry the new description. The `i` tags stay as they were, because identifiers are immutable after the root is published.
+After `ddd444` applies, the canonical bytes of the Product carry the new description. The `i` tags stay as they were, because indexers are immutable after the root is published.
 
 ```mermaid
 stateDiagram-v2
@@ -190,7 +190,7 @@ The vendor decides that the wording in `ddd444` was misleading and retracts it w
 What follows:
 
 - `ddd444` leaves the canonical chain. Any root-author patch that replied to it would leave too; here there is none.
-- The canonical bytes of the Product revert to the root: two identifiers and the original description.
+- The canonical bytes of the Product revert to the root: two indexers and the original description.
 - `eee555` replied to `ddd444`, so it is now orphaned. If the client can still find `ddd444` (cached, on another relay, or through the "show deleted events" toggle), the overlay renders against `ddd444`'s resolved content (α). Otherwise it renders as a standalone artifact with its payload, author and target id (β). Either way the auditor's statement is kept.
 - A SCRUTINY-aware relay keeps `ddd444`, `eee555` and `fff666`, so an audit-mode query can recover the history.
 

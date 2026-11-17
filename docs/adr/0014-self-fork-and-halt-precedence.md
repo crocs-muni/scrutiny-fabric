@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | Accepted |
-| **Spec release** | 0.9.0 |
+| **Spec release** | 0.6.1, 0.9.0 |
 | **Rules** | SF-5, SF-7 |
 
 ## Context

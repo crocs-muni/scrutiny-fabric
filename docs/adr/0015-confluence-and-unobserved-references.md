@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | Accepted |
-| **Spec release** | 0.8.0, 0.9.0 |
+| **Spec release** | 0.6.0, 0.8.0, 0.9.0 |
 | **Rules** | UR-1 to UR-4, BD-6, BD-7, SUP-1, DEL-8 |
 
 ## Context

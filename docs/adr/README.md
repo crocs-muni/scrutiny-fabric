@@ -8,7 +8,7 @@ A record explains why the specification reads as it does; it never changes what 
 |---|---|---|
 | [0001](0001-bcp-14-keywords.md) | Normative keywords follow BCP 14 (RFC 2119 and RFC 8174) | Accepted |
 | [0002](0002-licence-mit-for-pre-1-0.md) | MIT licence retained until 1.0 | Accepted; revisit before 1.0 |
-| [0003](0003-changelog-rationale-and-decisions-split.md) | Release notes, rule rationale and decisions live in separate places | Accepted; amended by ADR-0009 and the restructure of 0.9.1 |
+| [0003](0003-changelog-rationale-and-decisions-split.md) | Release notes, rule rationale and decisions live in separate places | Accepted; extended in 0.9.1 |
 | [0004](0004-version-tag-scheme.md) | Version tag `scrutiny-v<MAJOR>.<MINOR>.<PATCH>` | Accepted; supersedes the three-digit `scrutiny-vMMP` form |
 | [0005](0005-governance-infrastructure-deferred.md) | Governance, citation and contribution infrastructure deferred | Accepted; revisit at 1.0 |
 | [0006](0006-ci-validator-deferred.md) | CI validation of the rule registry deferred | Accepted; revisit when the tools repository is public |

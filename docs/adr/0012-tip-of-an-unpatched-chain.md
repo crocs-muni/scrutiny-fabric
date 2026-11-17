@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Status** | Accepted |
-| **Spec release** | 0.9.0 |
+| **Spec release** | 0.6.1 |
 | **Rules** | RC-5, OV state `clean` |
 
 ## Context

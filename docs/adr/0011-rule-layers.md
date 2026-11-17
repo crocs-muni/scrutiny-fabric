@@ -12,7 +12,7 @@ An event can fail in different ways, and a consumer's response differs. A malfor
 
 ## Decision
 
-Rules are partitioned by what they constrain, not by normative strength: V (is the event well-formed), A (does it apply to chain state), D (how consumers find and show it). The consequences differ: reject, annotate and freeze, hide. A V-valid event is never rejected by an A or D rule (TR-1). The tolerance is deliberate and bounded, in the sense of RFC 9413: what a consumer accepts is stated, so tolerance does not become silent acceptance of ambiguity.
+Rules are partitioned by what they constrain, not by normative strength: V (is the event well-formed), A (does it apply to chain state), D (how consumers find and show it). The consequences differ: reject, annotate and freeze, hide. A V-valid event is never rejected by an A or D rule (TR-1). The tolerance is deliberate and bounded: what a consumer accepts is stated, so it does not become silent acceptance of ambiguity (compare RFC 9413 on the limits of the robustness principle).
 
 V rules have two voices. Exclusion rules say what is outside the valid set; inclusion rules, such as C2, C3 and C7, say what must not be treated as outside it. A consumer that is stricter than the grammar triggers no A or D rule, so without an inclusion rule nothing would forbid it.
 

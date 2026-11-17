@@ -1,6 +1,6 @@
 # SCRUTINY Fabric overview
 
-SCRUTINY Fabric is a discovery layer for security metadata. It lets anyone publish a signed statement about a product, and lets a user find the statements about the products they care about and decide whose statements to see. It runs on Nostr, so there is no central server and no one who can refuse to carry a statement.
+SCRUTINY Fabric is a discovery layer for security metadata. It lets anyone publish a signed statement about a product, and lets a user find the statements about the products they care about and decide whose statements to see. It runs on Nostr, so there is no central server, and a statement published to several relays is hard to suppress.
 
 This page explains the ideas. The rules are in the [protocol specification](protocol-spec.md), which is the only normative document.
 
@@ -16,7 +16,7 @@ Nostr fits because events are signed by their author's key, relays are interchan
 
 All four are identified by `t` tags (`scrutiny-fabric`, a version, and one type tag).
 
-- A **Product** names a thing: a smartcard chip, a software package, a device. It carries identifiers such as a CPE, a PURL or a Common Criteria certificate number in `i` tags, so that a relay can answer "all events about this identifier" with one filter.
+- A **Product** names a thing: a smartcard chip, a software package, a device. It carries indexers such as a CPE, a PURL or a Common Criteria certificate number in `i` tags, so that a relay can answer "all events about this indexer" with one filter.
 - **Metadata** says something about a Product: a vulnerability, an SBOM, a certification report, a test result. It has the same shape as a Product.
 - A **Binding** connects one Metadata event to one Product. It is an immutable signed edge, and the signer takes responsibility for the connection. Anyone can publish a Binding, and the reader's trusted set decides which Bindings count.
 - A **Patch** changes the text of a Product or Metadata event, the way a commit changes a file. It carries a unified diff.
@@ -54,7 +54,7 @@ CC certification report`"]:::metadata
     classDef metadata fill:#fff,stroke:#f15a24,stroke-width:3px,color:#000
 ```
 
-**Figure 1 — Products, Bindings and Metadata.** Each Binding joins one Product to one Metadata event. A Product can have many Bindings.
+**Figure 1 — Products, Bindings and Metadata.** Each Binding joins one Product to one Metadata event; arrows show the direction of the edge from Metadata to Product. A Product can have many Bindings.
 
 ### Who may change what
 
@@ -62,7 +62,7 @@ The author of a Product or Metadata event owns its content. Patches by that auth
 
 ## How a client builds its view
 
-A client gathers events from several relays and then does the work itself. Nothing in this pipeline depends on a relay being honest, because each step uses only signed data.
+A client gathers events from several relays and then does the work itself. Verification does not depend on trusting a relay, because each step uses signed data. Completeness does depend on at least one queried relay being honest ([§9](protocol-spec.md#9-security-considerations)).
 
 ```mermaid
 flowchart LR
@@ -80,7 +80,7 @@ flowchart LR
 3. **Classify overlays.** Each foreign patch is checked against the text it was written for. It is clean, stale, in conflict, orphaned (its target is gone) or unclassified (the client ran out of budget).
 4. **Gate by trust.** Only now does the client hide whatever the user's trusted set does not admit.
 
-Because clients see events in different orders, every step is designed so that the same set of events always gives the same result.
+Because clients see events in different orders, every step is designed so that the same set of events gives the same result, given the same resource ceilings.
 
 ## Trust, and what it does not do
 
@@ -103,7 +103,7 @@ There is no global authority, no reputation score in the protocol and no revocat
 
 ### Reader paths
 
-- **Producer.** Read §3 (event model) and §4.3 (producer output) of the specification, then the worked example.
-- **Consumer.** Read §3 to §8 in order, run the vectors, and read §9 on what a client may not trust.
-- **Relay operator.** Read §3.1 (verification), §7 (retaining deletion requests) and §8 (queries relays must support).
-- **Auditor.** Read the threat model with §5 and §9 of the specification beside it.
+- **Producer.** Read [§3](protocol-spec.md#3-event-model) (event model) and [§4.3](protocol-spec.md#43-producer-output) (producer output) of the specification, then the worked example.
+- **Consumer.** Read [§3](protocol-spec.md#3-event-model) to [§8](protocol-spec.md#8-discovery) in order, run the vectors, and read [§9](protocol-spec.md#9-security-considerations) on what a client may not trust.
+- **Relay operator.** Read [§3.1](protocol-spec.md#31-identification-and-versioning) (verification), [§7](protocol-spec.md#7-kind-5-deletion) (keeping deletion requests, a SHOULD) and [§8](protocol-spec.md#8-discovery) (queries a relay is assumed to support).
+- **Auditor.** Read the threat model with [§5](protocol-spec.md#5-rule-layers-and-trust) and [§9](protocol-spec.md#9-security-considerations) of the specification beside it.
